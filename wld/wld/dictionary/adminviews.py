@@ -81,7 +81,7 @@ class EntryListView(ListView):
 
         context['searchform'] = search_form
 
-        # Determine the count
+        # Determine the count 
         context['entrycount'] = self.get_queryset().count()
 
         # Return the calculated context
