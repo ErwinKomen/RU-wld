@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25123.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "wld", "wld\wld.pyproj", "{A6C3239A-BCAF-4905-97FF-9F3D22AA4223}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "wldfix", "wldfix\wldfix.pyproj", "{C8C41500-A8FC-4016-9632-7DFD2488F638}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A6C3239A-BCAF-4905-97FF-9F3D22AA4223}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6C3239A-BCAF-4905-97FF-9F3D22AA4223}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A6C3239A-BCAF-4905-97FF-9F3D22AA4223}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A6C3239A-BCAF-4905-97FF-9F3D22AA4223}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C8C41500-A8FC-4016-9632-7DFD2488F638}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8C41500-A8FC-4016-9632-7DFD2488F638}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA58FEF3-893D-4CE8-BA98-238523E05E1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA58FEF3-893D-4CE8-BA98-238523E05E1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
