@@ -108,7 +108,7 @@
 </head>
 
 <body>
-    <div class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar navbar-custom navbar-fixed-top">
         <div class="container">
             <div class="navbar-header">
                 <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -122,9 +122,7 @@
                 <ul class="nav navbar-nav">
                     <li><a href="{% url 'definitions' %}">Definities</a></li>
                     <li><a href="{% url 'entries' %}">Bewerken</a></li>
-                    <li><a href="{% url 'overview' %}">Overzicht</a></li>
                     <li><a href="{% url 'admin_entry_list' %}">Zoeken</a></li>
-                    <li><a href="{% url 'home' %}">Hoofdmenu</a></li>
                     <li><a href="{% url 'about' %}">Informatie</a></li>
                     <li><a href="{% url 'contact' %}">Contact</a></li>
                 </ul>
@@ -221,28 +219,69 @@
       </div>
 
     {% if object_list %}
-      <h3>Overzicht van lexemen</h3>
-      <div>Gevonden: <span>{{entrycount}}</span></div>
+      <h3>Overzicht</h3>
+      <div class="row">
+          <div class="col-sm-4"><span>Gevonden: </span><span>{{entrycount}}</span></div>
+          <div class="col-sm-8">
+          <span class="step-links">
+
+              <ul class='pagination pagination-sm'>
+              {% if page_obj.has_previous %}
+                  <li><a href="?page={{ page_obj.previous_page_number }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">&laquo;</a></li>
+              {% endif %}
+          
+                {% if  page_obj.number > 10 %}
+                  <li><a>...</a></li>
+                {% endif %}
+
+                {% for p in page_obj.paginator.page_range %}
+          
+                   {% if p < page_obj.number|add:"10" and  p > page_obj.number|add:"-10" %}
+                   <li {% ifequal p page_obj.number %}class='active'{% endifequal %}>
+                   <a href='?page={{ p }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}'>{% ifequal p 0 %}Start{% else %}{{p}}{% endifequal %}</a>
+                   </li>
+                   {% endif %}
+         
+                {% endfor %}
+  
+                {% if page_obj.paginator.num_pages > page_obj.number|add:"10" %}
+                  <li><a>...</a></li>
+                  <li>
+                  <a href='?page={{ page_obj.paginator.num_pages }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}'>{{page_obj.paginator.num_pages}}</a>
+                  </li>
+                {% endif %}
+      
+              {% if page_obj.has_next %}
+                  <li><a href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">&raquo;</a></li>
+
+            
+            </ul>
+
+
+              {% endif %}
+          </span>
+          </div>
+      </div>
       <table class="table table-hover">
-        <thead><tr><th>id</th><th>Identifier</th><th>Description</th></tr></thead>
+        <thead><tr><th>id</th><th>Woord</th><th>Trefwoord</th><th>Omschrijving</th><th>Dialect</th></tr></thead>
         <tbody>
         {% for ent in object_list %}
           <tr class="dict-entry">
             <td> {{ ent.id }} </td>
             <td class="entry-word">
-              <div><a href="/{{app_prefix }}entry/{{ent.pk}}">{{ ent.woord}}</a></div>
+              <div><a href="/{{app_prefix }}admin/dictionary/entry/{{ent.pk}}">{{ ent.woord}}</a></div>
               {% if ent.toelichting %}<div>({{ent.toelichting}})</div>{% endif %}
             </td>
             <td><span class="trefwoord">{{ent.trefwoord.woord}}</span>
               {% if ent.trefwoord.toelichting %}<span>({{ent.trefwoord.toelichting}})</span>{% endif %}
             </td>
             <td>Lemma: 
-              <span class="lemma-name"><a href="/{{app_prefix }}lemma/{{ent.lemma.pk}}">{{ent.lemma.gloss}}</a> - </span>
+              <span class="lemma-name"><a href="/{{app_prefix }}admin/dictionary/lemma/{{ent.lemma.pk}}">{{ent.lemma.gloss}}</a> - </span>
               <span class="toelichting">{{ent.lemma.toelichting}}</span>
-              <span class="lemma-bronnen">[{{ent.lemma.bronnelijst}}]</span>
+              <span class="lemma-bronnen">[{{ent.lemma.bronnenlijst}}]</span>
             </td>
             <td>Dialect:
-              <span class="kloeke-code"><a href="/{{app_prefix}}dialect/{{ent.dialect.pk}}">{{ent.dialect.code}}</a></span>
+              <span class="kloeke-code"><a href="/{{app_prefix}}admin/dictionary/dialect/{{ent.dialect.pk}}">{{ent.dialect.code}}</a></span>
               (<span class="kloeke-code">{{ent.dialect.nieuw}}</span>)
               <span class="kloeke-stad">{{ent.dialect.stad}}</span>
               {% if ent.dialect.toelichting %}<span>({{ent.dialect.toelichting}})</span>{% endif %}
@@ -254,47 +293,49 @@
     {% else %}
       <p>No entries are available.</p>
     {% endif %}
-    </div>
 
-<div class="pagination">
-    <span class="step-links">
+      <div class="pagination">
+          <span class="step-links">
 
-        <ul class='pagination pagination-sm'>
-        {% if page_obj.has_previous %}
-            <li><a href="?page={{ page_obj.previous_page_number }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">&laquo;</a></li>
-        {% endif %}
+              <ul class='pagination pagination-sm'>
+              {% if page_obj.has_previous %}
+                  <li><a href="?page={{ page_obj.previous_page_number }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">&laquo;</a></li>
+              {% endif %}
           
-          {% if  page_obj.number > 10 %}
-            <li><a>...</a></li>
-          {% endif %}
+                {% if  page_obj.number > 10 %}
+                  <li><a>...</a></li>
+                {% endif %}
 
-          {% for p in page_obj.paginator.page_range %}
+                {% for p in page_obj.paginator.page_range %}
           
-             {% if p < page_obj.number|add:"10" and  p > page_obj.number|add:"-10" %}
-             <li {% ifequal p page_obj.number %}class='active'{% endifequal %}>
-             <a href='?page={{ p }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}'>{% ifequal p 0 %}Start{% else %}{{p}}{% endifequal %}</a>
-             </li>
-             {% endif %}
+                   {% if p < page_obj.number|add:"10" and  p > page_obj.number|add:"-10" %}
+                   <li {% ifequal p page_obj.number %}class='active'{% endifequal %}>
+                   <a href='?page={{ p }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}'>{% ifequal p 0 %}Start{% else %}{{p}}{% endifequal %}</a>
+                   </li>
+                   {% endif %}
          
-          {% endfor %}
+                {% endfor %}
   
-          {% if page_obj.paginator.num_pages > page_obj.number|add:"10" %}
-            <li><a>...</a></li>
-            <li>
-            <a href='?page={{ page_obj.paginator.num_pages }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}'>{{page_obj.paginator.num_pages}}</a>
-            </li>
-          {% endif %}
+                {% if page_obj.paginator.num_pages > page_obj.number|add:"10" %}
+                  <li><a>...</a></li>
+                  <li>
+                  <a href='?page={{ page_obj.paginator.num_pages }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}'>{{page_obj.paginator.num_pages}}</a>
+                  </li>
+                {% endif %}
       
-        {% if page_obj.has_next %}
-            <li><a href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">&raquo;</a></li>
+              {% if page_obj.has_next %}
+                  <li><a href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">&raquo;</a></li>
 
             
-      </ul>
+            </ul>
 
 
-        {% endif %}
-    </span>
-</div>
+              {% endif %}
+          </span>
+      </div>
+    </div>
+
+
 {% endblock content %}
 
     <script src="{% static 'dictionary/scripts/jquery-1.10.2.js' %}"></script>

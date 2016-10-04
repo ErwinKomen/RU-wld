@@ -24,7 +24,7 @@ def remove_from_fieldsets(fieldsets, fields):
                 break
 
 class LemmaAdmin(admin.ModelAdmin):
-    fieldsets = ( ('Editable', {'fields': ('gloss', 'toelichting', 'bronnen',)}),
+    fieldsets = ( ('Editable', {'fields': ('gloss', 'toelichting', 'bronnenlijst',)}),
                 )
 
 

@@ -26,7 +26,7 @@ def home(request):
         request,
         'dictionary/index.html',
         {
-            'title':'RU-wld',
+            'title':'Dialectenwoordenboek',
             'year':datetime.now().year,
         }
     )
@@ -51,8 +51,8 @@ def about(request):
         request,
         'dictionary/about.html',
         {
-            'title':'About',
-            'message':'Radboud University Limburg Dialect Dictionary.',
+            'title':'Informatie',
+            'message':'Radboud Universiteit Nijmegen - Dialectenwoordenboek.',
             'year':datetime.now().year,
         }
     )

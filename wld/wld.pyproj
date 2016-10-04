@@ -71,6 +71,8 @@
     <Folder Include="wld\dictionary\static\dictionary\scripts\" />
     <Folder Include="wld\dictionary\templates\" />
     <Folder Include="wld\dictionary\templates\dictionary\" />
+    <Folder Include="wld\templates\" />
+    <Folder Include="wld\templates\admin\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="wld\dictionary\fixtures\initial_data.json" />
@@ -81,6 +83,8 @@
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.svg" />
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.ttf" />
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.woff" />
+    <Content Include="wld\templates\admin\base.html" />
+    <Content Include="wld\templates\admin\base_site.html" />
     <None Include="wld\dictionary\static\dictionary\scripts\_references.js" />
     <Content Include="wld\dictionary\static\dictionary\scripts\bootstrap.js" />
     <Content Include="wld\dictionary\static\dictionary\scripts\bootstrap.min.js" />

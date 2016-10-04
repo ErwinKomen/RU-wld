@@ -75,7 +75,7 @@ ROOT_URLCONF = 'wld.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'wld/dictionary/templates')],
+        'DIRS': [os.path.join(BASE_DIR, 'wld/templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
