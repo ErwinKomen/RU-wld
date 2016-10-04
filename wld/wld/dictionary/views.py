@@ -26,7 +26,7 @@ def home(request):
         request,
         'dictionary/index.html',
         {
-            'title':'RU-CollBank',
+            'title':'RU-wld',
             'year':datetime.now().year,
         }
     )
