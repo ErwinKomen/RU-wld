@@ -83,6 +83,8 @@
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.svg" />
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.ttf" />
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.woff" />
+    <Content Include="wld\dictionary\templates\dictionary\lemma_list.html" />
+    <Content Include="wld\dictionary\templates\dictionary\topnav.html" />
     <Content Include="wld\templates\admin\base.html" />
     <Content Include="wld\templates\admin\base_site.html" />
     <None Include="wld\dictionary\static\dictionary\scripts\_references.js" />
@@ -108,7 +110,6 @@
     <Content Include="wld\dictionary\templates\dictionary\login.html" />
     <Content Include="wld\dictionary\templates\dictionary\loginpartial.html" />
     <Content Include="wld\dictionary\templates\dictionary\output.xml" />
-    <Content Include="wld\dictionary\templates\dictionary\overview.html" />
     <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>

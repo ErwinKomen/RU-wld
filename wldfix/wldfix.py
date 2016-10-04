@@ -147,6 +147,25 @@ class Dialect:
         self.pk = iPk
 
 
+class Aflevering:
+    """Aflevering"""
+
+    def __init__(self, iPk, sAflevering, sToelichting):
+        self.naam = sAflevering
+        self.toelichting = sToelichting
+        self.pk = iPk
+
+
+class Mijn:
+    """Mijn"""
+
+    def __init__(self, iPk, sNaam, sLocatie, sToelichting):
+        self.naam = sNaam
+        self.locatie = sLocatie
+        self.toelichting = sToelichting
+        self.pk = iPk
+
+
 class Entry:
     """Entry"""
 
@@ -179,6 +198,8 @@ def wldfix(csv_file, output_file):
         lstLemma = []       # List of lemma entries
         lstTrefw = []       # List of trefwoord entries
         lstDialect = []     # list of dialect entries
+        lstMijn = []        # List of mijn entries
+        lstAflevering = []  # List of aflevering entries
         lstEntry = []       # List of dictionary entries
 
         # Open source file to read line-by-line

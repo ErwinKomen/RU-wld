@@ -20,11 +20,11 @@ if "RU-wld\\writable" in WRITABLE_DIR:
     # Need another string
     WRITABLE_DIR = os.path.abspath(os.path.join(BASE_DIR, "../../../writable/database/"))
 
-APP_PREFIX = "ru/"
+APP_PREFIX = "dd/"
 if "d:" in WRITABLE_DIR or "D:" in WRITABLE_DIR:
     APP_PREFIX = ""
 elif "/scratch" in WRITABLE_DIR:
-    APP_PREFIX = "wld/"
+    APP_PREFIX = "ewld/"
 
 # Not the location of the wsgi.py file for "reload_wld"
 WSGI_FILE = os.path.abspath(os.path.join(BASE_DIR,"wld/wsgi.py"))

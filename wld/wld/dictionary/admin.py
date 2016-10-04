@@ -49,6 +49,8 @@ class EntryAdmin(admin.ModelAdmin):
 admin.site.register(Lemma, LemmaAdmin)
 admin.site.register(Dialect, DialectAdmin)
 admin.site.register(Trefwoord, TrefwoordAdmin)
+admin.site.register(Mijn)
+admin.site.register(Aflevering)
 
 # -- dictionary as a whole
 admin.site.register(Entry, EntryAdmin)

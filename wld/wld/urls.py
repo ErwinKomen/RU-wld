@@ -23,8 +23,8 @@ from wld.dictionary.adminviews import EntryListView
 
 
 # set admin site names
-admin.site.site_header = 'RU-wld Admin'
-admin.site.site_title = 'RU-wld Site Admin'
+admin.site.site_header = 'RU-eWLD Admin'
+admin.site.site_title = 'RU-eWLD Site Admin'
 
 pfx = APP_PREFIX
 
@@ -35,7 +35,7 @@ urlpatterns = [
     url(r'^about', wld.dictionary.views.about, name='about'),
     url(r'^definitions$', RedirectView.as_view(url='/'+pfx+'admin/'), name='definitions'),
     url(r'^entries$', RedirectView.as_view(url='/'+pfx+'admin/dictionary/entry/'), name='entries'),
-    url(r'^overview$', wld.dictionary.views.overview, name='overview'),
+    url(r'^lemmas$', LemmaListView.as_view(), name='lemmas'),
     url(r'^list/$', permission_required('dictionary.search_gloss')(EntryListView.as_view()), name='admin_entry_list'), 
     url(r'^dictionary/search/$', permission_required('dictionary.search_gloss')(EntryListView.as_view())),
     url(r'^entry/(?P<pk>\d+)', DictionaryDetailView.as_view(), name='output'),
