@@ -24,7 +24,7 @@ def remove_from_fieldsets(fieldsets, fields):
                 break
 
 class LemmaAdmin(admin.ModelAdmin):
-    fieldsets = ( ('Editable', {'fields': ('gloss', 'toelichting', 'bronnen',)}),
+    fieldsets = ( ('Editable', {'fields': ('gloss', 'toelichting', 'bronnenlijst',)}),
                 )
 
 
@@ -49,6 +49,8 @@ class EntryAdmin(admin.ModelAdmin):
 admin.site.register(Lemma, LemmaAdmin)
 admin.site.register(Dialect, DialectAdmin)
 admin.site.register(Trefwoord, TrefwoordAdmin)
+admin.site.register(Mijn)
+admin.site.register(Aflevering)
 
 # -- dictionary as a whole
 admin.site.register(Entry, EntryAdmin)

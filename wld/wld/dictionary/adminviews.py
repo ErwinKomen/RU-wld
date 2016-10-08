@@ -9,6 +9,7 @@ import re
 
 from wld.dictionary.models import *
 from wld.dictionary.forms import *
+from wld.settings import APP_PREFIX
 
 def order_queryset_by_sort_order(get, qs):
     """Change the sort-order of the query set, depending on the form field [sortOrder]
@@ -83,6 +84,9 @@ class EntryListView(ListView):
 
         # Determine the count 
         context['entrycount'] = self.get_queryset().count()
+
+        # Set the prefix
+        context['app_prefix'] = APP_PREFIX
 
         # Return the calculated context
         return context

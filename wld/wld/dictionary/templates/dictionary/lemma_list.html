@@ -116,8 +116,8 @@
         <form name='adminsearch' id='adminsearch' action="" method='get' onsubmit="return do_adminsearch('#id_submit_button', 'simple');" >
             <!-- EK: A sort-order specification is in a hidden form field, which is filled by JS:do_sort_column() -->
             <div class="hidden">
-                <input name='sortOrder' class='form-control' value='woord' >
-                <input name='search_type' class='form-control' value='woord'>
+                <input name='sortOrder' class='form-control' value='lemma' >
+                <input name='search_type' class='form-control' value='lemma'>
                 <input name='submit_type' class='form-control' value='simple'>
             </div>
 
@@ -242,35 +242,24 @@
           </div>
       </div>
       <table class="table table-hover">
-        <thead><tr><th>id</th><th>Woord</th><th>Trefwoord</th><th>Omschrijving</th><th>Dialect</th></tr></thead>
+        <thead><tr><th>id</th><th>Begrip</th><th>Woord</th><th>Omschrijving</th><th>Dialect</th></tr></thead>
         <tbody>
-        {% for ent in object_list %}
+        {% for lem in object_list %}
           <tr class="dict-entry">
-            <td> {{ ent.id }} </td>
-            <td class="entry-word">
-              <div><a href="/{{app_prefix }}admin/dictionary/entry/{{ent.pk}}">{{ ent.woord}}</a></div>
-              {% if ent.toelichting %}<div>({{ent.toelichting}})</div>{% endif %}
+            <td> {{ lem.id }} </td>
+            <td>
+              <span class="lemma-name">{{lem.gloss}}</span>
             </td>
-            <td><span class="trefwoord">{{ent.trefwoord.woord}}</span>
-              {% if ent.trefwoord.toelichting %}<span>({{ent.trefwoord.toelichting}})</span>{% endif %}
-            </td>
-            <td>Lemma: 
-              <span class="lemma-name"><a href="/{{app_prefix }}admin/dictionary/lemma/{{ent.lemma.pk}}">{{ent.lemma.gloss}}</a> - </span>
-              <span class="toelichting">{{ent.lemma.toelichting}}</span>
-              <span class="lemma-bronnen">[{{ent.lemma.bronnenlijst}}]</span>
-            </td>
-            <td>Dialect:
-              <span class="kloeke-code"><a href="/{{app_prefix}}admin/dictionary/dialect/{{ent.dialect.pk}}">{{ent.dialect.code}}</a></span>
-              (<span class="kloeke-code">{{ent.dialect.nieuw}}</span>)
-              <span class="kloeke-stad">{{ent.dialect.stad}}</span>
-              {% if ent.dialect.toelichting %}<span>({{ent.dialect.toelichting}})</span>{% endif %}
+            <td>
+              <span class="toelichting">{{lem.toelichting}}</span>
+              <span class="lemma-bronnen">[{{lem.bronnenlijst}}]</span>
             </td>
           </tr>
         {% endfor %}
         </tbody>
       </table>
     {% else %}
-      <p>No entries are available.</p>
+      <p>No lemma's are available.</p>
     {% endif %}
 
       <div class="pagination">

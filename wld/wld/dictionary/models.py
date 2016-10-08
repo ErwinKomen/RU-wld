@@ -165,12 +165,33 @@ class Trefwoord(models.Model):
         return self.woord
 
 
+class Aflevering(models.Model):
+    """Aflevering van een woordenboek"""
+
+    naam = models.CharField("Aflevering", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    toelichting = models.TextField("Toelichting bij aflevering", blank=True)
+
+    def __str__(self):
+        return self.naam
+
+
+class Mijn(models.Model):
+    """De mijn waar de sprekers werken"""
+
+    naam = models.CharField("Mijn", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    locatie = models.CharField("Locatie", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    toelichting = models.TextField("Toelichting bij mijn", blank=True)
+
+    def __str__(self):
+        return self.naam
+
+
 class Entry(models.Model):
     """Dictionary entry"""
 
     class Meta:
         verbose_name_plural = "Entries"
-        ordering = ['woord']
+        ordering = ['lemma', 'woord']
         permissions = ( ('search_gloss', 'Can search/view full entry details'),
                        )
 
@@ -183,8 +204,12 @@ class Entry(models.Model):
     dialect = models.ForeignKey(Dialect, blank=False)
     # Trefwoord: obligatory
     trefwoord = models.ForeignKey(Trefwoord, blank=False)
+    # Mijn [0-1]
+    mijn = models.ForeignKey(Mijn, blank = True)
+    # Aflevering [1]
+    aflevering = models.ForeignKey(Aflevering, blank=False)
     # Dialectal entry: obligatory
-    woord = models.CharField("Dialectwoord", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    woord = models.CharField("Dialectopgave", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
     # Notes to this entry: optional
     toelichting = models.TextField("Toelichting", blank=True)
 

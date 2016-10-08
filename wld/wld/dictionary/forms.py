@@ -5,7 +5,7 @@ Definition of forms.
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.utils.translation import ugettext_lazy as _
-from wld.dictionary.models import Entry
+from wld.dictionary.models import Entry, Lemma
 
 class BootstrapAuthenticationForm(AuthenticationForm):
     """Authentication form which uses boostrap CSS."""
@@ -32,3 +32,20 @@ class EntrySearchForm(forms.ModelForm):
 
         model = Entry
         fields = ('lemma', 'dialect', 'trefwoord', 'woord')
+
+
+class LemmaSearchForm(forms.ModelForm):
+
+    search = forms.CharField(label=_("Begrip"))
+    sortOrder = forms.CharField(label=_("Sort Order"), initial="lemma")
+    woord = forms.CharField(label=_("Dialectopgave"))
+    dialectCode = forms.CharField(label=_("Kloeke code"))
+    dialectCity = forms.CharField(label=_("Stad"))
+    bronnen = forms.CharField(label=_("Bronnen"))
+
+    class Meta:
+
+        ATTRS_FOR_FORMS = {'class': 'form-control'};
+
+        model = Lemma
+        fields = ('gloss', 'toelichting', 'bronnenlijst')

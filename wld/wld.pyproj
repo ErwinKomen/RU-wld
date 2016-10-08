@@ -71,7 +71,8 @@
     <Folder Include="wld\dictionary\static\dictionary\scripts\" />
     <Folder Include="wld\dictionary\templates\" />
     <Folder Include="wld\dictionary\templates\dictionary\" />
-    <Folder Include="wld\dictionary\templates\admin\" />
+    <Folder Include="wld\templates\" />
+    <Folder Include="wld\templates\admin\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="wld\dictionary\fixtures\initial_data.json" />
@@ -82,6 +83,10 @@
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.svg" />
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.ttf" />
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.woff" />
+    <Content Include="wld\dictionary\templates\dictionary\lemma_list.html" />
+    <Content Include="wld\dictionary\templates\dictionary\topnav.html" />
+    <Content Include="wld\templates\admin\base.html" />
+    <Content Include="wld\templates\admin\base_site.html" />
     <None Include="wld\dictionary\static\dictionary\scripts\_references.js" />
     <Content Include="wld\dictionary\static\dictionary\scripts\bootstrap.js" />
     <Content Include="wld\dictionary\static\dictionary\scripts\bootstrap.min.js" />
@@ -97,7 +102,6 @@
     <Content Include="wld\dictionary\static\dictionary\scripts\modernizr-2.6.2.js" />
     <Content Include="wld\dictionary\static\dictionary\scripts\respond.js" />
     <Content Include="wld\dictionary\static\dictionary\scripts\respond.min.js" />
-    <Content Include="wld\dictionary\templates\admin\base_site.html" />
     <Content Include="wld\dictionary\templates\dictionary\about.html" />
     <Content Include="wld\dictionary\templates\dictionary\contact.html" />
     <Content Include="wld\dictionary\templates\dictionary\admin_entry_list.html" />
@@ -106,7 +110,6 @@
     <Content Include="wld\dictionary\templates\dictionary\login.html" />
     <Content Include="wld\dictionary\templates\dictionary\loginpartial.html" />
     <Content Include="wld\dictionary\templates\dictionary\output.xml" />
-    <Content Include="wld\dictionary\templates\dictionary\overview.html" />
     <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>
