@@ -71,6 +71,7 @@
     <Folder Include="wld\dictionary\static\dictionary\scripts\" />
     <Folder Include="wld\dictionary\templates\" />
     <Folder Include="wld\dictionary\templates\dictionary\" />
+    <Folder Include="wld\dictionary\templates\admin\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="wld\dictionary\fixtures\initial_data.json" />
@@ -96,6 +97,7 @@
     <Content Include="wld\dictionary\static\dictionary\scripts\modernizr-2.6.2.js" />
     <Content Include="wld\dictionary\static\dictionary\scripts\respond.js" />
     <Content Include="wld\dictionary\static\dictionary\scripts\respond.min.js" />
+    <Content Include="wld\dictionary\templates\admin\base_site.html" />
     <Content Include="wld\dictionary\templates\dictionary\about.html" />
     <Content Include="wld\dictionary\templates\dictionary\contact.html" />
     <Content Include="wld\dictionary\templates\dictionary\admin_entry_list.html" />
