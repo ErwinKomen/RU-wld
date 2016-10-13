@@ -251,6 +251,19 @@
               <span class="lemma-name">{{lem.gloss}}</span>
             </td>
             <td>
+                <!-- See: https://docs.djangoproject.com/en/dev/ref/templates/builtins/?from=olddocs#regroup -->
+              {% regroup lem.entry_set.all by woord as word_list %}
+              {% for wrd in word_list %}
+                
+                <span class="lemma-word">{{wrd.grouper}}</span>
+              {% endfor %}
+            </td>
+            <td>
+              {% for wrd in lem.entry_set.all %}
+                <span class="lemma-word">{{wrd.woord}}</span>
+              {% endfor %}
+            </td>
+            <td>
               <span class="toelichting">{{lem.toelichting}}</span>
               <span class="lemma-bronnen">[{{lem.bronnenlijst}}]</span>
             </td>
