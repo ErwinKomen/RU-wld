@@ -7,10 +7,13 @@ from django.views.generic.list import ListView
 from django.shortcuts import get_object_or_404, render
 from django.http import HttpRequest, HttpResponse
 from django.template import RequestContext, loader
+from django.db.models import Q
 from datetime import datetime
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
 import os
+import operator
+import re
 from wld.dictionary.models import *
 from wld.dictionary.forms import *
 #from wld.dictionary.adminviews import order_queryset_by_sort_order
@@ -123,7 +126,7 @@ class LemmaListView(ListView):
     """ListView of lemma's"""
 
     model = Lemma
-    context_object_name = 'lemma'    
+    # context_object_name = 'lemma'    
     template_name = 'dictionary/lemma_list.html'
     paginate_by = 50
 
@@ -132,9 +135,20 @@ class LemmaListView(ListView):
         context = super(LemmaListView, self).get_context_data(**kwargs)
 
         # Get parameters for the search
+        initial = self.request.GET
+        if initial is None:
+            initial = {'optdialect': 'stad'}
         search_form = LemmaSearchForm(self.request.GET)
+        # , initial={'optdialect': 'stad'}
+        #data = search_form.data.copy()
+        #if data and data['optdialect'] is None:
+        #    data['optdialect'] = 'stad'
+        #search_form.data = data
 
         context['searchform'] = search_form
+
+        # context['dialectweergave'] = search_form.fields['optdialect']
+        
 
         # Determine the count 
         context['entrycount'] = self.get_queryset().count()
@@ -159,7 +173,7 @@ class LemmaListView(ListView):
         # Queryset: start out with *ALL* the lemma's
         qs = Lemma.objects.all()
 
-        # Fine-tuning: search string
+        # Fine-tuning: search string is the LEMMA
         if 'search' in get and get['search'] != '':
             val = get['search']
             query = Q(gloss__istartswith=val) 
