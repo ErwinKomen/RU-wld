@@ -93,7 +93,7 @@
       var f = $("#adminsearch")
       var sSearchType = $(el).attr('value');
       // $("#adminsearch input[name='search_type']").val(sSearchType);
-      f.attr('action', '{{URL}}/dictionary/search/');
+      f.attr('action', '/{{app_prefix}}dictionary/search/');
       // var lemma = f.find('[name=lemma]').val();
       document.getElementById('adminsearch').submit();
 

@@ -93,7 +93,7 @@
         return clearForm(el);
       var f = $("#lemmasearch")
       var sSearchType = $(el).attr('value');
-      f.attr('action', '{{URL}}/lemma/search/');
+      f.attr('action', '/{{app_prefix}}lemma/search/');
       document.getElementById('lemmasearch').submit();
 
       // Make sure we return positively
