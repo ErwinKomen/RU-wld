@@ -83,6 +83,7 @@
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.svg" />
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.ttf" />
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.woff" />
+    <Content Include="wld\dictionary\templates\dictionary\dialect_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\lemma_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\topnav.html" />
     <Content Include="wld\templates\admin\base.html" />

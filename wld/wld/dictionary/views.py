@@ -73,8 +73,6 @@ def order_queryset_by_sort_order(get, qs):
     return ordered
 
 
-
-
 def home(request):
     """Renders the home page."""
     assert isinstance(request, HttpRequest)
@@ -113,6 +111,11 @@ def about(request):
         }
     )
 
+def adapt_search(val):
+    if not '^' in val and not '$' in val: 
+        val = '^' + val + '$'
+    return val
+
 
 
 class DictionaryDetailView(DetailView):
@@ -128,7 +131,7 @@ class LemmaListView(ListView):
     model = Lemma
     # context_object_name = 'lemma'    
     template_name = 'dictionary/lemma_list.html'
-    paginate_by = 50
+    paginate_by = 20
 
     def get_context_data(self, **kwargs):
         # Call the base implementation first to get a context
@@ -138,17 +141,9 @@ class LemmaListView(ListView):
         initial = self.request.GET
         if initial is None:
             initial = {'optdialect': 'stad'}
-        search_form = LemmaSearchForm(self.request.GET)
-        # , initial={'optdialect': 'stad'}
-        #data = search_form.data.copy()
-        #if data and data['optdialect'] is None:
-        #    data['optdialect'] = 'stad'
-        #search_form.data = data
+        search_form = LemmaSearchForm(initial)
 
         context['searchform'] = search_form
-
-        # context['dialectweergave'] = search_form.fields['optdialect']
-        
 
         # Determine the count 
         context['entrycount'] = self.get_queryset().count()
@@ -175,8 +170,9 @@ class LemmaListView(ListView):
 
         # Fine-tuning: search string is the LEMMA
         if 'search' in get and get['search'] != '':
-            val = get['search']
-            query = Q(gloss__istartswith=val) 
+            val = adapt_search(get['search'])
+            # query = Q(gloss__istartswith=val) 
+            query = Q(gloss__iregex=val) 
 
             # check for possible exact numbers having been given
             if re.match('^\d+$', val):
@@ -185,11 +181,19 @@ class LemmaListView(ListView):
             # Apply the filter
             qs = qs.filter(query)
 
-        ## Check for woord
-        #if 'woord' in get and get['woord'] != '':
-        #    val = get['lemma']
-        #    query = Q(lemma__entry__woord__istartswith=val)
-        #    qs = qs.filter(query)
+        # Check for dialect city
+        if 'dialectcity' in get and get['dialectcity'] != '':
+            val = adapt_search(get['dialectcity'])
+            # query = Q(entry__dialect__stad__istartswith=val)
+            query = Q(entry__dialect__stad__iregex=val)
+            qs = qs.filter(query)
+
+        # Check for dialect code (Kloeke)
+        if 'dialectcode' in get and get['dialectcode'] != '':
+            val = adapt_search(get['dialectcode'])
+            # query = Q(entry__dialect__code__istartswith=val)
+            query = Q(entry__dialect__code__iregex=val)
+            qs = qs.filter(query)
 
         # Make sure we only have distinct values
         qs = qs.distinct()
@@ -199,3 +203,82 @@ class LemmaListView(ListView):
 
         # Return the resulting filtered and sorted queryset
         return qs
+
+
+class DialectListView(ListView):
+    """Listview of dialects"""
+
+    model = Dialect
+    paginate_by = 20
+    template_name = 'dictionary/dialect_list.html'
+
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get a context
+        context = super(DialectListView, self).get_context_data(**kwargs)
+
+        # Get parameters for the search
+        initial = self.request.GET
+        search_form = DialectSearchForm(initial)
+
+        context['searchform'] = search_form
+
+        # Determine the count 
+        context['entrycount'] = self.get_queryset().count()
+
+        # Set the prefix
+        context['app_prefix'] = APP_PREFIX
+
+        # Return the calculated context
+        return context
+
+    def get_paginate_by(self, queryset):
+        """
+        Paginate by specified value in querystring, or use default class property value.
+        """
+        return self.request.GET.get('paginate_by', self.paginate_by)
+        
+    def get_queryset(self):
+
+        # Get the parameters passed on with the GET request
+        get = self.request.GET.copy()
+        get['sortOrder'] = 'stad'
+
+        # Queryset: start out with *ALL* the lemma's
+        qs = Dialect.objects.all()
+
+        # Fine-tuning: search string is the LEMMA
+        if 'search' in get and get['search'] != '':
+            val = adapt_search(get['search'])
+            # query = Q(stad__istartswith=val) 
+            query = Q(stad__iregex=val) 
+
+            # check for possible exact numbers having been given
+            if re.match('^\d+$', val):
+                query = query | Q(sn__exact=val)
+
+            # Apply the filter
+            qs = qs.filter(query)
+
+        # Check for dialect code (Kloeke)
+        if 'nieuw' in get and get['nieuw'] != '':
+            val = adapt_search(get['nieuw'])
+            # query = Q(nieuw__istartswith=val)
+            query = Q(nieuw__iregex=val)
+            qs = qs.filter(query)
+
+        # Make sure we only have distinct values
+        qs = qs.distinct()
+
+        # Sort the queryset by the parameters given
+        qs = order_queryset_by_sort_order(get, qs)
+
+        # Return the resulting filtered and sorted queryset
+        return qs
+
+
+class MijnListView(ListView):
+    """Listview of mines"""
+
+    model = Mijn
+    paginate_by = 20
+    template_name = 'dictionary/mijn_list.html'

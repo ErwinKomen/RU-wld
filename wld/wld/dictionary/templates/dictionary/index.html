@@ -3,8 +3,8 @@
 {% block content %}
 
 <div class="jumbotron">
-    <h1>RU-eWLD</h1>
-    <p class="lead">De "RU-eWLD" applicatie stelt geïnteresseerden in staat om het dialectenwoordenboek te doorzoeken dat is ontwikkeld aan de
+    <h2>Electronisch Woordenboek der Limburgse Dialecten</h2>
+    <p class="lead">Het "Radboud Electronische Woordenboek der Limburgse Dialecten" (RU-eWLD) stelt geïnteresseerden in staat om het dialectenwoordenboek te doorzoeken dat is ontwikkeld aan de
   Radboud Universiteit Nijmegen. Op dit moment bevat het woordenboek ruim 4000 lexemen verzameld in ruim 300 Limburgse locaties. 
   Ieder lexeem bevat 
     This dictionary contains dialect words, each of which has a dialect identifier.
@@ -14,21 +14,28 @@
 
 <div class="row">
     <div class="col-md-6">
-        <h2>Getting started</h2>
+        <h2>Aan de slag</h2>
         <p>
           De RU-eWLD applicatie is ontwikkeld aan de Technical Service Group van het Humanities Lab aan de Radboud University Nijmegen.
-          Iedereen kan het woordenboek doorbladeren en doorzoeken via de knop <em>Zoeken</em>.
+          Iedereen kan het woordenboek doorbladeren en doorzoeken via de knop <b>Zoeken</b>.
+        </p><p>
           Wie mee gaat werken aan de inhoud kan toegang vragen via onderstaande link.
         </p>
         <p><a class="btn btn-default" href="mailto:e.komen@let.ru.nl">Toegang &raquo;</a></p>
     </div>
     <div class="col-md-6">
-        <h2>Lexemen definiëren</h2>
-        <p>Een lexeem uit een dialect kan ingevoerd of gewijzigd worden via de menukeuze <em>Bewerken</em>.
+        {% if user.is_authenticated %}
+        <h2>Ontwikkelaars</h2>
+        <p>Als ontwikkelaar heeft u toegang tot een aantal extra voorzieningen:
+          <ul>
+            <li>De knop <em>Definities</em> leidt de gebruiker die daar rechten toe heeft tot een dashboard waarvandaan wijzigingen kunnen worden
+      aangebracht in de definities van dialecten, lemma's, trefwoorden en lexemen.</li>
+            <li>De knop <b>Bewerken</b> stelt u in staat om een nieuw dialectwoord in te voeren of een bestaand dialectwoord te wijzigen. 
+            Ook kunt u hiermee de informatie bij een bestaand dialectwoord aanpassen.</li>
+          </ul>
         </p>
-        <p>De knop <em>Definities</em> leidt de gebruiker die daar rechten toe heeft tot een dashboard waarvandaan wijzigingen kunnen worden
-      aangebracht in de definities van dialecten, lemma's, trefwoorden en lexemen. 
-        </p>
+
+        {% endif %}
         <p><a class="btn btn-default" href="mailto:e.komen@let.ru.nl">Ik heb een vraag &raquo;</a></p>
     </div>
 </div>

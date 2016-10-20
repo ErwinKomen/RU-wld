@@ -5,7 +5,7 @@ Definition of forms.
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.utils.translation import ugettext_lazy as _
-from wld.dictionary.models import Entry, Lemma
+from wld.dictionary.models import Entry, Lemma, Dialect, Mijn
 
 DIALECT_CHOICES = (
         ('code', 'Nieuwe Kloekecode'),
@@ -48,12 +48,7 @@ class LemmaSearchForm(forms.ModelForm):
     dialectCode = forms.CharField(label=_("Kloeke code"))
     dialectCity = forms.CharField(label=_("Stad"))
     bronnen = forms.CharField(label=_("Bronnen"))
-    #optdialect = forms.MultipleChoiceField(label=_("Dialectweergave"), 
-    #                                       choices=DIALECT_CHOICES)
     optdialect = forms.CharField(label=_("Dialectweergave"))
-    #optdialect = forms.CharField(label=_("Dialectweergave"), 
-    #                            widget=forms.Select(choices=DIALECT_CHOICES),
-    #                            initial='stad')
 
     class Meta:
 
@@ -62,8 +57,16 @@ class LemmaSearchForm(forms.ModelForm):
         model = Lemma
         fields = ('gloss', 'toelichting', 'bronnenlijst', 'optdialect')
 
-    #def clean_optdialect(self):
-    #    optdialect = self.cleaned_data['optdialect']
-    #    if optdialect is None:
-    #        return self.fields['optdialect'].initial
-    #    return optdialect
+
+class DialectSearchForm(forms.ModelForm):
+
+    search = forms.CharField(label=_("Stad"))
+    nieuw = forms.CharField(label=_("Nieuwe kloeke code"))
+    sortOrder = forms.CharField(label=_("Sort Order"), initial="stad")
+
+    class Meta:
+
+        ATTRS_FOR_FORMS = {'class': 'form-control'};
+
+        model = Dialect
+        fields = ('stad', 'toelichting', 'code', 'nieuw')

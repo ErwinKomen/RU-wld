@@ -31,6 +31,7 @@ class LemmaAdmin(admin.ModelAdmin):
 class DialectAdmin(admin.ModelAdmin):
     fieldsets = ( ('Editable', {'fields': ('stad', 'code', 'nieuw', 'toelichting',)}),
                 )
+    list_display = ['nieuw', 'stad', 'toelichting']
 
 
 class TrefwoordAdmin(admin.ModelAdmin):

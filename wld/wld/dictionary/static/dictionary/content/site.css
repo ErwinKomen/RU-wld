@@ -64,7 +64,7 @@ table tbody tr:hover {
 
 }
 .dict-entry .toelichting {
-  font-style: italic;
+  /% font-style: italic;*/
 }
 .dict-entry .trefwoord {
 
@@ -74,6 +74,33 @@ table tbody tr:hover {
 }
 .dict-entry .kloeke-stad {
 
+}
+
+.lemma-trefwoord {
+  color: darkblue;
+  font-weight: bold;
+}
+
+.lemma-word-dialect {
+}
+
+.lemma-word-dialect-code {
+  font-variant-caps: small-caps;
+  color: green;
+}
+
+.lemma-word-dialect-stad {
+  color: saddlebrown;
+}
+
+.lemma-bronnen {
+  font-variant-caps: small-caps;
+  color: darkolivegreen;
+}
+
+.lemma-name {
+  text-transform: lowercase;
+  font-weight: bold;
 }
 
 .pagination {

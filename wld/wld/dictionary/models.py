@@ -213,3 +213,5 @@ class Entry(models.Model):
     # Notes to this entry: optional
     toelichting = models.TextField("Toelichting", blank=True)
 
+    def get_trefwoord_woord(self):
+        return self.trefwoord.woord + '_' + self.woord
