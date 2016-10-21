@@ -14,6 +14,7 @@ import xml.etree.ElementTree as ET
 import os
 import operator
 import re
+import fnmatch
 from wld.dictionary.models import *
 from wld.dictionary.forms import *
 #from wld.dictionary.adminviews import order_queryset_by_sort_order
@@ -112,8 +113,10 @@ def about(request):
     )
 
 def adapt_search(val):
-    if not '^' in val and not '$' in val: 
-        val = '^' + val + '$'
+    val = fnmatch.translate(val)
+    val = '^' + val + '$'
+    #if not '^' in val and not '$' in val: 
+    #    val = '^' + val + '$'
     return val
 
 
