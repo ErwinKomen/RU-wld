@@ -81,7 +81,7 @@ def home(request):
         request,
         'dictionary/index.html',
         {
-            'title':'Dialectenwoordenboek',
+            'title':'eWLD',
             'year':datetime.now().year,
         }
     )
@@ -93,7 +93,7 @@ def contact(request):
         request,
         'dictionary/contact.html',
         {
-            'title':'Contact',
+            'title':'eWLD contact',
             'message':'Henk van den Heuvel (H.vandenHeuvel@Let.ru.nl)',
             'year':datetime.now().year,
         }
@@ -106,7 +106,7 @@ def about(request):
         request,
         'dictionary/about.html',
         {
-            'title':'Informatie',
+            'title':'eWLD informatie',
             'message':'Radboud Universiteit Nijmegen - Dialectenwoordenboek.',
             'year':datetime.now().year,
         }
@@ -126,6 +126,19 @@ class DictionaryDetailView(DetailView):
 
     model = Entry
     context_object_name = 'entry'
+
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get a context
+        context = super(LemmaListView, self).get_context_data(**kwargs)
+
+        # Set the prefix
+        context['app_prefix'] = APP_PREFIX
+
+        # Set the title of the application
+        context['title'] = "eWLD detail"
+
+        # Return the calculated context
+        return context
 
 
 class LemmaListView(ListView):
@@ -153,6 +166,9 @@ class LemmaListView(ListView):
 
         # Set the prefix
         context['app_prefix'] = APP_PREFIX
+
+        # Set the title of the application
+        context['title'] = "eWLD begrippen"
 
         # Return the calculated context
         return context
@@ -231,6 +247,9 @@ class DialectListView(ListView):
         # Set the prefix
         context['app_prefix'] = APP_PREFIX
 
+        # Set the title of the application
+        context['title'] = "eWLD dialecten"
+
         # Return the calculated context
         return context
 
@@ -285,3 +304,17 @@ class MijnListView(ListView):
     model = Mijn
     paginate_by = 20
     template_name = 'dictionary/mijn_list.html'
+
+
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get a context
+        context = super(LemmaListView, self).get_context_data(**kwargs)
+
+        # Set the prefix
+        context['app_prefix'] = APP_PREFIX
+
+        # Set the title of the application
+        context['title'] = "eWLD mijnen"
+
+        # Return the calculated context
+        return context

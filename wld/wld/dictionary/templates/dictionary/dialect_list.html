@@ -9,13 +9,17 @@
     <link rel="stylesheet" type="text/css" href="{% static 'dictionary/content/bootstrap.min.css' %}" />
     <link rel="stylesheet" type="text/css" href="{% static 'dictionary/content/site.css' %}" />
     <script src="{% static 'dictionary/scripts/modernizr-2.6.2.js' %}"></script>
+    <script src="{% static 'dictionary/scripts/jquery-1.10.2.js' %}"></script>
+    <script src="{% static 'dictionary/scripts/bootstrap.min.js' %}"></script>
+    <script src="{% static 'dictionary/scripts/respond.js' %}"></script>
 
 {% block extrajs %}
 
     <script type='text/javascript'>
     
      $(document).ready(function(){
-        // Empty for now
+        // Initialize Bootstrap popover
+        $('[data-toggle="popover"]').popover();
      });
 
      // http://www.javascript-coder.com/javascript-form/javascript-reset-form.phtml
@@ -127,25 +131,36 @@
 
             <div id="searchdefault" class="row">
               <div class="col-sm-3">
+                <label>&nbsp;</label>
                 <div class='input-group'>
                     <label class='input-group-addon' for='id_entry'>{{searchform.search.label}}</label>
                     <input name='search' class='form-control' {% if searchform.search.value %}value='{{searchform.search.value}}'{% endif %}>
                 </div>
               </div>
+              <div class="col-sm-1">
+                <label>&nbsp;</label>
+                <div>
+                  <!-- data-trigger="hover" -->
+                  <button type="button" class="btn btn-default" data-container="body" data-toggle="popover" data-trigger="hover"
+                          data-placement="right" data-content="Willekeurige tekens: ? (één) * (0 of meer). Groep tekens: [m-n]">?</button>
+                </div>
+              </div>
               <div class="col-sm-3">
+                <label>&nbsp;</label>
                 <div class='input-group'>
-                    <label class='input-group-addon' for='id_woord'>{{searchform.niew.label}}</label>
+                    <label class='input-group-addon' for='id_woord'>{{searchform.nieuw.label}}</label>
                     <input name='nieuw' class='form-control' {% if searchform.nieuw.value %}value='{{searchform.nieuw.value}}'{% endif %}>
                 </div>
               </div>
               <div class="col-sm-3">
+                <div><label>&nbsp;</label></div>
                 <div class='btn-group'>
                     <!-- Make sure no button has the *name* 'submit', otherwise submit() cannot be used -->
                     <input class='btn btn-primary' type="submit" onclick="do_dialectsearch(this, 'simple');" name="submit_type" value="Zoek">
                     <input class='btn btn-default' type="submit" onclick="do_dialectsearch(this, 'Herstel');" name="submit_type" value="Herstel">
                 </div>
               </div>
-              <div class="col-sm-3">
+              <div class="col-sm-2">
                 <div class='form-group' id='paginate_by'>
                   <label for='paginate_by'>Resultaten per pagina</label>
                   <select class='form-control' name="paginate_by">
@@ -274,9 +289,6 @@
 
 {% endblock content %}
 
-    <script src="{% static 'dictionary/scripts/jquery-1.10.2.js' %}"></script>
-    <script src="{% static 'dictionary/scripts/bootstrap.min.js' %}"></script>
-    <script src="{% static 'dictionary/scripts/respond.js' %}"></script>
 {% block scripts %}{% endblock %}
 
 

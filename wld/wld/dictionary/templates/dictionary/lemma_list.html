@@ -4,18 +4,22 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }}</title>
+    <title>{{title}}</title>
     {% load staticfiles %}
     <link rel="stylesheet" type="text/css" href="{% static 'dictionary/content/bootstrap.min.css' %}" />
     <link rel="stylesheet" type="text/css" href="{% static 'dictionary/content/site.css' %}" />
     <script src="{% static 'dictionary/scripts/modernizr-2.6.2.js' %}"></script>
+    <script src="{% static 'dictionary/scripts/jquery-1.10.2.js' %}"></script>
+    <script src="{% static 'dictionary/scripts/bootstrap.min.js' %}"></script>
+    <script src="{% static 'dictionary/scripts/respond.js' %}"></script>
 
 {% block extrajs %}
 
     <script type='text/javascript'>
     
      $(document).ready(function(){
-        // Empty for now
+        // Initialize Bootstrap popover
+        $('[data-toggle="popover"]').popover();
      });
 
      // http://www.javascript-coder.com/javascript-form/javascript-reset-form.phtml
@@ -166,9 +170,14 @@
             <div id="searchdefault" class="row">
               <div class="col-sm-4">
                 <div class='input-group'>
-                    <label class='input-group-addon' for='id_entry'>{{searchform.search.label}}</label>
-                    <input name='search' class='form-control' {% if searchform.search.value %}value='{{searchform.search.value}}'{% endif %}>
+                  <label class='input-group-addon' for='id_entry'>{{searchform.search.label}}</label>
+                  <input name='search' class='form-control' {% if searchform.search.value %}value='{{searchform.search.value}}'{% endif %}>
                 </div>
+              </div>
+              <div class="col-sm-2">
+                <!-- data-trigger="hover" -->
+                <button type="button" class="btn btn-default" data-container="body" data-toggle="popover" data-trigger="hover"
+                        data-placement="right" data-content="Willekeurige tekens: ? (één) * (0 of meer). Groep tekens: [m-n]">?</button>
               </div>
               <div class="col-sm-4">
                 <div class='input-group'>
@@ -176,7 +185,7 @@
                     <input name='woord' class='form-control' {% if searchform.woord.value %}value='{{searchform.woord.value}}'{% endif %}>
                 </div>
               </div>
-              <div class="col-sm-4">
+              <div class="col-sm-2">
                 <div class='btn-group'>
                     <!-- Make sure no button has the *name* 'submit', otherwise submit() cannot be used -->
                     <input class='btn btn-primary' type="submit" onclick="do_lemmasearch(this, 'simple');" name="submit_type" value="Zoek">
@@ -368,9 +377,6 @@
 
 {% endblock content %}
 
-    <script src="{% static 'dictionary/scripts/jquery-1.10.2.js' %}"></script>
-    <script src="{% static 'dictionary/scripts/bootstrap.min.js' %}"></script>
-    <script src="{% static 'dictionary/scripts/respond.js' %}"></script>
 {% block scripts %}{% endblock %}
 
 
