@@ -1,0 +1,382 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    {% load staticfiles %}
+    <link rel="stylesheet" type="text/css" href="{% static 'dictionary/content/bootstrap.min.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'dictionary/content/site.css' %}" />
+    <script src="{% static 'dictionary/scripts/modernizr-2.6.2.js' %}"></script>
+    <script src="{% static 'dictionary/scripts/jquery-1.10.2.js' %}"></script>
+    <script src="{% static 'dictionary/scripts/bootstrap.min.js' %}"></script>
+    <script src="{% static 'dictionary/scripts/respond.js' %}"></script>
+
+{% block extrajs %}
+
+    <script type='text/javascript'>
+    
+     $(document).ready(function(){
+        // Initialize Bootstrap popover
+        $('[data-toggle="popover"]').popover();
+     });
+
+     // http://www.javascript-coder.com/javascript-form/javascript-reset-form.phtml
+     function clearForm(myFormElement) {
+
+       var f = $("#lemmasearch").get(0);
+       var elements = f.elements;
+
+       f.reset();
+
+       for (i = 0; i < elements.length; i++) {
+
+         field_type = elements[i].type.toLowerCase();
+
+         switch (field_type) {
+
+           case "text":
+           case "password":
+           case "textarea":
+           case "hidden":
+
+             elements[i].value = "";
+             break;
+
+           case "radio":
+           case "checkbox":
+             if (elements[i].checked) {
+               elements[i].checked = false;
+             }
+             break;
+
+           case "select-one":
+           case "select-multiple":
+             elements[i].selectedIndex = -1;
+             break;
+
+           default:
+             break;
+         }
+       }
+       return (false);
+     }
+
+      /**
+     * @param {string} field_name - name of the field to sort on
+     * @param {string} action     - one of: desc, asc, del
+     * @param {string} frmName    - name of the <form ...> that contains the 'sortOrder' <input> field
+     * @returns {void}
+     */
+    function do_sort_column(field_name, action, frmName) {
+      // Combine @field_name and @action into [sOrder]
+      var sOrder = field_name;
+      if (action == 'desc') {
+        // Descending sort order is signified by a '-' prefix
+        sOrder = '-' + sOrder;
+      } else if (action == 'del') {
+        // "Deleting" (pressing 'x') the sort order of a column means: return to the default 'woord' sort order
+        sOrder = 'woord';
+      }
+
+      // Set the value of the [sortOrder] field defined in dictionary/forms.py::EntrySearchForm
+      $("#" + frmName + " input[name='sortOrder']").val(sOrder);
+
+      // Submit the form with the indicated name
+      $("#" + frmName).submit();
+    }
+
+    /**
+     * Goal: initiate a trefwoord search
+     * @returns {bool}
+     */
+    function do_trefwoordsearch(el, sType) {
+      // Check if this is resetting
+      if (sType === 'Herstel')
+        return clearForm(el);
+      var f = $("#trefwoordsearch")
+      var sSearchType = $(el).attr('value');
+      f.attr('action', '/{{app_prefix}}trefwoord/search/');
+      document.getElementById('trefwoordsearch').submit();
+
+      // Make sure we return positively
+      return true;
+    }
+
+    /**
+     * Goal: change dialect choice
+     * @returns {bool}
+     */
+    function do_dialect(el) {
+      // Get the value of this option
+      var sOptVal = $(el).attr('value');
+      // Adapt hidden elements
+      switch(sOptVal) {
+        case 'code':
+          $(".lemma-word-dialect-code").removeClass("hidden");
+          $(".lemma-word-dialect-stad").addClass("hidden");
+          break;
+        case 'stad':
+          $(".lemma-word-dialect-code").addClass("hidden");
+          $(".lemma-word-dialect-stad").removeClass("hidden");
+          break;
+        case 'alles':
+          $(".lemma-word-dialect-code").removeClass("hidden");
+          $(".lemma-word-dialect-stad").removeClass("hidden");
+          break;
+      }
+
+      // Make sure we return positively
+      return true;
+    }
+
+    </script>
+
+{% endblock %}
+
+</head>
+
+<body>
+    {% include 'dictionary/topnav.html' %}
+
+    {% block content %}
+    <div class="container body-content">
+      <div class="panel panel-default">
+        <form name='trefwoordsearch' id='trefwoordsearch' action="" method='get' 
+              onsubmit="return do_trefwoordsearch('#id_submit_button', 'simple');" >
+            <!-- EK: A sort-order specification is in a hidden form field, which is filled by JS:do_sort_column() -->
+            <div class="hidden">
+                <input name='sortOrder' class='form-control' value='woord' >
+                <input name='search_type' class='form-control' value='woord'>
+                <input name='submit_type' class='form-control' value='simple'>
+            </div>
+
+              <!-- Checkboxes to indicate whether we want to see the dialect codes or the dialect city names -->
+                <div class="row">
+                  <div class="col-sm-1">
+                  </div>
+                  <div class="col-sm-8">
+                    <label >Dialectweergave:</label>
+                  <!--<div id="dialectmode" class="row">-->
+                    <label class="radio-inline"><input id="input-dialect-code" value="code" type="radio" name="optdialect" onclick="do_dialect(this);">Code</label>
+                    <label class="radio-inline active"><input id="input-dialect-stad" value="stad" type="radio" name="optdialect" checked=""  onclick="do_dialect(this);">Plaats</label>
+                    <label class="radio-inline"><input id="input-dialect-alles" value="alles" type="radio" name="optdialect" onclick="do_dialect(this);">Plaats en code</label>
+                  </div>
+                </div>
+            <!-- The top layer of searching -->
+            <div class="row"><table><tr><td>&nbsp;</td></tr></table></div>
+
+
+            <div id="searchdefault" class="row">
+              <div class="col-sm-4">
+                <div class='input-group'>
+                  <label class='input-group-addon' for='id_entry'>{{searchform.search.label}}</label>
+                  <input name='search' class='form-control' {% if searchform.search.value %}value='{{searchform.search.value}}'{% endif %}>
+                </div>
+              </div>
+              <div class="col-sm-2">
+                <!-- data-trigger="hover" -->
+                <button type="button" class="btn btn-default" data-container="body" data-toggle="popover" data-trigger="hover"
+                        data-placement="right" data-content="Willekeurige tekens: ? (één) * (0 of meer). Groep tekens: [m-n]">?</button>
+              </div>
+              <div class="col-sm-4">
+                <div class='input-group'>
+                    <label class='input-group-addon' for='id_woord'>{{searchform.woord.label}}</label>
+                    <input name='woord' class='form-control' {% if searchform.woord.value %}value='{{searchform.woord.value}}'{% endif %}>
+                </div>
+              </div>
+              <div class="col-sm-2">
+                <div class='btn-group'>
+                    <!-- Make sure no button has the *name* 'submit', otherwise submit() cannot be used -->
+                    <input class='btn btn-primary' type="submit" onclick="do_trefwoordsearch(this, 'simple');" name="submit_type" value="Zoek">
+                    <input class='btn btn-default' type="submit" onclick="do_trefwoordsearch(this, 'Herstel');" name="submit_type" value="Herstel">
+                </div>
+              </div>
+            </div>
+
+            <!-- Collapsable area for fine-tuning -->
+            <div class="row"><table><tr><td>&nbsp;</td></tr></table></div>
+            <div class="panel panel-default">
+
+              <div class="panel-heading" data-toggle="collapse" data-target="#query-area">Extra zoekcriteria</div>
+
+              <!-- class="collapse" -->
+              <div id="query-area" class="collapse {% if not request.GET.search %} inert {% endif %}">
+
+
+                <div id='searchformwell' class='well search-results-collapsable'>
+
+                    <table class='table'>
+                        <tr>
+                          <td><div class='input-group'>
+                              <label class='input-group-addon' for='id_code'>{{searchform.dialectCode.label}}</label>
+                              <input name='dialectcode' class='form-control' {% if searchform.dialectCode.value %}value='{{searchform.dialectCode.value}}'{% endif %}>
+                            </div>
+                          </td>
+                          <td>
+                            <div class='input-group'>
+                              <label class='input-group-addon' for='id_city'>{{searchform.dialectCity.label}}</label>
+                              <input name='dialectcity' class='form-control' {% if searchform.dialectCity.value %}value='{{searchform.dialectCity.value}}'{% endif %}>
+                            </div>
+
+                            <div class='form-group' id='paginate_by'>
+                            <label for='paginate_by'>Resultaten per pagina</label>
+                            <select class='form-control' name="paginate_by">
+                                <option>1000</option>
+                                <option>500</option>
+                                <option>250</option>
+                                <option>100</option>
+                                <option selected="true">50</option>
+                                <option>25</option>
+                                <option>10</option>
+                            </select>
+                            </div>
+                          </td>
+                        </tr>
+
+                    </table>
+
+
+
+
+
+              </div>
+            </div>
+            </div>
+        </form>
+      </div>
+
+    {% if object_list %}
+      <h3>Overzicht</h3>
+      <div class="row">
+          <div class="col-sm-4"><span>Gevonden: </span><span>{{entrycount}}</span></div>
+          <div class="col-sm-8">
+          <span class="step-links">
+
+              <ul class='pagination pagination-sm'>
+              {% if page_obj.has_previous %}
+                  <li><a href="?page={{ page_obj.previous_page_number }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">&laquo;</a></li>
+              {% endif %}
+          
+                {% if  page_obj.number > 10 %}
+                  <li><a>...</a></li>
+                {% endif %}
+
+                {% for p in page_obj.paginator.page_range %}
+          
+                   {% if p < page_obj.number|add:"10" and  p > page_obj.number|add:"-10" %}
+                   <li {% ifequal p page_obj.number %}class='active'{% endifequal %}>
+                   <a href='?page={{ p }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}'>{% ifequal p 0 %}Start{% else %}{{p}}{% endifequal %}</a>
+                   </li>
+                   {% endif %}
+         
+                {% endfor %}
+  
+                {% if page_obj.paginator.num_pages > page_obj.number|add:"10" %}
+                  <li><a>...</a></li>
+                  <li>
+                  <a href='?page={{ page_obj.paginator.num_pages }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}'>{{page_obj.paginator.num_pages}}</a>
+                  </li>
+                {% endif %}
+      
+              {% if page_obj.has_next %}
+                  <li><a href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">&raquo;</a></li>
+
+            
+            </ul>
+
+              {% endif %}
+          </span>
+          </div>
+      </div>
+      <table class="table table-hover">
+        <thead><tr><th class="hidden">id</th><th>Trefwoord</th><th>Dialectwoord(en)</th><th>Omschrijving</th></tr></thead>
+        <tbody>
+        {% for tw in object_list %}
+          <tr class="dict-entry">
+            <td class="hidden"> {{ lem.id }} </td>
+            <td>
+              <span class="lemma-name">{{tw.woord}}</span>
+            </td>
+            <td>
+              <!-- See: https://docs.djangoproject.com/en/dev/ref/templates/builtins/?from=olddocs#regroup -->
+              {% regroup tw.entry_set.all|dictsort:"get_lemma_gloss" by lemma as lemma_list %}
+              {% for lem in lemma_list %}
+                <span class="lemma-trefwoord"><a href="{% url 'lemmasearch' %}?search={{lem.grouper}}">{{lem.grouper}}</a>:</span>
+                {% regroup lem.list|dictsort:"get_lemma_gloss" by woord as word_list %}
+                {% for wrd in word_list %}    
+                    <span class="lemma-word">{{wrd.grouper}}</span>
+                    {% spaceless %}
+                    <span>(</span>
+                    {% for entry in wrd.list %}
+                      <span class="lemma-word-dialect">
+                        <span class="lemma-word-dialect-code hidden">{{entry.dialect.nieuw}}</span>
+                        <span class="lemma-word-dialect-stad">{{entry.dialect.stad}}{% if not forloop.last %}, {% endif %}</span>
+                      </span>
+                    {% endfor %}
+                    <span>){% if not forloop.last %}, {% endif %}</span>
+                    {% endspaceless %}
+                {% endfor %}
+              {% endfor %}
+            </td>
+            <td>
+              <span class="toelichting">{{tw.toelichting}}</span>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No keywords are available.</p>
+    {% endif %}
+
+      <div class="pagination">
+          <span class="step-links">
+
+              <ul class='pagination pagination-sm'>
+              {% if page_obj.has_previous %}
+                  <li><a href="?page={{ page_obj.previous_page_number }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">&laquo;</a></li>
+              {% endif %}
+          
+                {% if  page_obj.number > 10 %}
+                  <li><a>...</a></li>
+                {% endif %}
+
+                {% for p in page_obj.paginator.page_range %}
+          
+                   {% if p < page_obj.number|add:"10" and  p > page_obj.number|add:"-10" %}
+                   <li {% ifequal p page_obj.number %}class='active'{% endifequal %}>
+                   <a href='?page={{ p }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}'>{% ifequal p 0 %}Start{% else %}{{p}}{% endifequal %}</a>
+                   </li>
+                   {% endif %}
+         
+                {% endfor %}
+  
+                {% if page_obj.paginator.num_pages > page_obj.number|add:"10" %}
+                  <li><a>...</a></li>
+                  <li>
+                  <a href='?page={{ page_obj.paginator.num_pages }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}'>{{page_obj.paginator.num_pages}}</a>
+                  </li>
+                {% endif %}
+      
+              {% if page_obj.has_next %}
+                  <li><a href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">&raquo;</a></li>
+
+            
+            </ul>
+
+
+              {% endif %}
+          </span>
+      </div>
+    </div>
+
+
+{% endblock content %}
+
+{% block scripts %}{% endblock %}
+
+
+</body>
+</html>

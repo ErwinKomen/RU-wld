@@ -215,3 +215,6 @@ class Entry(models.Model):
 
     def get_trefwoord_woord(self):
         return self.trefwoord.woord + '_' + self.woord
+
+    def get_lemma_gloss(self):
+        return self.lemma.gloss + '_' + self.woord

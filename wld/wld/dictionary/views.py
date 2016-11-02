@@ -21,7 +21,7 @@ from wld.dictionary.forms import *
 from wld.settings import APP_PREFIX, WSGI_FILE
 
 # General help functions
-def order_queryset_by_sort_order(get, qs):
+def order_queryset_by_sort_order(get, qs, sOrder = 'gloss'):
     """Change the sort-order of the query set, depending on the form field [sortOrder]
 
     This function is used by EntryListView.
@@ -55,7 +55,7 @@ def order_queryset_by_sort_order(get, qs):
         return sorted(qs, key=lambda x: get_string_from_tuple_list(tpList, getattr(x, sOrder)), reverse=bReversed)
 
     # Set the default sort order
-    sOrder = 'gloss'  # Default sort order if nothing is specified
+    # sOrder = 'gloss'  # Default sort order if nothing is specified
     # See if the form contains any sort-order information
     if ('sortOrder' in get and get['sortOrder'] != ''):
         # Take the user-indicated sort order
@@ -139,6 +139,88 @@ class DictionaryDetailView(DetailView):
 
         # Return the calculated context
         return context
+
+
+class TrefwoordListView(ListView):
+    """ListView of keywords (trefwoorden)"""
+
+    model = Trefwoord
+    template_name = 'dictionary/trefwoord_list.html'
+    paginate_by = 20
+
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get a context
+        context = super(TrefwoordListView, self).get_context_data(**kwargs)
+
+        # Get parameters for the search
+        initial = self.request.GET
+        if initial is None:
+            initial = {'optdialect': 'stad'}
+        search_form = TrefwoordSearchForm(initial)
+
+        context['searchform'] = search_form
+
+        # Determine the count 
+        context['entrycount'] = self.get_queryset().count()
+
+        # Set the prefix
+        context['app_prefix'] = APP_PREFIX
+
+        # Set the title of the application
+        context['title'] = "eWLD trefwoorden"
+
+        # Return the calculated context
+        return context
+
+    def get_paginate_by(self, queryset):
+        """
+        Paginate by specified value in querystring, or use default class property value.
+        """
+        return self.request.GET.get('paginate_by', self.paginate_by)
+        
+    def get_queryset(self):
+
+        # Get the parameters passed on with the GET request
+        get = self.request.GET
+
+        # Queryset: start out with *ALL* the keyword's
+        qs = Trefwoord.objects.all()
+
+        # Fine-tuning: search string is the LEMMA
+        if 'search' in get and get['search'] != '':
+            val = adapt_search(get['search'])
+            # Use the 'woord' attribute of Trefwoord
+            query = Q(woord__iregex=val) 
+
+            # check for possible exact numbers having been given
+            if re.match('^\d+$', val):
+                query = query | Q(sn__exact=val)
+
+            # Apply the filter
+            qs = qs.filter(query)
+
+        # Check for dialect city
+        if 'dialectcity' in get and get['dialectcity'] != '':
+            val = adapt_search(get['dialectcity'])
+            # query = Q(entry__dialect__stad__istartswith=val)
+            query = Q(entry__dialect__stad__iregex=val)
+            qs = qs.filter(query)
+
+        # Check for dialect code (Kloeke)
+        if 'dialectcode' in get and get['dialectcode'] != '':
+            val = adapt_search(get['dialectcode'])
+            # query = Q(entry__dialect__code__istartswith=val)
+            query = Q(entry__dialect__code__iregex=val)
+            qs = qs.filter(query)
+
+        # Make sure we only have distinct values
+        qs = qs.distinct()
+
+        # Sort the queryset by the parameters given
+        qs = order_queryset_by_sort_order(self.request.GET, qs, 'woord')
+
+        # Return the resulting filtered and sorted queryset
+        return qs
 
 
 class LemmaListView(ListView):
