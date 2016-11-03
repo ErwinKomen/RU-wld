@@ -27,7 +27,7 @@
     {% block content %}
     <div class="container body-content">
       <div class="panel panel-default">
-        <form name='dialectsearch' id='dialectsearch' action="" method='get' onsubmit="return do_search('#id_submit_button', 'dialect', 'simple');" >
+        <form name='dialectsearch' id='dialectsearch' action="" method='get' onsubmit="return do_search('#id_submit_button', 'mijn', 'simple');" >
             <!-- EK: A sort-order specification is in a hidden form field, which is filled by JS:do_sort_column() -->
             <div class="hidden">
                 <input name='sortOrder' class='form-control' value='stad' >
@@ -56,16 +56,16 @@
                     <label class='input-group-addon' 
                            data-toggle="popover" data-trigger="hover"
                            data-placement="right" data-content="Willekeurige tekens: ? (één) * (0 of meer). Groep tekens: [m-n]"
-                           for='id_woord'>{{searchform.nieuw.label}}</label>
-                    <input name='nieuw' class='form-control' {% if searchform.nieuw.value %}value='{{searchform.nieuw.value}}'{% endif %}>
+                           for='id_woord'>{{searchform.locatie.label}}</label>
+                    <input name='locatie' class='form-control' {% if searchform.locatie.value %}value='{{searchform.locatie.value}}'{% endif %}>
                 </div>
               </div>
               <div class="col-sm-3">
                 <div><label>&nbsp;</label></div>
                 <div class='btn-group'>
                     <!-- Make sure no button has the *name* 'submit', otherwise submit() cannot be used -->
-                    <input class='btn btn-primary' type="submit" onclick="do_search(this, 'dialect', 'simple');" name="submit_type" value="Zoek">
-                    <input class='btn btn-default' type="submit" onclick="do_search(this, 'dialect', 'Herstel');" name="submit_type" value="Herstel">
+                    <input class='btn btn-primary' type="submit" onclick="do_search(this, 'mijn', 'simple');" name="submit_type" value="Zoek">
+                    <input class='btn btn-default' type="submit" onclick="do_search(this, 'mijn', 'Herstel');" name="submit_type" value="Herstel">
                 </div>
               </div>
               <div class="col-sm-2">
@@ -88,7 +88,7 @@
       </div>
 
     {% if object_list %}
-      <h3>Dialecten</h3>
+      <h3>Mijnen</h3>
       <div class="row">
           <div class="col-sm-4"><span>Gevonden: </span><span>{{entrycount}}</span></div>
           <div class="col-sm-8">
@@ -131,26 +131,26 @@
           </div>
       </div>
       <table class="table table-hover">
-        <thead><tr><th class="hidden">id</th><th>Stad</th><th>Nieuwe kloeke code</th><th>Toelichting</th></tr></thead>
+        <thead><tr><th class="hidden">id</th><th>Mijn</th><th>Locatie</th><th>Toelichting</th></tr></thead>
         <tbody>
-        {% for dialect in object_list %}
+        {% for mine in object_list %}
           <tr class="dict-entry">
-            <td class="hidden"> {{ dialect.id }}</td>
+            <td class="hidden"> {{ mine.id }}</td>
             <td>
-              <span class="dialect-stad">{{dialect.stad}}</span>
+              <span class="mijn-naam">{{mine.naam}}</span>
             </td>
             <td>
-              <span class="dialect-nieuw">{{dialect.nieuw}}</span>
+              <span class="mijn-locatie">{{mine.locatie}}</span>
             </td>
             <td>
-              <span class="toelichting">{{dialect.toelichting}}</span>
+              <span class="toelichting">{{mine.toelichting}}</span>
             </td>
           </tr>
         {% endfor %}
         </tbody>
       </table>
     {% else %}
-      <p>Er zijn geen dialecten beschikbaar.</p>
+      <p>Er zijn geen mijnen om te tonen.</p>
     {% endif %}
 
       <div class="pagination">

@@ -192,7 +192,7 @@ class Entry(models.Model):
     class Meta:
         verbose_name_plural = "Entries"
         ordering = ['lemma', 'woord']
-        permissions = ( ('search_gloss', 'Can search/view full entry details'),
+        permissions = ( ('search_gloss', 'Can search/view/edit full entry details'),
                        )
 
     def __str__(self):

@@ -98,7 +98,23 @@ table tbody tr:hover {
   color: darkolivegreen;
 }
 
+.lemma-list-name {
+  text-transform: lowercase;
+  font-weight: bold;
+}
+
 .lemma-name {
+  text-transform: lowercase;
+  font-weight: bold;
+}
+
+.lemma-name > a {
+  text-transform: lowercase;
+  font-weight: bold;
+  color: darkblue !important;
+}
+
+.trefwoord-name {
   text-transform: lowercase;
   font-weight: bold;
 }

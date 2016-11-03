@@ -113,6 +113,8 @@ def about(request):
     )
 
 def adapt_search(val):
+    # First trim
+    val = val.strip()
     val = fnmatch.translate(val)
     val = '^' + val + '$'
     #if not '^' in val and not '$' in val: 
@@ -197,6 +199,13 @@ class TrefwoordListView(ListView):
                 query = query | Q(sn__exact=val)
 
             # Apply the filter
+            qs = qs.filter(query)
+
+        # Check for dialectwoord
+        if 'dialectwoord' in get and get['dialectwoord'] != '':
+            val = adapt_search(get['dialectwoord'])
+            # Try to get to the dialectwoord
+            query = Q(entry__woord__iregex=val)
             qs = qs.filter(query)
 
         # Check for dialect city
@@ -390,7 +399,16 @@ class MijnListView(ListView):
 
     def get_context_data(self, **kwargs):
         # Call the base implementation first to get a context
-        context = super(LemmaListView, self).get_context_data(**kwargs)
+        context = super(MijnListView, self).get_context_data(**kwargs)
+
+        # Get parameters for the search
+        initial = self.request.GET
+        search_form = MijnSearchForm(initial)
+
+        context['searchform'] = search_form
+
+        # Determine the count 
+        context['entrycount'] = self.get_queryset().count()
 
         # Set the prefix
         context['app_prefix'] = APP_PREFIX
@@ -400,3 +418,56 @@ class MijnListView(ListView):
 
         # Return the calculated context
         return context
+
+    def get_paginate_by(self, queryset):
+        """
+        Paginate by specified value in querystring, or use default class property value.
+        """
+        return self.request.GET.get('paginate_by', self.paginate_by)
+        
+    def get_queryset(self):
+
+        # Get the parameters passed on with the GET request
+        get = self.request.GET.copy()
+        get['sortOrder'] = 'naam'
+
+        # Queryset: start out with *ALL* the mines
+        qs = Mijn.objects.all()
+
+        # Fine-tuning: search string is the LEMMA
+        if 'search' in get and get['search'] != '':
+            val = adapt_search(get['search'])
+            # The main search is on the NAME of the mine
+            query = Q(naam__iregex=val) 
+
+            # check for possible exact numbers having been given
+            if re.match('^\d+$', val):
+                query = query | Q(sn__exact=val)
+
+            # Apply the filter
+            qs = qs.filter(query)
+
+        # Check for toelichting
+        if 'toelichting' in get and get['toelichting'] != '':
+            val = adapt_search(get['toelichting'])
+            # query = Q(nieuw__istartswith=val)
+            query = Q(toelichting__iregex=val)
+            qs = qs.filter(query)
+
+        # Check for locatie
+        if 'locatie' in get and get['locatie'] != '':
+            val = adapt_search(get['locatie'])
+            # query = Q(nieuw__istartswith=val)
+            query = Q(locatie__iregex=val)
+            qs = qs.filter(query)
+
+        # Make sure we only have distinct values
+        qs = qs.distinct()
+
+        # Sort the queryset by the parameters given
+        qs = order_queryset_by_sort_order(get, qs, 'naam')
+
+        # Return the resulting filtered and sorted queryset
+        return qs
+
+

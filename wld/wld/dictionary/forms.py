@@ -60,9 +60,10 @@ class LemmaSearchForm(forms.ModelForm):
 
 class TrefwoordSearchForm(forms.ModelForm):
 
-    search = forms.CharField(label=_("Begrip"))
+    search = forms.CharField(label=_("Trefwoord"))
     sortOrder = forms.CharField(label=_("Sort Order"), initial="woord")
-    # woord = forms.CharField(label=_("Dialectopgave"))
+    dialectwoord = forms.CharField(label=_("Dialectopgave"))
+    lemma = forms.CharField(label=_("Lemma"))
     dialectCode = forms.CharField(label=_("Kloeke code"))
     dialectCity = forms.CharField(label=_("Stad"))
     bronnen = forms.CharField(label=_("Bronnen"))
@@ -88,3 +89,18 @@ class DialectSearchForm(forms.ModelForm):
 
         model = Dialect
         fields = ('stad', 'toelichting', 'code', 'nieuw')
+
+
+class MijnSearchForm(forms.ModelForm):
+
+    search = forms.CharField(label=_("Mijn"))
+    toelichting = forms.CharField(label=_("Toelichting"))
+    locatie = forms.CharField(label=_("Locatie"))
+    sortOrder = forms.CharField(label=_("Sort Order"), initial="naam")
+
+    class Meta:
+
+        ATTRS_FOR_FORMS = {'class': 'form-control'};
+
+        model = Mijn
+        fields = ('naam', 'locatie', 'toelichting')
