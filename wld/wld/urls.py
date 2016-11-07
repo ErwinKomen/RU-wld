@@ -38,6 +38,7 @@ urlpatterns = [
     url(r'^lemmas$', LemmaListView.as_view(), name='lemmas'),
     url(r'^lemma/search/$', LemmaListView.as_view(), name='lemmasearch'),
     url(r'^trefwoord/search/$', TrefwoordListView.as_view(), name='trefwoordsearch'),
+    url(r'^trefwoord/csv/?format=csv$', TrefwoordListView.as_view(), name='trefwoordcsv'),
     url(r'^dialects', DialectListView.as_view(), name='dialects'),
     url(r'^dialect/search/$', DialectListView.as_view(), name='dialectsearch'),
     url(r'^mines', MijnListView.as_view(), name='mines'),

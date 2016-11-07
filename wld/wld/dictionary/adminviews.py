@@ -143,3 +143,4 @@ class EntryListView(ListView):
 
         # Return the resulting filtered and sorted queryset
         return qs
+

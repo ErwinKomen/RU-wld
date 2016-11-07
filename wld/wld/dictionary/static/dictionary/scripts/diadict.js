@@ -88,19 +88,23 @@ function do_sort_column(field_name, action, frmName) {
  * @returns {bool}
  */
 function do_search(el, sName, sType) {
+  var sSearch = 'search';
+
   // Check if this is resetting
   if (sType === 'Herstel')
     return clearForm(sName);
+  if (sType === 'Csv')
+    sSearch = 'csv';
   var f = $("#" + sName + "search");
   var sSearchType = $(el).attr('value');
   var url_prefix = $(".container").attr("url_home");
   var sPath = url_prefix;
   switch (sName) {
     case "admin":
-      sPath += "dictionary/search/";
+      sPath += "dictionary/"+sSearch+"/";
       break;
     default:
-      sPath += sName + "/search/";
+      sPath += sName + "/" + sSearch + "/";
       break;
   }
   f.attr('action', sPath);

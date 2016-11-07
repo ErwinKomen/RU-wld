@@ -15,6 +15,7 @@ import os
 import operator
 import re
 import fnmatch
+import csv
 from wld.dictionary.models import *
 from wld.dictionary.forms import *
 #from wld.dictionary.adminviews import order_queryset_by_sort_order
@@ -121,6 +122,20 @@ def adapt_search(val):
     #    val = '^' + val + '$'
     return val
 
+def export_csv(request, qs, fields):
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="somefilename.csv"'
+
+    # Create a writer for the CSV
+    writer = csv.writer(response)
+    # Output the first row with the headings
+    writer.writerow(['First row', 'Foo', 'Bar', 'Baz'])
+    # Walk through the queryset
+    for obj in qs:
+        writer.writerow([getattr(obj, f) for f in fields])
+
+    return response
 
 
 class DictionaryDetailView(DetailView):
@@ -149,6 +164,24 @@ class TrefwoordListView(ListView):
     model = Trefwoord
     template_name = 'dictionary/trefwoord_list.html'
     paginate_by = 20
+
+    def render_to_response(self, context, **response_kwargs):
+        """Check if a CSV response is needed or not"""
+        if 'Csv' in self.request.GET.get('submit_type', ''):
+            """ Provide CSV response"""
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="trefwoorden.csv"'
+            # Create a writer for the CSV
+            writer = csv.writer(response)
+            # Output the first row with the headings
+            writer.writerow(['First row', 'Foo', 'Bar', 'Baz'])
+            # Walk through the queryset
+            for obj in qs:
+                writer.writerow([getattr(obj, f) for f in fields])
+
+            return response
+        else:
+            return super(TrefwoordListView, self).render_to_response(context, **response_kwargs)
 
     def get_context_data(self, **kwargs):
         # Call the base implementation first to get a context
