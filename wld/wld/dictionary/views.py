@@ -21,6 +21,10 @@ from wld.dictionary.forms import *
 #from wld.dictionary.adminviews import order_queryset_by_sort_order
 from wld.settings import APP_PREFIX, WSGI_FILE
 
+# Global variables
+paginateSize = 20
+paginateValues = (1000, 500, 250, 100, 50, 40, 30, 20, 10, )
+
 # General help functions
 def order_queryset_by_sort_order(get, qs, sOrder = 'gloss'):
     """Change the sort-order of the query set, depending on the form field [sortOrder]
@@ -74,7 +78,6 @@ def order_queryset_by_sort_order(get, qs, sOrder = 'gloss'):
     # return the ordered list
     return ordered
 
-
 def home(request):
     """Renders the home page."""
     assert isinstance(request, HttpRequest)
@@ -122,18 +125,23 @@ def adapt_search(val):
     #    val = '^' + val + '$'
     return val
 
-def export_csv(request, qs, fields):
+def export_csv(qs, sFileName):
     # Create the HttpResponse object with the appropriate CSV header.
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="somefilename.csv"'
-
+    response['Content-Disposition'] = 'attachment; filename="'+sFileName+'.csv"'
+     
     # Create a writer for the CSV
-    writer = csv.writer(response)
+    writer = csv.writer(response, csv.excel, delimiter='\t')
+    # BOM 
+    response.write(u'\ufeff'.encode('utf8'))
+    # Output the first row with the headings -- these take 'entry' as basis
+    # fields = ['woord', 'lemma', 'dialectCode', 'trefwoord', 'mijn', 'aflevering', 'toelichting', ]
+    fields = ['begrip', 'trefwoord', 'dialectopgave', 'Kloeke code', 'aflevering']
     # Output the first row with the headings
-    writer.writerow(['First row', 'Foo', 'Bar', 'Baz'])
+    writer.writerow(fields)
     # Walk through the queryset
     for obj in qs:
-        writer.writerow([getattr(obj, f) for f in fields])
+        writer.writerow(obj.get_row())
 
     return response
 
@@ -163,25 +171,20 @@ class TrefwoordListView(ListView):
 
     model = Trefwoord
     template_name = 'dictionary/trefwoord_list.html'
-    paginate_by = 20
+    paginate_by = paginateSize
 
     def render_to_response(self, context, **response_kwargs):
         """Check if a CSV response is needed or not"""
         if 'Csv' in self.request.GET.get('submit_type', ''):
             """ Provide CSV response"""
-            response = HttpResponse(content_type='text/csv')
-            response['Content-Disposition'] = 'attachment; filename="trefwoorden.csv"'
-            # Create a writer for the CSV
-            writer = csv.writer(response)
-            # Output the first row with the headings
-            writer.writerow(['First row', 'Foo', 'Bar', 'Baz'])
-            # Walk through the CURRENT queryset
-            qs = self.get_queryset()
-            for obj in qs:
-                sRow = [getattr(obj, f) for f in fields]
-                writer.writerow(sRow)
 
-            return response
+            # Get the PKs of Entry related to Trefwoord
+            qs = self.get_queryset()
+            # Get the Entry queryset related to this
+            qs = Entry.objects.filter(trefwoord__pk__in=qs)
+
+            return export_csv(qs, 'trefwoorden')
+
         else:
             return super(TrefwoordListView, self).render_to_response(context, **response_kwargs)
 
@@ -193,12 +196,22 @@ class TrefwoordListView(ListView):
         initial = self.request.GET
         if initial is None:
             initial = {'optdialect': 'stad'}
-        search_form = TrefwoordSearchForm(initial)
 
+        # Fill the 'searchform' context variable with the values that are received from the GET request
+        search_form = TrefwoordSearchForm(initial)
         context['searchform'] = search_form
+
+        if 'paginate_by' in initial:
+            context['paginateSize'] = int(initial['paginate_by'])
+        else:
+            context['paginateSize'] = paginateSize
+
 
         # Determine the count 
         context['entrycount'] = self.get_queryset().count()
+
+        # Make sure the paginate-values are available
+        context['paginateValues'] = paginateValues
 
         # Set the prefix
         context['app_prefix'] = APP_PREFIX
@@ -243,16 +256,23 @@ class TrefwoordListView(ListView):
             query = Q(entry__woord__iregex=val)
             qs = qs.filter(query)
 
+        # Check for lemma
+        if 'lemma' in get and get['lemma'] != '':
+            val = adapt_search(get['lemma'])
+            # Try to get to the lemma gloss
+            query = Q(entry__lemma__gloss__iregex=val)
+            qs = qs.filter(query)
+
         # Check for dialect city
-        if 'dialectcity' in get and get['dialectcity'] != '':
-            val = adapt_search(get['dialectcity'])
+        if 'dialectCity' in get and get['dialectCity'] != '':
+            val = adapt_search(get['dialectCity'])
             # query = Q(entry__dialect__stad__istartswith=val)
             query = Q(entry__dialect__stad__iregex=val)
             qs = qs.filter(query)
 
         # Check for dialect code (Kloeke)
-        if 'dialectcode' in get and get['dialectcode'] != '':
-            val = adapt_search(get['dialectcode'])
+        if 'dialectCode' in get and get['dialectCode'] != '':
+            val = adapt_search(get['dialectCode'])
             # query = Q(entry__dialect__code__istartswith=val)
             query = Q(entry__dialect__code__iregex=val)
             qs = qs.filter(query)
@@ -273,25 +293,20 @@ class LemmaListView(ListView):
     model = Lemma
     # context_object_name = 'lemma'    
     template_name = 'dictionary/lemma_list.html'
-    paginate_by = 20
+    paginate_by = paginateSize
 
     def render_to_response(self, context, **response_kwargs):
         """Check if a CSV response is needed or not"""
         if 'Csv' in self.request.GET.get('submit_type', ''):
             """ Provide CSV response"""
-            response = HttpResponse(content_type='text/csv')
-            response['Content-Disposition'] = 'attachment; filename="begrippen.csv"'
-            # Create a writer for the CSV
-            writer = csv.writer(response)
-            # Output the first row with the headings
-            writer.writerow(['First row', 'Foo', 'Bar', 'Baz'])
-            # Walk through the CURRENT queryset
-            qs = self.get_queryset()
-            for obj in qs:
-                sRow = [getattr(obj, f) for f in fields]
-                writer.writerow(sRow)
 
-            return response
+            # Get the PKs of Entry related to Trefwoord
+            qs = self.get_queryset()
+            # Get the Entry queryset related to this
+            qs = Entry.objects.filter(lemma__pk__in=qs)
+
+            return export_csv(qs, 'begrippen')
+
         else:
             return super(LemmaListView, self).render_to_response(context, **response_kwargs)
 
@@ -309,6 +324,15 @@ class LemmaListView(ListView):
 
         # Determine the count 
         context['entrycount'] = self.get_queryset().count()
+
+        # Make sure the paginate-values are available
+        context['paginateValues'] = paginateValues
+
+        if 'paginate_by' in initial:
+            context['paginateSize'] = int(initial['paginate_by'])
+        else:
+            context['paginateSize'] = paginateSize
+
 
         # Set the prefix
         context['app_prefix'] = APP_PREFIX
@@ -347,18 +371,19 @@ class LemmaListView(ListView):
             qs = qs.filter(query)
 
         # Check for dialect city
-        if 'dialectcity' in get and get['dialectcity'] != '':
-            val = adapt_search(get['dialectcity'])
+        if 'dialectCity' in get and get['dialectCity'] != '':
+            val = adapt_search(get['dialectCity'])
             # query = Q(entry__dialect__stad__istartswith=val)
             query = Q(entry__dialect__stad__iregex=val)
             qs = qs.filter(query)
 
         # Check for dialect code (Kloeke)
-        if 'dialectcode' in get and get['dialectcode'] != '':
-            val = adapt_search(get['dialectcode'])
+        if 'dialectCode' in get and get['dialectCode'] != '':
+            val = adapt_search(get['dialectCode'])
             # query = Q(entry__dialect__code__istartswith=val)
             query = Q(entry__dialect__code__iregex=val)
             qs = qs.filter(query)
+
 
         # Make sure we only have distinct values
         qs = qs.distinct()

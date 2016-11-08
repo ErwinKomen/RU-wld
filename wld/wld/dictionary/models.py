@@ -218,3 +218,15 @@ class Entry(models.Model):
 
     def get_lemma_gloss(self):
         return self.lemma.gloss + '_' + self.woord
+
+    def get_row(self):
+        arRow = []
+        arRow.append(self.lemma.gloss)
+        arRow.append(self.trefwoord.woord)
+        arRow.append(self.woord)
+        arRow.append(self.dialect.nieuw)
+        arRow.append(self.aflevering.naam)
+        return arRow
+
+    def get_tsv(self):
+        return self.lemma.gloss + '\t' + self.trefwoord.woord + '\t' + self.woord + '\t' + self.dialect.nieuw + '\t' + self.aflevering.naam

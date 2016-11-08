@@ -10,6 +10,7 @@ import re
 from wld.dictionary.models import *
 from wld.dictionary.forms import *
 from wld.settings import APP_PREFIX
+from wld.dictionary.views import paginateSize, paginateValues
 
 def order_queryset_by_sort_order(get, qs):
     """Change the sort-order of the query set, depending on the form field [sortOrder]
@@ -71,19 +72,28 @@ class EntryListView(ListView):
     
     model = Entry
     template_name = 'dictionary/admin_entry_list.html'
-    paginate_by = 50
+    paginate_by = paginateSize
 
     def get_context_data(self, **kwargs):
         # Call the base implementation first to get a context
         context = super(EntryListView, self).get_context_data(**kwargs)
 
         # Get parameters for the search
-        search_form = EntrySearchForm(self.request.GET)
+        initial = self.request.GET
+        search_form = EntrySearchForm(initial)
 
         context['searchform'] = search_form
 
         # Determine the count 
         context['entrycount'] = self.get_queryset().count()
+
+        # Make sure the paginate-values are available
+        context['paginateValues'] = paginateValues
+
+        if 'paginate_by' in initial:
+            context['paginateSize'] = int(initial['paginate_by'])
+        else:
+            context['paginateSize'] = paginateSize
 
         # Set the prefix
         context['app_prefix'] = APP_PREFIX
@@ -118,15 +128,17 @@ class EntryListView(ListView):
             qs = qs.filter(query)
 
         # Check for dialect city
-        if 'dialectcity' in get and get['dialectcity'] != '':
-            val = get['dialectcity']
-            query = Q(dialect__stad__istartswith=val)
+        if 'dialectCity' in get and get['dialectCity'] != '':
+            val = adapt_search(get['dialectCity'])
+            # query = Q(entry__dialect__stad__istartswith=val)
+            query = Q(entry__dialect__stad__iregex=val)
             qs = qs.filter(query)
 
         # Check for dialect code (Kloeke)
-        if 'dialectcode' in get and get['dialectcode'] != '':
-            val = get['dialectcode']
-            query = Q(dialect__code__istartswith=val)
+        if 'dialectCode' in get and get['dialectCode'] != '':
+            val = adapt_search(get['dialectCode'])
+            # query = Q(entry__dialect__code__istartswith=val)
+            query = Q(entry__dialect__code__iregex=val)
             qs = qs.filter(query)
 
         # Check for lemma

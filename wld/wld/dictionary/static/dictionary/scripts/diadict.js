@@ -108,6 +108,8 @@ function do_search(el, sName, sType) {
       break;
   }
   f.attr('action', sPath);
+  // Set the submit type
+  $("#submit_type").attr('value', sType);
   document.getElementById(sName+'search').submit();
 
   // Make sure we return positively

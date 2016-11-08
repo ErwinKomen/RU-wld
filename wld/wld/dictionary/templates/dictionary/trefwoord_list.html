@@ -33,7 +33,7 @@
             <div class="hidden">
                 <input name='sortOrder' class='form-control' value='woord' >
                 <input name='search_type' class='form-control' value='woord'>
-                <input name='submit_type' class='form-control' value='simple'>
+                <input id="submit_type" name="submit_type" class='form-control' value="simple">
             </div>
 
               <!-- Checkboxes to indicate whether we want to see the dialect codes or the dialect city names -->
@@ -83,9 +83,15 @@
               <div class="col-sm-3">
                 <div class='btn-group'>
                     <!-- Make sure no button has the *name* 'submit', otherwise submit() cannot be used -->
-                    <input class='btn btn-primary' type="submit" onclick="do_search(this, 'trefwoord', 'simple');" name="submit_type" value="Zoek">
-                    <input class='btn btn-default' type="submit" onclick="do_search(this, 'trefwoord', 'Csv');" name="submit_type" value="Csv">
-                    <input class='btn btn-default' type="submit" onclick="do_search(this, 'trefwoord', 'Herstel');" name="submit_type" value="Herstel">
+                    <input class='btn btn-primary' type="submit" onclick="do_search(this, 'trefwoord', 'simple');" value="Zoek">
+                    <input class='btn btn-default' type="submit" onclick="do_search(this, 'trefwoord', 'Herstel');" value="Herstel">
+                    <!-- <input class='btn btn-default' type="submit" onclick="do_search(this, 'trefwoord', 'Csv');" name="submit_type" value="Csv"> -->
+                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" 
+                        aria-haspopup="true" aria-expanded="false">Download <span class="caret"></span></button>
+                    <ul class="dropdown-menu">
+                      <li><a href="#" onclick="do_search(this, 'trefwoord', 'Csv');" >Tab gescheiden lijst</a></li>
+                      <li><a href="#" onclick="do_search(this, 'trefwoord', 'Csv');" >Excel</a></li>
+                    </ul>
                 </div>
               </div>
             </div>
@@ -94,7 +100,7 @@
             <div class="row"><table><tr><td>&nbsp;</td></tr></table></div>
             <div class="panel panel-default">
 
-              <div class="panel-heading" data-toggle="collapse" data-target="#query-area">Extra zoekcriteria</div>
+              <div class="panel-heading" data-toggle="collapse" data-target="#query-area">Filteren...</div>
 
               <!-- class="collapse" -->
               <div id="query-area" class="collapse {% if not request.GET.search %} inert {% endif %}">
@@ -107,7 +113,7 @@
                           <td>
                             <div class='input-group'>
                               <label class='input-group-addon' for='id_code'>{{searchform.dialectCode.label}}</label>
-                              <input name='dialectcode' class='form-control' {% if searchform.dialectCode.value %}value='{{searchform.dialectCode.value}}'{% endif %}>
+                              <input name='dialectCode' class='form-control' {% if searchform.dialectCode.value %}value='{{searchform.dialectCode.value}}'{% endif %}>
                             </div>
                             <div class='input-group'>
                               <label class='input-group-addon' for='id_toelichting'>{{searchform.toelichting.label}}</label>
@@ -117,19 +123,15 @@
                           <td>
                             <div class='input-group'>
                               <label class='input-group-addon' for='id_city'>{{searchform.dialectCity.label}}</label>
-                              <input name='dialectcity' class='form-control' {% if searchform.dialectCity.value %}value='{{searchform.dialectCity.value}}'{% endif %}>
+                              <input name='dialectCity' class='form-control' {% if searchform.dialectCity.value %}value='{{searchform.dialectCity.value}}'{% endif %}>
                             </div>
 
                             <div class='form-group' id='paginate_by'>
                             <label for='paginate_by'>Resultaten per pagina</label>
                             <select class='form-control' name="paginate_by">
-                                <option>1000</option>
-                                <option>500</option>
-                                <option>250</option>
-                                <option>100</option>
-                                <option selected="true">50</option>
-                                <option>25</option>
-                                <option>10</option>
+                              {% for pag in paginateValues %}
+                              <option {% if pag == paginateSize %} selected {% endif %}>{{pag}}</option>
+                              {% endfor %}
                             </select>
                             </div>
                           </td>
@@ -154,39 +156,8 @@
           <div class="col-sm-8">
           <span class="step-links">
 
-              <ul class='pagination pagination-sm'>
-              {% if page_obj.has_previous %}
-                  <li><a href="?page={{ page_obj.previous_page_number }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">&laquo;</a></li>
-              {% endif %}
-          
-                {% if  page_obj.number > 10 %}
-                  <li><a>...</a></li>
-                {% endif %}
+          {% include 'dictionary/pagination.html' %}
 
-                {% for p in page_obj.paginator.page_range %}
-          
-                   {% if p < page_obj.number|add:"10" and  p > page_obj.number|add:"-10" %}
-                   <li {% ifequal p page_obj.number %}class='active'{% endifequal %}>
-                   <a href='?page={{ p }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}'>{% ifequal p 0 %}Start{% else %}{{p}}{% endifequal %}</a>
-                   </li>
-                   {% endif %}
-         
-                {% endfor %}
-  
-                {% if page_obj.paginator.num_pages > page_obj.number|add:"10" %}
-                  <li><a>...</a></li>
-                  <li>
-                  <a href='?page={{ page_obj.paginator.num_pages }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}'>{{page_obj.paginator.num_pages}}</a>
-                  </li>
-                {% endif %}
-      
-              {% if page_obj.has_next %}
-                  <li><a href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">&raquo;</a></li>
-
-            
-            </ul>
-
-              {% endif %}
           </span>
           </div>
       </div>
@@ -234,40 +205,7 @@
       <div class="pagination">
           <span class="step-links">
 
-              <ul class='pagination pagination-sm'>
-              {% if page_obj.has_previous %}
-                  <li><a href="?page={{ page_obj.previous_page_number }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">&laquo;</a></li>
-              {% endif %}
-          
-                {% if  page_obj.number > 10 %}
-                  <li><a>...</a></li>
-                {% endif %}
-
-                {% for p in page_obj.paginator.page_range %}
-          
-                   {% if p < page_obj.number|add:"10" and  p > page_obj.number|add:"-10" %}
-                   <li {% ifequal p page_obj.number %}class='active'{% endifequal %}>
-                   <a href='?page={{ p }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}'>{% ifequal p 0 %}Start{% else %}{{p}}{% endifequal %}</a>
-                   </li>
-                   {% endif %}
-         
-                {% endfor %}
-  
-                {% if page_obj.paginator.num_pages > page_obj.number|add:"10" %}
-                  <li><a>...</a></li>
-                  <li>
-                  <a href='?page={{ page_obj.paginator.num_pages }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}'>{{page_obj.paginator.num_pages}}</a>
-                  </li>
-                {% endif %}
-      
-              {% if page_obj.has_next %}
-                  <li><a href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% ifnotequal key 'page' %}&{{ key }}={{ value }}{% endifnotequal %}{% endfor %}">&raquo;</a></li>
-
-            
-            </ul>
-
-
-              {% endif %}
+          {% include 'dictionary/pagination.html' %}
           </span>
       </div>
     </div>

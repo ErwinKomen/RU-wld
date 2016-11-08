@@ -86,6 +86,7 @@
     <Content Include="wld\dictionary\static\dictionary\scripts\diadict.js" />
     <Content Include="wld\dictionary\templates\dictionary\mijn_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\dialect_list.html" />
+    <Content Include="wld\dictionary\templates\dictionary\pagination.html" />
     <Content Include="wld\dictionary\templates\dictionary\trefwoord_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\lemma_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\topnav.html" />
