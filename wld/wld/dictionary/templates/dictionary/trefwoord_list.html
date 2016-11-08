@@ -53,7 +53,7 @@
 
 
             <div id="searchdefault" class="row">
-              <div class="col-sm-4">
+              <div class="col-sm-3">
                 <div class='input-group'>
                   <label class='input-group-addon' 
                          data-toggle="popover" data-trigger="hover"
@@ -80,7 +80,7 @@
                   <input name='dialectwoord' class='form-control' {% if searchform.dialectwoord.value %}value='{{searchform.dialectwoord.value}}'{% endif %}>
                 </div>
               </div>
-              <div class="col-sm-2">
+              <div class="col-sm-3">
                 <div class='btn-group'>
                     <!-- Make sure no button has the *name* 'submit', otherwise submit() cannot be used -->
                     <input class='btn btn-primary' type="submit" onclick="do_search(this, 'trefwoord', 'simple');" name="submit_type" value="Zoek">

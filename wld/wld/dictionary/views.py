@@ -175,9 +175,11 @@ class TrefwoordListView(ListView):
             writer = csv.writer(response)
             # Output the first row with the headings
             writer.writerow(['First row', 'Foo', 'Bar', 'Baz'])
-            # Walk through the queryset
+            # Walk through the CURRENT queryset
+            qs = self.get_queryset()
             for obj in qs:
-                writer.writerow([getattr(obj, f) for f in fields])
+                sRow = [getattr(obj, f) for f in fields]
+                writer.writerow(sRow)
 
             return response
         else:
@@ -272,6 +274,26 @@ class LemmaListView(ListView):
     # context_object_name = 'lemma'    
     template_name = 'dictionary/lemma_list.html'
     paginate_by = 20
+
+    def render_to_response(self, context, **response_kwargs):
+        """Check if a CSV response is needed or not"""
+        if 'Csv' in self.request.GET.get('submit_type', ''):
+            """ Provide CSV response"""
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="begrippen.csv"'
+            # Create a writer for the CSV
+            writer = csv.writer(response)
+            # Output the first row with the headings
+            writer.writerow(['First row', 'Foo', 'Bar', 'Baz'])
+            # Walk through the CURRENT queryset
+            qs = self.get_queryset()
+            for obj in qs:
+                sRow = [getattr(obj, f) for f in fields]
+                writer.writerow(sRow)
+
+            return response
+        else:
+            return super(LemmaListView, self).render_to_response(context, **response_kwargs)
 
     def get_context_data(self, **kwargs):
         # Call the base implementation first to get a context
