@@ -10,7 +10,7 @@ from wld.dictionary.models import Entry, Lemma, Dialect, Mijn, Trefwoord
 DIALECT_CHOICES = (
         ('code', 'Nieuwe Kloekecode'),
         ('stad', 'Plaats'),
-        ('alles', 'Plaats en code'),
+        ('alles', 'Plaats en Kloekecode'),
     )
 
 class BootstrapAuthenticationForm(AuthenticationForm):
@@ -65,7 +65,7 @@ class TrefwoordSearchForm(forms.ModelForm):
     dialectwoord = forms.CharField(label=_("Dialectopgave"))
     lemma = forms.CharField(label=_("Lemma"))
     dialectCode = forms.CharField(label=_("Kloeke code"))
-    dialectCity = forms.CharField(label=_("Stad"))
+    dialectCity = forms.CharField(label=_("Plaats"))
     bronnen = forms.CharField(label=_("Bronnen"))
     optdialect = forms.CharField(label=_("Dialectweergave"))
 
@@ -79,7 +79,7 @@ class TrefwoordSearchForm(forms.ModelForm):
 
 class DialectSearchForm(forms.ModelForm):
 
-    search = forms.CharField(label=_("Stad"))
+    search = forms.CharField(label=_("Plaats"))
     nieuw = forms.CharField(label=_("Nieuwe kloeke code"))
     sortOrder = forms.CharField(label=_("Sort Order"), initial="stad")
 

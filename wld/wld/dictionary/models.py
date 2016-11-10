@@ -146,9 +146,9 @@ class Lemma(models.Model):
 class Dialect(models.Model):
     """Dialect"""
 
-    stad = models.CharField("Stad van dialect", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    stad = models.CharField("Dialectlocatie", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
     code = models.CharField("Plaatscode (Kloeke)", blank=False, max_length=6, default="xxxxxx")
-    nieuw = models.CharField("Plaatscode (New Kloeke)", blank=False, max_length=6, default="xxxxxx")
+    nieuw = models.CharField("Plaatscode (Nieuwe Kloeke)", blank=False, max_length=6, default="xxxxxx")
     toelichting = models.TextField("Toelichting bij dialect", blank=True)
 
     def __str__(self):

@@ -24,7 +24,7 @@ from wld.settings import APP_PREFIX, WSGI_FILE
 # Global variables
 paginateSize = 20
 paginateValues = (1000, 500, 250, 100, 50, 40, 30, 20, 10, )
-outputColumns = ['begrip', 'trefwoord', 'dialectopgave', 'Kloeke code', 'aflevering']
+outputColumns = ['begrip', 'trefwoord', 'dialectopgave', 'Kloekecode', 'aflevering']
 
 # General help functions
 def order_queryset_by_sort_order(get, qs, sOrder = 'gloss'):
@@ -398,7 +398,6 @@ class LemmaListView(ListView):
         else:
             context['paginateSize'] = paginateSize
 
-
         # Set the prefix
         context['app_prefix'] = APP_PREFIX
 
@@ -460,6 +459,88 @@ class LemmaListView(ListView):
         return qs
 
 
+class LocationListView(ListView):
+    """Listview of locations"""
+
+    model = Dialect
+    paginate_by = 20
+    template_name = 'dictionary/location_list.html'
+
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get a context
+        context = super(LocationListView, self).get_context_data(**kwargs)
+
+        # Get parameters for the search
+        initial = self.request.GET
+        search_form = DialectSearchForm(initial)
+
+        context['searchform'] = search_form
+
+        # Determine the count 
+        context['entrycount'] = self.get_queryset().count()
+
+        # Set the prefix
+        context['app_prefix'] = APP_PREFIX
+
+        # Make sure the paginate-values are available
+        context['paginateValues'] = paginateValues
+
+        if 'paginate_by' in initial:
+            context['paginateSize'] = int(initial['paginate_by'])
+        else:
+            context['paginateSize'] = paginateSize
+
+        # Set the title of the application
+        context['title'] = "eWLD dialecten"
+
+        # Return the calculated context
+        return context
+
+    def get_paginate_by(self, queryset):
+        """
+        Paginate by specified value in querystring, or use default class property value.
+        """
+        return self.request.GET.get('paginate_by', self.paginate_by)
+        
+    def get_queryset(self):
+
+        # Get the parameters passed on with the GET request
+        get = self.request.GET.copy()
+        get['sortOrder'] = 'stad'
+
+        # Queryset: start out with *ALL* the lemma's
+        qs = Dialect.objects.all()
+
+        # Fine-tuning: search string is the LEMMA
+        if 'search' in get and get['search'] != '':
+            val = adapt_search(get['search'])
+            # query = Q(stad__istartswith=val) 
+            query = Q(stad__iregex=val) 
+
+            # check for possible exact numbers having been given
+            if re.match('^\d+$', val):
+                query = query | Q(sn__exact=val)
+
+            # Apply the filter
+            qs = qs.filter(query)
+
+        # Check for dialect code (Kloeke)
+        if 'nieuw' in get and get['nieuw'] != '':
+            val = adapt_search(get['nieuw'])
+            # query = Q(nieuw__istartswith=val)
+            query = Q(nieuw__iregex=val)
+            qs = qs.filter(query)
+
+        # Make sure we only have distinct values
+        qs = qs.distinct()
+
+        # Sort the queryset by the parameters given
+        qs = order_queryset_by_sort_order(get, qs)
+
+        # Return the resulting filtered and sorted queryset
+        return qs
+
+
 class DialectListView(ListView):
     """Listview of dialects"""
 
@@ -482,6 +563,14 @@ class DialectListView(ListView):
 
         # Set the prefix
         context['app_prefix'] = APP_PREFIX
+
+        # Make sure the paginate-values are available
+        context['paginateValues'] = paginateValues
+
+        if 'paginate_by' in initial:
+            context['paginateSize'] = int(initial['paginate_by'])
+        else:
+            context['paginateSize'] = paginateSize
 
         # Set the title of the application
         context['title'] = "eWLD dialecten"
@@ -554,6 +643,14 @@ class MijnListView(ListView):
 
         # Determine the count 
         context['entrycount'] = self.get_queryset().count()
+
+        # Make sure the paginate-values are available
+        context['paginateValues'] = paginateValues
+
+        if 'paginate_by' in initial:
+            context['paginateSize'] = int(initial['paginate_by'])
+        else:
+            context['paginateSize'] = paginateSize
 
         # Set the prefix
         context['app_prefix'] = APP_PREFIX

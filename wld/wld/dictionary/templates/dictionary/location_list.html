@@ -27,7 +27,7 @@
     {% block content %}
     <div class="container body-content">
       <div class="panel panel-default">
-        <form name='dialectsearch' id='dialectsearch' action="" method='get' onsubmit="return do_search('#id_submit_button', 'dialect', 'simple');" >
+        <form name='locationsearch' id='locationsearch' action="" method='get' onsubmit="return do_search('#id_submit_button', 'location', 'simple');" >
             <!-- EK: A sort-order specification is in a hidden form field, which is filled by JS:do_sort_column() -->
             <div class="hidden">
                 <input name='sortOrder' class='form-control' value='stad' >
@@ -64,8 +64,8 @@
                 <div><label>&nbsp;</label></div>
                 <div class='btn-group'>
                     <!-- Make sure no button has the *name* 'submit', otherwise submit() cannot be used -->
-                    <input class='btn btn-primary' type="submit" onclick="do_search(this, 'dialect', 'simple');" name="submit_type" value="Zoek">
-                    <input class='btn btn-default' type="submit" onclick="do_search(this, 'dialect', 'Herstel');" name="submit_type" value="Herstel">
+                    <input class='btn btn-primary' type="submit" onclick="do_search(this, 'location', 'simple');" name="submit_type" value="Zoek">
+                    <input class='btn btn-default' type="submit" onclick="do_search(this, 'location', 'Herstel');" name="submit_type" value="Herstel">
                 </div>
               </div>
               <div class="col-sm-2">
@@ -84,19 +84,13 @@
       </div>
 
     {% if object_list %}
-      <h3>Dialecten</h3>
+      <h3>Woorden per plaats</h3>
       <div class="row">
           <div class="col-sm-4"><span>Gevonden: </span><span>{{entrycount}}</span></div>
-          <div class="col-sm-8">
-          <span class="step-links">
-
-          {% include 'dictionary/pagination.html' %}
-
-          </span>
-          </div>
+          <div class="col-sm-8"><span class="step-links">{% include 'dictionary/pagination.html' %}</span></div>
       </div>
       <table class="table table-hover">
-        <thead><tr><th class="hidden">id</th><th>Plaats</th><th>Nieuwe kloeke code</th><th>Toelichting</th></tr></thead>
+        <thead><tr><th class="hidden">id</th><th>Plaats</th><th>Begrip: trefwoord (dialectopgave)</th></tr></thead>
         <tbody>
         {% for dialect in object_list %}
           <tr class="dict-entry">
@@ -105,26 +99,39 @@
               <span class="dialect-stad">{{dialect.stad}}</span>
             </td>
             <td>
-              <span class="dialect-nieuw">{{dialect.nieuw}}</span>
-            </td>
-            <td>
-              <span class="toelichting">{{dialect.toelichting}}</span>
+              <span class="lemma-word-dialect-code">{{dialect.nieuw}} - </span>
+              <!-- See: https://docs.djangoproject.com/en/dev/ref/templates/builtins/?from=olddocs#regroup -->
+              <!-- Take all the [entry] elements for this dialect and divide them over their [lemma] -->
+              {% regroup dialect.entry_set.all|dictsort:"get_lemma_gloss" by lemma as lemma_list %}
+              {% for lem in lemma_list %}
+                <span class="lemma-name"><a href="{% url 'lemmasearch' %}?search={{lem.grouper}}">{{lem.grouper}}</a>:</span>
+                <!-- Take all the [trefwoord] elements available per [lemma] -->
+                {% regroup lem.list|dictsort:"get_lemma_gloss" by trefwoord as tw_list %}
+                {% for tw in tw_list %}
+                  <span class="trefwoord-name"><a href="{% url 'trefwoordsearch' %}?search={{tw.grouper}}">{{tw.grouper}}</a></span>
+                  <!-- Take all the [trefwoord] elements, sort them alphabetically on [lemma.gloss-entry.woord] into [word_list] -->
+                  {% regroup tw.list|dictsort:"get_trefwoord_woord" by woord as word_list %}
+                  {% spaceless %}
+                  <span>(</span>
+                  {% for wrd in word_list %}
+                    <span class="trefwoord-woord">{{wrd.grouper}}</span>
+                    <span>{% if not forloop.last %}, {% endif %}</span>
+                  {% endfor %}
+                  <span>){% if not forloop.last %}, {% endif %}</span>
+                  {% endspaceless %}
+                {% endfor %}
+
+              {% endfor %}
             </td>
           </tr>
         {% endfor %}
         </tbody>
       </table>
     {% else %}
-      <p>Er zijn geen dialecten beschikbaar.</p>
+      <p>Er is geen informatie over plaatsen beschikbaar.</p>
     {% endif %}
 
-      <div class="pagination">
-          <span class="step-links">
-
-          {% include 'dictionary/pagination.html' %}
-
-          </span>
-      </div>
+      <div class="pagination"><span class="step-links">{% include 'dictionary/pagination.html' %}</span></div>
     </div>
 
 

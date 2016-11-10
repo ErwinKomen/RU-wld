@@ -35,18 +35,8 @@
                 <input name='submit_type' class='form-control' value='simple'>
             </div>
 
-              <!-- Checkboxes to indicate whether we want to see the dialect codes or the dialect city names -->
-                <div class="row">
-                  <div class="col-sm-1">
-                  </div>
-                  <div class="col-sm-8">
-                    <label >Dialectweergave:</label>
-                  <!--<div id="dialectmode" class="row">-->
-                    <label class="radio-inline"><input id="input-dialect-code" value="code" type="radio" name="optdialect" onclick="do_dialect(this);">Code</label>
-                    <label class="radio-inline active"><input id="input-dialect-stad" value="stad" type="radio" name="optdialect" checked=""  onclick="do_dialect(this);">Plaats</label>
-                    <label class="radio-inline"><input id="input-dialect-alles" value="alles" type="radio" name="optdialect" onclick="do_dialect(this);">Plaats en code</label>
-                  </div>
-                </div>
+            {% include 'dictionary/dialectviewing.html' %}
+
             <!-- The top layer of searching -->
             <div class="row"><table><tr><td>&nbsp;</td></tr></table></div>
 
@@ -141,7 +131,7 @@
           </div>
       </div>
       <table class="table table-hover">
-        <thead><tr><th class="hidden">id</th><th>Begrip</th><th>Dialectwoord(en)</th><th>Omschrijving</th></tr></thead>
+        <thead><tr><th class="hidden">id</th><th>Begrip</th><th>Trefwoord: dialectopgave (plaats)</th><th>Omschrijving</th></tr></thead>
         <tbody>
         {% for lem in object_list %}
           <tr class="dict-entry">
@@ -162,7 +152,9 @@
                     {% for entry in wrd.list %}
                       <span class="lemma-word-dialect">
                         <span class="lemma-word-dialect-code hidden">{{entry.dialect.nieuw}}</span>
-                        <span class="lemma-word-dialect-stad">{{entry.dialect.stad}}{% if not forloop.last %}, {% endif %}</span>
+                        <span class="lemma-word-dialect-space hidden">&nbsp;</span>
+                        <span class="lemma-word-dialect-stad">{{entry.dialect.stad}}</span>
+                        <span>{% if not forloop.last %}, {% endif %}</span>
                       </span>
                     {% endfor %}
                     <span>){% if not forloop.last %}, {% endif %}</span>

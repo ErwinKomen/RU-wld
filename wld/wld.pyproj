@@ -84,6 +84,8 @@
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.ttf" />
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.woff" />
     <Content Include="wld\dictionary\static\dictionary\scripts\diadict.js" />
+    <Content Include="wld\dictionary\templates\dictionary\dialectviewing.html" />
+    <Content Include="wld\dictionary\templates\dictionary\location_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\mijn_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\dialect_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\pagination.html" />
@@ -113,7 +115,6 @@
     <Content Include="wld\dictionary\templates\dictionary\index.html" />
     <Content Include="wld\dictionary\templates\dictionary\layout.html" />
     <Content Include="wld\dictionary\templates\dictionary\login.html" />
-    <Content Include="wld\dictionary\templates\dictionary\loginpartial.html" />
     <Content Include="wld\dictionary\templates\dictionary\output.xml" />
     <Content Include="requirements.txt" />
   </ItemGroup>

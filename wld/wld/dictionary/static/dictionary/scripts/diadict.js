@@ -127,15 +127,18 @@ function do_dialect(el) {
   switch (sOptVal) {
     case 'code':
       $(".lemma-word-dialect-code").removeClass("hidden");
+      $(".lemma-word-dialect-space").addClass("hidden");
       $(".lemma-word-dialect-stad").addClass("hidden");
       break;
     case 'stad':
       $(".lemma-word-dialect-code").addClass("hidden");
+      $(".lemma-word-dialect-space").addClass("hidden");
       $(".lemma-word-dialect-stad").removeClass("hidden");
       break;
     case 'alles':
       $(".lemma-word-dialect-code").removeClass("hidden");
       $(".lemma-word-dialect-stad").removeClass("hidden");
+      $(".lemma-word-dialect-space").removeClass("hidden");
       break;
   }
 
