@@ -148,7 +148,7 @@ def export_csv(qs, sFileName):
     # writer = csv.writer(response, csv.excel, delimiter='\t')
     writer = csv.writer(response, csv.excel_tab)
     # BOM to indicate that this is UTF8
-    # response.write(u'\ufeff'.encode('utf8'))
+    response.write(u'\ufeff'.encode('utf8'))
     # Output the first row with the headings -- these take 'entry' as basis
     fields = outputColumns
     # Output the first row with the headings

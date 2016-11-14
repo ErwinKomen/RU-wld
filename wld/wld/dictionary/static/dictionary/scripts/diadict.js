@@ -93,10 +93,12 @@ function do_search(el, sName, sType) {
   // Check if this is resetting
   if (sType === 'Herstel')
     return clearForm(sName);
+  /*
   if (sType === 'Csv')
     sSearch = 'csv';
+    */
   var f = $("#" + sName + "search");
-  var sSearchType = $(el).attr('value');
+  // var sSearchType = $(el).attr('value');
   var url_prefix = $(".container").attr("url_home");
   var sPath = url_prefix;
   switch (sName) {
