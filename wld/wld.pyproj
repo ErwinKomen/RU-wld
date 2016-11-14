@@ -79,6 +79,7 @@
     <Content Include="wld\dictionary\static\dictionary\content\bootstrap.css" />
     <Content Include="wld\dictionary\static\dictionary\content\bootstrap.min.css" />
     <Content Include="wld\dictionary\static\dictionary\content\site.css" />
+    <Content Include="wld\dictionary\static\dictionary\content\taalkaart-limburg.jpg" />
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.eot" />
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.svg" />
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.ttf" />

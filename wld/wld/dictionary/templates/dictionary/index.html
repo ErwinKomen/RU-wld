@@ -1,29 +1,46 @@
 {% extends "dictionary/layout.html" %}
+{% load static %}
 
 {% block content %}
 
 <div class="jumbotron">
     <h2>Elektronisch Woordenboek van de Limburgse Dialecten (e-WLD)</h2>
-    <p class="lead">Het e-WLD bevat de inhoud van de drie delen van het <em>Woordenboek van de Limburgse dialecten</em> 
-  die in druk in 35 afleveringen zijn verschenen tussen 1983 en 2005 (zie tabblad Overzichten). 
-  In het e-WLD kunnen geïnteresseerden de Limburgse <b>trefwoorden</b> opzoeken voor bepaalde <b>begrippen</b>, 
+    <p class="lead"></p> 
+
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <p>Het e-WLD bevat de inhoud van de drie delen van het <em>Woordenboek van de Limburgse dialecten</em> 
+  die in druk in 39 afleveringen zijn verschenen tussen 1983 en 2008 (zie tabblad Overzichten).
+      In het e-WLD kunnen geïnteresseerden de Limburgse <b>trefwoorden</b> opzoeken voor bepaalde <b>begrippen</b>, 
   zoals ‘appelstroop’ of ‘persstro’. Daarbij worden ook de verschillende fonetische varianten, 
   de zogenoemde <b>dialectopgaven</b>, van de trefwoorden getoond.</p>
 
   <p>Het is ook mogelijk alle trefwoorden van één bepaalde Limburgse <b>plaats</b> op te zoeken, 
   hetzij door te zoeken op de plaatsnaam, hetzij door te zoeken op de <b>Kloekecode</b> van de bewuste plaatsnaam. 
-  De Kloekecodes zijn unieke nummeringen die de dialectoloog G.G. Kloeke in 1926 heeft toegekend aan 
-  de plaatsen en gehuchten in Nederland, Vlaanderen, Frans-Vlaanderen en het noordwesten van Duitsland. 
+  De <a href="http://www.meertens.knaw.nl/kloeke/">Kloekecodes</a> zijn unieke nummeringen die de dialectoloog 
+  G.G. Kloeke in 1926 heeft toegekend 
+  aan de plaatsen en gehuchten in Nederland, Vlaanderen, Frans-Vlaanderen en het noordwesten van Duitsland. 
   Ze bestaan uit een hoofdletter gevolgd door drie cijfers met soms een kleine letter daaraan toegevoegd. 
   Omdat de oorspronkelijke nummering in de loop van de tijd is uitgebreid, bestaan er een naast de oude 
-  Kloekecodes ook nieuwe Kloekecodes; in de zoekapplicatie worden beide versies getoond.</p>
-  <p>Het e-WLD bevat een enorme hoeveelheid uniek dialectmateriaal, in de vorige eeuw verzameld 
+  Kloekecodes ook nieuwe Kloekecodes; in de zoekapplicatie worden beide versies getoond.
+  </p>
+        <p>Het e-WLD bevat ?? begrippen, ?? trefwoorden en ?? dialectopgaven, verzameld 
   in ruim 300 Limburgse plaatsen ofwel dialecten (iedere plaats vertegenwoordigt een eigen dialect). 
-  Ook uniek voor het Limburgs is de mijnbouw, waaraan aflevering II.5 is gewijd. Zowel in de Nederlandse 
-  als de Belgische <b>mijnen</b> werd een bijzondere vorm van het dialect gesproken, en daarmee vormen die 
-  lokaties een uitbreiding van het Limburgse plaatsennetwerk. 
-  Het is mogelijk specifiek voor de mijntaal te zoeken op de gegevens van deze mijnen.</p>
+  Uniek voor het Limburgs is de mijnbouw, waaraan aflevering II.5 is gewijd. In de negentien <b>mijnen</b> 
+  (12 in Nederlands Limburg en 7 in Belgisch Limburg) werd een bijzondere vorm van het dialect gesproken, 
+  en daarmee vormen die mijnen een uitbreiding van het Limburgse plaatsennetwerk. 
+  Het is mogelijk te zoeken op de gegevens van deze mijnen; dat levert dan alleen gegevens op afkomstig uit aflevering II.5.
+  </p>
+
   <p>De website met e-WLD is op 17 december feestelijk gelanceerd tijdens een dialectencongres in Venlo.</p>
+    </div>
+
+  <div class="col-md-4">
+    <a target="_blank" href="{% static 'dictionary/content/taalkaart-limburg.jpg' %}"><img src="{% static 'dictionary/content/taalkaart-limburg.jpg' %}" alt="Een indeling van de Limburgse dialecten" title="Een indeling van de Limburgse dialecten" style="float:right;height:400px;" ></a>
+  </div>
 </div>
+
 
 {% endblock %}
