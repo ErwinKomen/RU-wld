@@ -3,41 +3,27 @@
 {% block content %}
 
 <div class="jumbotron">
-    <h2>Electronisch Woordenboek der Limburgse Dialecten</h2>
-    <p class="lead">Het "Radboud Electronische Woordenboek der Limburgse Dialecten" (RU-eWLD) stelt geïnteresseerden in staat om het dialectenwoordenboek te doorzoeken dat is ontwikkeld aan de
-  Radboud Universiteit Nijmegen. Op dit moment bevat het woordenboek ruim 4000 lexemen verzameld in ruim 300 Limburgse locaties. 
-  Ieder lexeem bevat 
-    This dictionary contains dialect words, each of which has a dialect identifier.
-    Entries also contain a more generic Lemma.</p>
-    <p><a href="https://catalog.clarin.eu/ds/ComponentRegistry" class="btn btn-primary btn-large">Lees verder &raquo;</a></p>
-</div>
+    <h2>Elektronisch Woordenboek van de Limburgse Dialecten (e-WLD)</h2>
+    <p class="lead">Het e-WLD bevat de inhoud van de drie delen van het <em>Woordenboek van de Limburgse dialecten</em> 
+  die in druk in 35 afleveringen zijn verschenen tussen 1983 en 2005 (zie tabblad Overzichten). 
+  In het e-WLD kunnen geïnteresseerden de Limburgse <b>trefwoorden</b> opzoeken voor bepaalde <b>begrippen</b>, 
+  zoals ‘appelstroop’ of ‘persstro’. Daarbij worden ook de verschillende fonetische varianten, 
+  de zogenoemde <b>dialectopgaven</b>, van de trefwoorden getoond.</p>
 
-<div class="row">
-    <div class="col-md-6">
-        <h2>Aan de slag</h2>
-        <p>
-          De RU-eWLD applicatie is ontwikkeld aan de Technical Service Group van het Humanities Lab aan de Radboud University Nijmegen.
-          Iedereen kan het woordenboek doorbladeren en doorzoeken via de knop <b>Zoeken</b>.
-        </p><p>
-          Wie mee gaat werken aan de inhoud kan toegang vragen via onderstaande link.
-        </p>
-        <p><a class="btn btn-default" href="mailto:e.komen@let.ru.nl">Toegang &raquo;</a></p>
-    </div>
-    <div class="col-md-6">
-        {% if user.is_authenticated %}
-        <h2>Ontwikkelaars</h2>
-        <p>Als ontwikkelaar heeft u toegang tot een aantal extra voorzieningen:
-          <ul>
-            <li>De knop <em>Definities</em> leidt de gebruiker die daar rechten toe heeft tot een dashboard waarvandaan wijzigingen kunnen worden
-      aangebracht in de definities van dialecten, lemma's, trefwoorden en lexemen.</li>
-            <li>De knop <b>Bewerken</b> stelt u in staat om een nieuw woord (een 'dialectopgave') in te voeren of de gegevens voor een bestaand woord te wijzigen. 
-            </li>
-          </ul>
-        </p>
-
-        {% endif %}
-        <p><a class="btn btn-default" href="mailto:e.komen@let.ru.nl">Ik heb een vraag &raquo;</a></p>
-    </div>
+  <p>Het is ook mogelijk alle trefwoorden van één bepaalde Limburgse <b>plaats</b> op te zoeken, 
+  hetzij door te zoeken op de plaatsnaam, hetzij door te zoeken op de <b>Kloekecode</b> van de bewuste plaatsnaam. 
+  De Kloekecodes zijn unieke nummeringen die de dialectoloog G.G. Kloeke in 1926 heeft toegekend aan 
+  de plaatsen en gehuchten in Nederland, Vlaanderen, Frans-Vlaanderen en het noordwesten van Duitsland. 
+  Ze bestaan uit een hoofdletter gevolgd door drie cijfers met soms een kleine letter daaraan toegevoegd. 
+  Omdat de oorspronkelijke nummering in de loop van de tijd is uitgebreid, bestaan er een naast de oude 
+  Kloekecodes ook nieuwe Kloekecodes; in de zoekapplicatie worden beide versies getoond.</p>
+  <p>Het e-WLD bevat een enorme hoeveelheid uniek dialectmateriaal, in de vorige eeuw verzameld 
+  in ruim 300 Limburgse plaatsen ofwel dialecten (iedere plaats vertegenwoordigt een eigen dialect). 
+  Ook uniek voor het Limburgs is de mijnbouw, waaraan aflevering II.5 is gewijd. Zowel in de Nederlandse 
+  als de Belgische <b>mijnen</b> werd een bijzondere vorm van het dialect gesproken, en daarmee vormen die 
+  lokaties een uitbreiding van het Limburgse plaatsennetwerk. 
+  Het is mogelijk specifiek voor de mijntaal te zoeken op de gegevens van deze mijnen.</p>
+  <p>De website met e-WLD is op 17 december feestelijk gelanceerd tijdens een dialectencongres in Venlo.</p>
 </div>
 
 {% endblock %}

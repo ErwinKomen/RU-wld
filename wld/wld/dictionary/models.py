@@ -2,7 +2,7 @@
 
 The wld is the "Dictionary of Limburg Dialects".
 Each wld entry has a gloss, a definition and a number of variants in different dialects.
-The dialects are identified by locations, and the locations are indicated by a Kloeke code.
+The dialects are identified by locations, and the locations are indicated by a 'Kloekecode'.
 
 """
 from django.db import models

@@ -7,7 +7,7 @@
                     <span class="icon-bar"></span>
                 </button>
                 <a href="{% url 'home' %}" class="navbar-brand">
-                eWLD{% if user.is_authenticated %} [{{ user.username }}]{% endif %}
+                e-WLD{% if user.is_authenticated %} [{{ user.username }}]{% endif %}
                 </a>
             </div>
             <div class="navbar-collapse collapse">
@@ -51,6 +51,8 @@
                         <li><a href="{% url 'dialects' %}">Dialecten</a></li>
                         <li><a href="{% url 'minesearch' %}">Mijnen</a></li>
                         <li><a href="{% url 'trefwoordsearch' %}">Trefwoorden</a></li>
+                        <li role="separator" class="divider"></li>
+                        <li><a href="{% url 'afleveringen' %}">Pdf's oorspronkelijke uitgaven</a></li>
                       </ul>
                     </li>
                 </ul>

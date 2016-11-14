@@ -86,7 +86,7 @@ def home(request):
         request,
         'dictionary/index.html',
         {
-            'title':'eWLD',
+            'title':'e-WLD',
             'year':datetime.now().year,
         }
     )
@@ -98,7 +98,7 @@ def contact(request):
         request,
         'dictionary/contact.html',
         {
-            'title':'eWLD contact',
+            'title':'e-WLD contact',
             'message':'Henk van den Heuvel (H.vandenHeuvel@Let.ru.nl)',
             'year':datetime.now().year,
         }
@@ -111,7 +111,20 @@ def about(request):
         request,
         'dictionary/about.html',
         {
-            'title':'eWLD informatie',
+            'title':'e-WLD informatie',
+            'message':'Radboud Universiteit Nijmegen - Dialectenwoordenboek.',
+            'year':datetime.now().year,
+        }
+    )
+
+def afleveringen(request):
+    """Renders the AFLEVERINGEN page."""
+    assert isinstance(request, HttpRequest)
+    return render(
+        request,
+        'dictionary/afleveringen.html',
+        {
+            'title':'e-WLD afleveringen',
             'message':'Radboud Universiteit Nijmegen - Dialectenwoordenboek.',
             'year':datetime.now().year,
         }
@@ -207,7 +220,7 @@ class DictionaryDetailView(DetailView):
         context['app_prefix'] = APP_PREFIX
 
         # Set the title of the application
-        context['title'] = "eWLD detail"
+        context['title'] = "e-WLD detail"
 
         # Return the calculated context
         return context
@@ -282,7 +295,7 @@ class TrefwoordListView(ListView):
         context['app_prefix'] = APP_PREFIX
 
         # Set the title of the application
-        context['title'] = "eWLD trefwoorden"
+        context['title'] = "e-WLD trefwoorden"
 
         # Return the calculated context
         return context
@@ -402,7 +415,7 @@ class LemmaListView(ListView):
         context['app_prefix'] = APP_PREFIX
 
         # Set the title of the application
-        context['title'] = "eWLD begrippen"
+        context['title'] = "e-WLD begrippen"
 
         # Return the calculated context
         return context
@@ -491,7 +504,7 @@ class LocationListView(ListView):
             context['paginateSize'] = paginateSize
 
         # Set the title of the application
-        context['title'] = "eWLD dialecten"
+        context['title'] = "e-WLD plaatsen"
 
         # Return the calculated context
         return context
@@ -573,7 +586,7 @@ class DialectListView(ListView):
             context['paginateSize'] = paginateSize
 
         # Set the title of the application
-        context['title'] = "eWLD dialecten"
+        context['title'] = "e-WLD dialecten"
 
         # Return the calculated context
         return context
@@ -656,7 +669,7 @@ class MijnListView(ListView):
         context['app_prefix'] = APP_PREFIX
 
         # Set the title of the application
-        context['title'] = "eWLD mijnen"
+        context['title'] = "e-WLD mijnen"
 
         # Return the calculated context
         return context
