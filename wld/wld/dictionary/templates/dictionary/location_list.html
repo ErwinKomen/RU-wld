@@ -32,7 +32,7 @@
             <div class="hidden">
                 <input name='sortOrder' class='form-control' value='stad' >
                 <input name='search_type' class='form-control' value='stad'>
-                <input name='submit_type' class='form-control' value='simple'>
+                <input id="submit_type" name='submit_type' class='form-control' value='simple'>
             </div>
 
             <!-- The top layer of searching -->
@@ -64,8 +64,16 @@
                 <div><label>&nbsp;</label></div>
                 <div class='btn-group'>
                     <!-- Make sure no button has the *name* 'submit', otherwise submit() cannot be used -->
-                    <input class='btn btn-primary' type="submit" onclick="do_search(this, 'location', 'simple');" name="submit_type" value="Zoek">
-                    <input class='btn btn-default' type="submit" onclick="do_search(this, 'location', 'Herstel');" name="submit_type" value="Herstel">
+                    <input class='btn btn-primary' type="submit" onclick="do_search(this, 'location', 'simple');" value="Zoek">
+                    <input class='btn btn-default' type="submit" onclick="do_search(this, 'location', 'Herstel');" value="Herstel">
+                    <!-- <input class='btn btn-default' type="submit" onclick="do_search(this, 'trefwoord', 'Csv');" name="submit_type" value="Csv"> -->
+                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" 
+                        aria-haspopup="true" aria-expanded="false">Download <span class="caret"></span></button>
+                    <ul class="dropdown-menu">
+                      <li><a href="#" onclick="do_search(this, 'location', 'Csv');" >Tab gescheiden lijst</a></li>
+                      <li><a href="#" onclick="do_search(this, 'location', 'Excel');" >Excel</a></li>
+                      <li><a href="#" onclick="do_search(this, 'location', 'Html');" >Html</a></li>
+                    </ul>
                 </div>
               </div>
               <div class="col-sm-2">

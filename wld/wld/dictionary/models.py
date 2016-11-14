@@ -152,7 +152,7 @@ class Dialect(models.Model):
     toelichting = models.TextField("Toelichting bij dialect", blank=True)
 
     def __str__(self):
-        return self.stad
+        return self.nieuw
 
 
 class Trefwoord(models.Model):
