@@ -1,30 +1,41 @@
 {% extends "dictionary/layout.html" %}
+{% load staticfiles %}
+
 
 {% block content %}
 
-<h3>Bewerking en digitalisering</h3>
+<div class="row">
 
-<p>In 2015 zijn de eerste twee delen van het Woordenboek van de Limburgse Dialecten gedigitaliseerd 
-  dankzij een subsidie die CLARIN heeft toegekend voor het project ‘CARE: CuRatie en integratie 
-  REgionale woordenboeken’ onder leiding van Nicoline van der Sijs, Henk van den Heuvel en Roeland van Hout (RU).
-</p>
+  <h3>Bewerking en digitalisering</h3>
 
-<p>Eric Sanders (RU) heeft een macro en script ontworpen voor de semi-automatische digitalisering.
-Onderzoeksassistent Aukje Borkent, projectmedewerkster datacuratie Linda van Meel, student-assistenten Jorik van Engeland en Inge Otto, 
-  en stagiairs Maaike Borst en Eline Dimmendaal hebben alle teksten door de macro laten lezen en het 
-  resultaat nauwkeurig handmatig gecorrigeerd. Vrijwilligers Jantien Kettenes-Van den Bosch en 
-  Herman Wiltink hebben voor veel delen een voorcorrectie uitgevoerd.
-</p>
+  <div class="col-md-8">
+    <p>In 2015 zijn de eerste twee delen van het Woordenboek van de Limburgse Dialecten gedigitaliseerd 
+      dankzij een subsidie die CLARIN heeft toegekend voor het project ‘CARE: CuRatie en integratie 
+      REgionale woordenboeken’ onder leiding van Nicoline van der Sijs, Henk van den Heuvel en Roeland van Hout (RU).
+    </p>
 
-<p>Joep Kruijsen, een van de oorspronkelijke redacteuren, heeft zijn enorme knowhow ter beschikking 
-  gesteld voor de digitalisering en veel correctiewerkzaamheden uitgevoerd; zo heeft hij onder 
-  andere alle fonetische tekens uit deel II gecorrigeerd. In 2017 zullen ook alle fonetische tekens 
-  uit deel I worden gecorrigeerd; deze zitten nu nog ongecorrigeerd in de huidige applicatie.
-</p>
+    <p>Eric Sanders (RU) heeft een macro en script ontworpen voor de semi-automatische digitalisering.
+    Onderzoeksassistent Aukje Borkent, projectmedewerkster datacuratie Linda van Meel (met behulp van een subsidie van de Raod veur ’t Limburgs), 
+      student-assistenten Jorik van Engeland en Inge Otto, 
+      en stagiairs Maaike Borst en Eline Dimmendaal hebben alle teksten door de macro laten lezen en het 
+      resultaat nauwkeurig handmatig gecorrigeerd. Vrijwilligers Jantien Kettenes-Van den Bosch en 
+      Herman Wiltink hebben voor veel delen een voorcorrectie uitgevoerd.
+    </p>
 
-<h3>Techniek</h3>
-<p>De e-WLD-applicatie is ontwikkeld door Erwin Komen van de 
-  Technical Support Group van het Humanities Lab van de Radboud Universiteit 
-  onder supervisie van Henk van den Heuvel.</p>
+    <p>Joep Kruijsen, een van de oorspronkelijke redacteuren, heeft zijn enorme knowhow ter beschikking 
+      gesteld voor de digitalisering en veel correctiewerkzaamheden uitgevoerd; zo heeft hij onder 
+      andere alle fonetische tekens uit deel II gecorrigeerd. In 2017 zullen ook alle fonetische tekens 
+      uit deel I worden gecorrigeerd; deze zitten nu nog ongecorrigeerd in de huidige applicatie.
+    </p>
+
+    <h3>Techniek</h3>
+    <p>De e-WLD-applicatie is ontwikkeld door Erwin Komen van de 
+      Technical Support Group van het Humanities Lab van de Radboud Universiteit 
+      onder supervisie van Henk van den Heuvel.</p>
+  </div>
+  <div class="col-md-4">
+    <a target="_blank" href="{% static 'dictionary/content/taalkaart-limburg.jpg' %}"><img src="{% static 'dictionary/content/taalkaart-limburg.jpg' %}" alt="Een indeling van de Limburgse dialecten" title="Een indeling van de Limburgse dialecten" style="float:right;height:380px;" ></a>
+  </div>
+</div>
 
 {% endblock %}

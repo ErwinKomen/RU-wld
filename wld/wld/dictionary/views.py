@@ -217,8 +217,6 @@ def export_html(qs, sFileName):
 
 
 
-
-
 class DictionaryDetailView(DetailView):
     """Details of an entry from the dictionary"""
 
@@ -772,3 +770,21 @@ class MijnListView(ListView):
         return qs
 
 
+class DeelListView(ListView):
+    """Overview of all the [aflevering] books per [deel]"""
+
+    model = Deel
+    template_name = 'dictionary/aflevering_list.html'
+
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get a context
+        context = super(DeelListView, self).get_context_data(**kwargs)
+
+        # Set the prefix
+        context['app_prefix'] = APP_PREFIX
+
+        # Set the title of the application
+        context['title'] = "e-WLD afleveringen"
+
+        # Return the calculated context
+        return context

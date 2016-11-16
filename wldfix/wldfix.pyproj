@@ -14,7 +14,7 @@
     <RootNamespace>wldfix</RootNamespace>
     <IsWindowsApplication>False</IsWindowsApplication>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>-i "u:/data files/tg/dialecten/WLD-II-2 genoveva-utf8.txt" -o "u:/data files/tg/dialecten/fixtures.json"</CommandLineArguments>
+    <CommandLineArguments>-p "aflevering" -i "u:/data files/tg/dialecten/pdf-oview.tsv" -o "d:/data files/vs2010/projects/RU-wld/pdf-oview.json"</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <InterpreterId>{b2e56c51-badd-4a4a-bde8-50a5ee454d8b}</InterpreterId>
     <InterpreterVersion>3.5</InterpreterVersion>

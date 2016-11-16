@@ -104,3 +104,4 @@ class MijnSearchForm(forms.ModelForm):
 
         model = Mijn
         fields = ('naam', 'locatie', 'toelichting')
+

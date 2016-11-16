@@ -53,5 +53,8 @@ admin.site.register(Trefwoord, TrefwoordAdmin)
 admin.site.register(Mijn)
 admin.site.register(Aflevering)
 
+# -- Components of a publication
+admin.site.register(Deel)
+
 # -- dictionary as a whole
 admin.site.register(Entry, EntryAdmin)

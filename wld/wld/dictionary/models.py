@@ -8,9 +8,10 @@ The dialects are identified by locations, and the locations are indicated by a '
 from django.db import models
 from django.contrib.auth.models import User
 from datetime import datetime
+from wld.settings import APP_PREFIX
 
 MAX_IDENTIFIER_LEN = 10
-MAX_LEMMA_LEN = 50
+MAX_LEMMA_LEN = 100
 
 
 
@@ -90,6 +91,16 @@ def get_ident(qs):
             idt = m2m_identifier(qs)
     return idt
 
+def int_to_roman(input):
+   """Convert an integer to Roman numerals."""
+   ints = (1000, 900,  500, 400, 100,  90, 50,  40, 10,  9,   5,  4,   1)
+   nums = ('M',  'CM', 'D', 'CD','C', 'XC','L','XL','X','IX','V','IV','I')
+   result = ""
+   for i in range(len(ints)):
+      count = int(input / ints[i])
+      result += nums[i] * count
+      input -= ints[i] * count
+   return result
   
 
 class HelpChoice(models.Model):
@@ -165,14 +176,63 @@ class Trefwoord(models.Model):
         return self.woord
 
 
+class Deel(models.Model):
+    """Deel van de woordenboekencollectie"""
+
+    # Titel van dit deel
+    titel = models.CharField("Volledige titel", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    # Nummer van dit deel
+    nummer = models.IntegerField("Nummer", blank=False, default=0)
+    # Allow for comments for this 'deel'
+    toelichting = models.TextField("Toelichting bij dit deel", blank=True)
+
+    def __str__(self):
+        return self.titel
+
+    def romeins(self):
+        return int_to_roman(self.nummer)
+
+
 class Aflevering(models.Model):
     """Aflevering van een woordenboek"""
 
-    naam = models.CharField("Aflevering", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    # The 'naam' is the full name of the PDF (without path) in which information is stored
+    naam = models.CharField("PDF naam", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    # The 'deel' is the main category of the books
+    deel = models.ForeignKey(Deel, blank=False)
+    # The 'sectie' is a sub-category used for instance in deel 3
+    sectie = models.IntegerField("Sectie (optioneel)", blank=True, null=True)
+    # The 'aflnum' is the actual number of the aflevering 
+    aflnum = models.IntegerField("Aflevering", blank=False, default=0)
+    # A field that indicates this item also has an Inleiding
+    inleiding = models.BooleanField("Heeft inleiding", blank=False, default=False)
+    # The year of publication of the book
+    jaar = models.IntegerField("Jaar van publicatie", blank=False, default=1900)
+    # The authors for this book
+    auteurs = models.CharField("Auteurs", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    # The title of this aflevering
+    afltitel = models.CharField("Boektitel", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    # The title of this sectie
+    sectietitel = models.CharField("Sectietitel", blank=True, max_length=MAX_LEMMA_LEN, default="")
+    # The place(s) of publication
+    plaats = models.CharField("Plaats van publicatie", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    # Any additional information
     toelichting = models.TextField("Toelichting bij aflevering", blank=True)
 
     def __str__(self):
         return self.naam
+
+    def get_number(self):
+        if self.sectie == None:
+            iNumber = self.aflnum
+        else:
+            iNumber = self.sectie * 10 + self.aflnum
+        return iNumber
+
+    def get_pdf(self):
+        # sPdf =  "{}/static/dictionary/content/pdf{}/{}".format(APP_PREFIX, self.deel.nummer,self.naam)
+        sPdf =  "wld-{}/{}".format(self.deel.nummer,self.naam)
+        return sPdf
 
 
 class Mijn(models.Model):
@@ -230,3 +290,5 @@ class Entry(models.Model):
 
     def get_tsv(self):
         return self.lemma.gloss + '\t' + self.trefwoord.woord + '\t' + self.woord + '\t' + self.dialect.nieuw + '\t' + self.aflevering.naam
+
+

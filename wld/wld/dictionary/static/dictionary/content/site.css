@@ -119,6 +119,26 @@ table tbody tr:hover {
   font-weight: bold;
 }
 
+.citation-intro {
+  
+}
+.citation-number {
+
+}
+.citation-author {
+  color: darkblue;
+}
+.citation-title-sectietitel {
+  color: darkred;
+}
+.citation-title-afltitel {
+  color: darkcyan
+}
+.citation-publication {
+
+}
+
+
 .pagination {
   margin: 5px 0;
 }

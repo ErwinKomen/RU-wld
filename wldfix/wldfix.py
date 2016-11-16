@@ -58,6 +58,8 @@ errHandle =  ErrHandle()
 def main(prgName, argv) :
     flInput = ''        # input file name
     flOutput = ''       # output file name
+    sPart = ''          # The part we are supposed to process: 'entries' or 'afleveringen'
+    oAflevering = {}    # Details of this aflevering
 
     try:
         # Adapt the program name to exclude the directory
@@ -65,14 +67,19 @@ def main(prgName, argv) :
         if (index > 0) :
             prgName = prgName[index+1:]
 
-        sSyntax = prgName + ' -i <inputfile> -o <outputfile>'
+        sSyntax = prgName + ' -p <part> -i <inputfile> -o <outputfile>'
         # get all the arguments
         try:
             # Get arguments and options
-            opts, args = getopt.getopt(argv, "hi:o:", ["-inputfile=","-outputfile="])
+            opts, args = getopt.getopt(argv, "hp:i:o:d:s:a:", ["-part=","-inputfile=","-outputfile=","-deel=", "-sectie=", "-aflevering="])
         except getopt.GetoptError:
             print(sSyntax)
             sys.exit(2)
+
+        # Initialise the aflevering details
+        oAflevering['deel'] = ""
+        oAflevering['sectie'] = ""
+        oAflevering['aflevering'] = ""
 
         # Walk all the arguments
         for opt, arg in opts:
@@ -83,6 +90,14 @@ def main(prgName, argv) :
                 flInput = arg
             elif opt in ("-o", "--outputfile"):
                 flOutput = arg
+            elif opt in ("-p", "--part"):
+                sPart = arg
+            elif opt in ("-d", "--deel"):
+                oAflevering['deel'] = arg
+            elif opt in ("-s", "--sectie"):
+                oAflevering['sectie'] = arg
+            elif opt in ("-a", "--aflevering"):
+                oAflevering['aflevering'] = arg
 
         # Check if all arguments are there
         if (flInput == '' or flOutput == ''):
@@ -92,8 +107,8 @@ def main(prgName, argv) :
         errHandle.Status('Input is "' + flInput + '"')
         errHandle.Status('Output is "' + flOutput + '"')
 
-        # Call the function that converst input into output
-        if (wldfix(flInput, flOutput)) :
+        # Call the function that converts input into output
+        if (wldfix(flInput, flOutput, sPart, oAflevering)) :
             errHandle.Status("Ready")
         else :
             errHandle.DoError("Could not complete")
@@ -147,11 +162,26 @@ class Dialect:
         self.pk = iPk
 
 
+class Deel:
+    """Deel"""
+
+    def __init__(self, iPk, sTitel, iNummer, sToelichting):
+        self.titel = sTitel
+        self.nummer = iNummer
+        self.toelichting = sToelichting
+        self.pk = iPk
+
+
 class Aflevering:
     """Aflevering"""
 
-    def __init__(self, iPk, sAflevering, sToelichting):
-        self.naam = sAflevering
+    def __init__(self, iPk, sPdfNaam, iDeel, iSectie, iAflevering, iJaar, sToelichting):
+        self.naam = sPdfNaam
+        self.deel = iDeel
+        if (iSectie != None):
+            self.sectie = iSectie
+        self.aflevering = iAflevering
+        self.jaar = iJaar
         self.toelichting = sToelichting
         self.pk = iPk
 
@@ -182,9 +212,10 @@ class Entry:
 # Name :    wldfix
 # Goal :    Create fixtures for the collection bank
 # History:
-# 18/jun/2016    ERK Created
+# 18/jun/2016   ERK Created
+# 16/nov/2016   ERK Added [sPart] and [oAflevering] arguments
 # ----------------------------------------------------------------------------------
-def wldfix(csv_file, output_file):
+def wldfix(csv_file, output_file, sPart, oAflevering):
     try:
         # Validate: input file exists
         if (not os.path.isfile(csv_file)): return False
@@ -195,6 +226,9 @@ def wldfix(csv_file, output_file):
         iPkTrefw = 1        # The PK for each Trefwoord
         iPkDialect = 1      # The PK for each Dialect
         iPkEntry = 1        # The PK for each Entry
+        iPkAfl = 1          # The PK for each Aflevering
+        iPkDeel = 1         # The PK for each Deel
+        lstDeel = []        # List of deel afleveringen
         lstLemma = []       # List of lemma entries
         lstTrefw = []       # List of trefwoord entries
         lstDialect = []     # list of dialect entries
@@ -219,66 +253,122 @@ def wldfix(csv_file, output_file):
                 arPart = strLine.split('\t')
                 # IF this is the first line or an empty line, then skip
                 if (not bFirst):
-                    # Get a lemma number from this
-                    iPkLemma = findItem(lstLemma, 'name', arPart[0])
-                    if (iPkLemma<0):
+                    # Determine what part we are processing
+                    if sPart == "aflevering":
+                        # Process this line of aflevering-details
+                        #   0  - PDF name    (string)
+                        #   1  - deel        (int)
+                        #   2  - sectie      (int, optional)
+                        #   3  - aflnum      (int)
+                        #   4  - jaar        (int)
+                        #   5  - auteurs     (string)
+                        #   6  - afltitel    (string)
+                        #   7  - sectietitel (string)
+                        #   8  - plaats      (string)
+                        #   9  - toelichting (string)
+                        #  10  - deeltitel   (string)
 
-                        # Create a new lemma entry
-                        iPkLemma = len(lstLemma)+1
-                        newItem = Lemma(iPkLemma, arPart[0], arPart[1], arPart[2])
-                        lstLemma.append(newItem)
+                        # Determine the Sectie
+                        iSectie = arPart[2]
+                        if iSectie == "":
+                            iSectie = None
 
-                        # Add this lemma to the fixtures
-                        oFields = {"gloss":         newItem.name,
-                                   "toelichting":   newItem.toelichting,
-                                   "bronnenlijst":  newItem.bronnen}
-                        oEntry = {"model": "dictionary.lemma", 
-                                  "pk": iPkLemma, "fields": oFields}
-                        arFixture.append(oEntry)
+                        # get a 'deel' identifier
+                        iPkDeel = findItem(lstDeel, 'titel', arPart[10])
+                        if (iPkDeel<0):
+                            iPkDeel = len(lstDeel)+1
+                            newItem = Deel(iPkDeel, arPart[10], arPart[1], "")
+                            lstDeel.append(newItem)
 
-                    # get a dialect number
-                    iPkDialect = findItem(lstDialect, 'code', arPart[7])
-                    if (iPkDialect<0):
-                        iPkDialect = len(lstDialect)+1
-                        newItem = Dialect(iPkDialect, arPart[9], arPart[7], arPart[8], arPart[10])
-                        lstDialect.append(newItem)
+                            # Add this dialect to the fixtures
+                            oFields = {"titel":         newItem.titel,
+                                       "nummer":        newItem.nummer,
+                                       "toelichting":   newItem.toelichting}
+                            oDeel = {"model": "dictionary.deel", 
+                                      "pk": iPkDeel, "fields": oFields}
+                            arFixture.append(oDeel)
 
-                        # Add this dialect to the fixtures
-                        oFields = {"stad":          newItem.stad,
-                                   "nieuw":         newItem.nieuw,
-                                   "toelichting":   newItem.toelichting,
-                                   "code":          newItem.code}
-                        oEntry = {"model": "dictionary.dialect", 
-                                  "pk": iPkDialect, "fields": oFields}
-                        arFixture.append(oEntry)
+                        # Add the whole aflevering to the fixtures
+                        oFields = {"naam":        arPart[0],
+                                   "deel":        arPart[1],
+                                   "sectie":      iSectie,
+                                   "aflnum":      arPart[3],
+                                   "jaar":        arPart[4],
+                                   "auteurs":     arPart[5],
+                                   "afltitel":    arPart[6],
+                                   "sectietitel": arPart[7],
+                                   "plaats":      arPart[8],
+                                   "toelichting": arPart[9],
+                                   "deel":        iPkDeel}
+                        # Process this aflevering
+                        oAflevering = {"model": "dictionary.aflevering", 
+                                  "pk": iPkAfl, "fields": oFields}
+                        arFixture.append(oAflevering)
 
-                    # Get a trefwoord number
-                    iPkTrefw = findItem(lstTrefw, 'woord', arPart[3])
-                    if (iPkTrefw<0):
-                        iPkTrefw = len(lstTrefw)+1
-                        newItem = Trefwoord(iPkTrefw, arPart[3], arPart[4])
-                        lstTrefw.append(newItem)
+                        # Make sure PK is incremented
+                        iPkAfl += 1
+                    else:
+                        # Assuming this 'part' is entering an ENTRY
+                        # Get a lemma number from this
+                        iPkLemma = findItem(lstLemma, 'name', arPart[0])
+                        if (iPkLemma<0):
 
-                        # Add this trefwoord to the fixtures
-                        oFields = {"woord":         newItem.woord,
-                                   "toelichting":   newItem.toelichting}
-                        oEntry = {"model": "dictionary.trefwoord", 
-                                  "pk": iPkTrefw, "fields": oFields}
-                        arFixture.append(oEntry)
+                            # Create a new lemma entry
+                            iPkLemma = len(lstLemma)+1
+                            newItem = Lemma(iPkLemma, arPart[0], arPart[1], arPart[2])
+                            lstLemma.append(newItem)
+
+                            # Add this lemma to the fixtures
+                            oFields = {"gloss":         newItem.name,
+                                       "toelichting":   newItem.toelichting,
+                                       "bronnenlijst":  newItem.bronnen}
+                            oEntry = {"model": "dictionary.lemma", 
+                                      "pk": iPkLemma, "fields": oFields}
+                            arFixture.append(oEntry)
+
+                        # get a dialect number
+                        iPkDialect = findItem(lstDialect, 'code', arPart[7])
+                        if (iPkDialect<0):
+                            iPkDialect = len(lstDialect)+1
+                            newItem = Dialect(iPkDialect, arPart[9], arPart[7], arPart[8], arPart[10])
+                            lstDialect.append(newItem)
+
+                            # Add this dialect to the fixtures
+                            oFields = {"stad":          newItem.stad,
+                                       "nieuw":         newItem.nieuw,
+                                       "toelichting":   newItem.toelichting,
+                                       "code":          newItem.code}
+                            oEntry = {"model": "dictionary.dialect", 
+                                      "pk": iPkDialect, "fields": oFields}
+                            arFixture.append(oEntry)
+
+                        # Get a trefwoord number
+                        iPkTrefw = findItem(lstTrefw, 'woord', arPart[3])
+                        if (iPkTrefw<0):
+                            iPkTrefw = len(lstTrefw)+1
+                            newItem = Trefwoord(iPkTrefw, arPart[3], arPart[4])
+                            lstTrefw.append(newItem)
+
+                            # Add this trefwoord to the fixtures
+                            oFields = {"woord":         newItem.woord,
+                                       "toelichting":   newItem.toelichting}
+                            oEntry = {"model": "dictionary.trefwoord", 
+                                      "pk": iPkTrefw, "fields": oFields}
+                            arFixture.append(oEntry)
                     
 
-                    # Add the whole entry to the fixtures
-                    oFields = {"lemma":         iPkLemma,
-                               "dialect":       iPkDialect,
-                               "trefwoord":     iPkTrefw,
-                               "woord":         arPart[5],
-                               "toelichting":   arPart[6]}
-                    oEntry = {"model": "dictionary.entry", 
-                              "pk": iPkEntry, "fields": oFields}
-                    arFixture.append(oEntry)
+                        # Add the whole entry to the fixtures
+                        oFields = {"lemma":         iPkLemma,
+                                   "dialect":       iPkDialect,
+                                   "trefwoord":     iPkTrefw,
+                                   "woord":         arPart[5],
+                                   "toelichting":   arPart[6]}
+                        oEntry = {"model": "dictionary.entry", 
+                                  "pk": iPkEntry, "fields": oFields}
+                        arFixture.append(oEntry)
 
-                    # Make sure PK is incremented
-                    iPkEntry += 1
+                        # Make sure PK is incremented
+                        iPkEntry += 1
                 else:
                     # Indicate that the first item has been had
                     bFirst = False

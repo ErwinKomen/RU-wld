@@ -1,0 +1,55 @@
+﻿{% extends "dictionary/layout.html" %}
+
+{% load staticfiles %}
+
+{% block content %}
+
+
+<div class="aflevering-overview">
+
+  <div class="row">
+    <a target="_blank" href="{% static 'dictionary/content/boeken-wld.jpg' %}"><img src="{% static 'dictionary/content/boeken-wld.jpg' %}" alt="Alle delen op een rij" title="Alle delen op een rij" style="height:250px;"></a>
+  </div>
+
+  <p><span class="aflevering">&nbsp;</span></p>
+
+  {% for deel in object_list %}
+    <p><b>
+      <span>Woordenboek van de Limburgse dialecten, Deel {{deel.nummer}}.</span>
+      <span class="deel">{{deel.titel}}</span>
+    </b></p>
+
+    <!-- Take all the [aflevering] elements for this [deel] and divide them over their [lemma] -->
+    {% regroup deel.aflevering_set.all|dictsort:"get_number" by naam as afl_list %}
+    {% for afl in afl_list %}
+      <p class="citation-line">
+        {% for deze in afl.list %}
+          {% spaceless %}
+          <span class="citation-intro">WLD {{deel.romeins}}</span>
+          
+          <span class="citation-number">{% if deze.sectietitel != "" %}, {{deze.sectie}}.{% else %}. {% endif %}{{deze.aflnum}}: </span>
+          <span class="citation-author">{{deze.auteurs}}, </span>
+          <i>
+            <span class="citation-title-intro">WLD {{deel.romeins}}, </span>
+            {% if deze.inleiding %}<span class="citation-title-inleiding">Inleiding en </span>{% endif %}
+            {% if deze.sectietitel != "" %}
+            <span class="citation-title-sectienummer">Sectie {{deze.sectie}}, </span>
+            <span class="citation-title-sectietitel">{{deze.sectietitel}}, </span>
+            {% endif %}
+            <span class="citation-title-aflnum">Aflevering {{deze.aflnum}}. </span>
+            <span class="citation-title-afltitel">{{deze.afltitel}}</span>
+          </i>
+          <span class="citation-publication">, {{deze.plaats}} {{deze.jaar}}.</span>
+          {% endspaceless %}
+          <span class="citation-pdf">(<a href="/{{app_prefix}}static/dictionary/content/pdf/{{deze.get_pdf}}">pdf</a>)</span>
+        {% endfor %}
+      </p>
+    {% endfor %}
+
+  {% endfor %}
+
+</div>
+
+
+{% endblock %}
+
