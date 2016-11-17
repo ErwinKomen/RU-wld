@@ -25,8 +25,12 @@ APP_PREFIX = "dd/"
 if "d:" in WRITABLE_DIR or "D:" in WRITABLE_DIR:
     APP_PREFIX = ""
 elif "/scratch" in WRITABLE_DIR:
-    APP_PREFIX = "ewld/"
-    admin.site.site_url = '/ewld'
+    # Previous configuration of http://applejack.science.ru.nl/ewld
+    # APP_PREFIX = "ewld/"
+    # admin.site.site_url = '/ewld'
+    # New configuration of http://e-wld.nl
+    APP_PREFIX = ""
+    admin.site.site_url = '/'
 else:
     admin.site.site_url = '/dd'
 
