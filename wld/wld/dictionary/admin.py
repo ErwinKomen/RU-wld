@@ -2,6 +2,7 @@ from django.contrib import admin
 from django import forms
 from django.core import serializers
 from django.contrib.contenttypes.models import ContentType
+from django.forms import TextInput
 from wld.dictionary.models import *
 import logging
 
@@ -46,12 +47,26 @@ class EntryAdmin(admin.ModelAdmin):
     list_filter = ['lemma', 'dialect']
 
 
+class AfleveringAdmin(admin.ModelAdmin):
+    formfield_overrides = {
+            models.CharField: {'widget': TextInput(attrs={'size': '50'})}
+        }
+    fieldsets = ( ('Editable', {'fields': ('naam', 'deel', 'sectie', 'aflnum', 'inleiding', 'jaar', 'auteurs',
+                                           'afltitel', 'sectietitel', 'plaats', 'toelichting')}),
+                )
+
+
+class InfoAdmin(admin.ModelAdmin):
+    list_display = ['deel', 'sectie', 'aflnum', 'csv_file', 'processed']
+
+
 # -- Components of an entry
 admin.site.register(Lemma, LemmaAdmin)
 admin.site.register(Dialect, DialectAdmin)
 admin.site.register(Trefwoord, TrefwoordAdmin)
+admin.site.register(Aflevering, AfleveringAdmin)
 admin.site.register(Mijn)
-admin.site.register(Aflevering)
+admin.site.register(Info, InfoAdmin)
 
 # -- Components of a publication
 admin.site.register(Deel)

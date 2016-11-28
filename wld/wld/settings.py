@@ -17,9 +17,11 @@ from django.contrib import admin
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WRITABLE_DIR = os.path.abspath(os.path.join(BASE_DIR, "../../writable/database/"))
+MEDIA_ROOT = os.path.abspath(os.path.join(BASE_DIR, "../../writable/media/"))
 if "RU-wld\\writable" in WRITABLE_DIR:
     # Need another string
     WRITABLE_DIR = os.path.abspath(os.path.join(BASE_DIR, "../../../writable/database/"))
+    MEDIA_ROOT = os.path.abspath(os.path.join(BASE_DIR, "../../../writable/media/"))
 
 APP_PREFIX = "dd/"
 if "d:" in WRITABLE_DIR or "D:" in WRITABLE_DIR:

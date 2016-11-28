@@ -156,3 +156,9 @@ class EntryListView(ListView):
         # Return the resulting filtered and sorted queryset
         return qs
 
+
+class InfoListView(ListView):
+
+    model = Info
+    template_name = 'dictionary/admin_info_list.html'
+

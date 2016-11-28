@@ -40,6 +40,13 @@ class EntrySearchForm(forms.ModelForm):
         fields = ('lemma', 'dialect', 'trefwoord', 'woord')
 
 
+class CsvImportForm(forms.Form):
+    success = forms.CharField(label=_("Status"), initial="")
+    csvfile = forms.FileField(
+        label="Selecteer een CSV bestand", 
+        help_text="Het bestand moet de [tab] als scheidingsteken gebruiken")
+
+
 class LemmaSearchForm(forms.ModelForm):
 
     search = forms.CharField(label=_("Begrip"))

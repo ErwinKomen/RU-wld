@@ -19,7 +19,7 @@ admin.autodiscover()
 # Imports for my own project
 import wld.dictionary.forms
 from wld.dictionary.views import *
-from wld.dictionary.adminviews import EntryListView
+from wld.dictionary.adminviews import EntryListView, InfoListView
 
 
 # set admin site names
@@ -33,15 +33,13 @@ urlpatterns = [
     url(r'^$', wld.dictionary.views.home, name='home'),
     url(r'^contact$', wld.dictionary.views.contact, name='contact'),
     url(r'^about', wld.dictionary.views.about, name='about'),
-    # url(r'^afleveringen', wld.dictionary.views.afleveringen, name='afleveringen'),
     url(r'^delen', DeelListView.as_view(), name='delen'),
     url(r'^definitions$', RedirectView.as_view(url='/'+pfx+'admin/'), name='definitions'),
     url(r'^entries$', RedirectView.as_view(url='/'+pfx+'admin/dictionary/entry/'), name='entries'),
+    url(r'^entries/import/$', permission_required('dictionary.search_gloss')(InfoListView.as_view()), name='admin_import_list'),
     url(r'^lemmas$', LemmaListView.as_view(), name='lemmas'),
     url(r'^lemma/search/$', LemmaListView.as_view(), name='lemmasearch'),
-    # url(r'^lemma/csv/$', LemmaListView.as_view(), name='lemmacsv'),
     url(r'^trefwoord/search/$', TrefwoordListView.as_view(), name='trefwoordsearch'),
-    # url(r'^trefwoord/csv/$', TrefwoordListView.as_view(), name='trefwoordcsv'),
     url(r'^dialects', DialectListView.as_view(), name='dialects'),
     url(r'^dialect/search/$', DialectListView.as_view(), name='dialectsearch'),
     url(r'^locations', LocationListView.as_view(), name='locations'),

@@ -6,6 +6,7 @@ from django.views.generic.detail import DetailView
 from django.views.generic.list import ListView
 from django.shortcuts import get_object_or_404, render
 from django.http import HttpRequest, HttpResponse
+from django.core.urlresolvers import reverse
 from django.template import RequestContext, loader
 from django.db.models import Q
 from datetime import datetime
@@ -16,6 +17,7 @@ import operator
 import re
 import fnmatch
 import csv
+import codecs
 from wld.dictionary.models import *
 from wld.dictionary.forms import *
 #from wld.dictionary.adminviews import order_queryset_by_sort_order
@@ -214,7 +216,6 @@ def export_html(qs, sFileName):
     response['Content-Disposition'] = 'attachment; filename="'+sFileName+'.htm"'
      
     return response
-
 
 
 class DictionaryDetailView(DetailView):
