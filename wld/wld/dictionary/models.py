@@ -7,8 +7,10 @@ The dialects are identified by locations, and the locations are indicated by a '
 """
 from django.db import models
 from django.contrib.auth.models import User
+from django.db import transaction
 from datetime import datetime
 from wld.settings import APP_PREFIX
+import sys
 import codecs
 import html
                 
@@ -184,6 +186,175 @@ def handle_uploaded_csv(fPath, iDeel, iSectie, iAflevering):
     # return correctly
     return True
   
+def bulk_uploaded_csv(fPath, iDeel, iSectie, iAflevering):
+    """Process a CSV with entry definitions in a two-pass method"""
+
+    # Pass 1: read and prepare all the [lemma], [dialect], [trefwoord] and [aflevering] details
+    lstLemma = []
+    lstDialect = []
+    lstTrefwoord = []
+    lstAflevering = []
+
+    # Open it with the appropriate codec
+    f = codecs.open(fPath, "r", encoding='utf-8-sig')
+    bEnd = False
+    bFirst = True
+    iCounter = 0
+    with transaction.atomic():
+        while (not bEnd):
+            # Read one line
+            strLine = f.readline()
+            if (strLine == ""):
+                break
+            strLine = str(strLine)
+            strLine = strLine.strip(" \n\r")
+            # Only process substantial lines
+            if (strLine != ""):
+                # Split the line into parts
+                arPart = strLine.split('\t')
+                # Print a counter
+                msg = "bulk pass1: " + str(iCounter)
+                print(msg, file=sys.stderr)
+                iCounter += 1
+                # IF this is the first line or an empty line, then skip
+                if bFirst:
+                    # Check if the line starts correctly
+                    if arPart[0] != 'Lemmanummer':
+                        # The first line does not start correctly -- return false
+                        return False
+                    # Indicate that the first item has been had
+                    bFirst = False
+                else:
+                    # Assuming this is entering an ENTRY
+                    # Fields overview:
+                    #  0 Lemmanummer        -   
+                    #  1 Lemmatitel         - lemma.gloss
+                    #  2 Vraag(tekst)       -
+                    #  3 Trefwoord          - trefwoord.woord
+                    #  4 Lexicale variant   - 
+                    #  5 Fonetische variant - entry.woord
+                    #  6 Vragenlijst        - lemma.bronnenlijst
+                    #  7 Vraagnummer        - 
+                    #  8 Boek               - lemma.bronnenlijst
+                    #  9 Boekpagina         -
+                    # 10 Plaatsnaam         - dialect.stad
+                    # 11 Regio              -
+                    # 12 Subregio           -
+                    # 13 Informantencode    -
+                    # 14 Commentaar         - entry.toelichting
+                    # 15 Plaatscode (Kloeke)- dialect.nieuw
+
+                    # Find out which lemma this is
+                    iPkLemma = Lemma.get_item({'gloss': arPart[1], 
+                                               'bronnenlijst': arPart[6], 
+                                               'boek': arPart[7]})
+                    #if iPkLemma < 0:
+                    #    print("Add lemma {}, {}, {}".format(arPart[1], arPart[6], arPart[7]), file=sys.stderr)
+                    #    lstLemma.append(Lemma(gloss=arPart[1], bronnenlijst=arPart[6], boek=arPart[7]))
+
+                    # Find out which dialect this is
+                    iPkDialect = Dialect.get_item({'stad': arPart[10], 
+                                                   'nieuw': arPart[15]})
+                    #if iPkDialect < 0:
+                    #    lstDialect.append(Dialect(stad=arPart[10], nieuw=arPart[15]))
+
+                    # Find out which trefwoord this is
+                    iPkTrefwoord = Trefwoord.get_item({'woord': arPart[3]})
+                    #if iPkTrefwoord < 0:
+                    #    lstTrefwoord.append(Trefwoord(woord=arPart[3]))
+
+                    # Get an entry to aflevering
+                    iPkAflevering = Aflevering.get_item({'deel': iDeel, 
+                                                         'sectie': iSectie, 
+                                                         'aflnum': iAflevering})
+                    #if iPkAflevering < 0:
+                    #    if iSectie == None:
+                    #        lstAflevering.append(Aflevering(deel=iDeel, aflnum=iAflevering))
+                    #    else:
+                    #        lstAflevering.append(Aflevering(deel=iDeel, sectie=iSectie, aflnum=iAflevering))
+
+    # CLose the input file
+    f.close()
+
+    # Perform bulk-processing of Lemma, Dialect, Trefwoord and Aflevering
+    Lemma.objects.bulk_create(lstLemma)
+    Dialect.objects.bulk_create(lstDialect)
+    Trefwoord.objects.bulk_create(lstTrefwoord)
+    if lstAflevering.count > 0:
+        iStop = 1
+        Aflevering.objects.bulk_create(lstAflevering)
+
+
+    # Open it with the appropriate codec
+    f = codecs.open(fPath, "r", encoding='utf-8-sig')
+    bEnd = False
+    bFirst = True
+    iCounter = 0
+    while (not bEnd):
+        # Read one line
+        strLine = f.readline()
+        if (strLine == ""):
+            break
+        strLine = str(strLine)
+        strLine = strLine.strip(" \n\r")
+        # Only process substantial lines
+        if (strLine != ""):
+            # Print a counter
+            msg = "bulk pass2: " + str(iCounter)
+            print(msg, file=sys.stderr)
+            iCounter += 1
+            # Split the line into parts
+            arPart = strLine.split('\t')
+            # IF this is the first line or an empty line, then skip
+            if bFirst:
+                # Check if the line starts correctly
+                if arPart[0] != 'Lemmanummer':
+                    # The first line does not start correctly -- return false
+                    return False
+                # Indicate that the first item has been had
+                bFirst = False
+            else:
+                # Find out which lemma this is
+                iPkLemma = Lemma.get_pk({'gloss': arPart[1], 
+                                           'bronnenlijst': arPart[6], 
+                                           'boek': arPart[7]})
+                # Find out which dialect this is
+                iPkDialect = Dialect.get_pk({'stad': arPart[10], 
+                                               'nieuw': arPart[15]})
+                # Find out which trefwoord this is
+                iPkTrefwoord = Trefwoord.get_pk({'woord': arPart[3]})
+                # Get an entry to aflevering
+                iPkAflevering = Aflevering.get_pk({'deel': iDeel, 
+                                                     'sectie': iSectie, 
+                                                     'aflnum': iAflevering})
+
+
+                # Process this entry
+                sDialectWoord = arPart[5]
+                sDialectWoord = html.unescape(sDialectWoord).strip('"')
+                iPkEntry = Entry.get_pk({'woord': sDialectWoord, 
+                                           'toelichting': arPart[14], 
+                                           'lemma': iPkLemma, 
+                                           'dialect': iPkDialect, 
+                                           'trefwoord': iPkTrefwoord,
+                                           'aflevering': iPkAflevering})
+                if iPkEntry < 0:
+                    lstEntry.append(Entry(woord=sDialectWoord, 
+                                          toelichting= arPart[14], 
+                                          lemma= iPkLemma, 
+                                          dialect= iPkDialect, 
+                                          trefwoord= iPkTrefwoord,
+                                          aflevering= iPkAflevering))
+
+    # CLose the input file
+    f.close()
+
+    # Save all the new entries
+    Entry.objects.bulk_create(lstEntry)
+
+    # return correctly
+    return True
+  
 
 class HelpChoice(models.Model):
     """Define the URL to link to for the help-text"""
@@ -229,13 +400,25 @@ def get_help(field):
 class Lemma(models.Model):
     """Lemma"""
 
-    gloss = models.CharField("Gloss voor dit lemma", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    gloss = models.CharField("Gloss voor dit lemma", db_index=True, blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
     toelichting = models.TextField("Omschrijving van het lemma", blank=True)
-    bronnenlijst = models.TextField("Bronnenlijst bij dit lemma", blank=True)
-    boek = models.TextField("Boekaanduiding", blank=True)
+    bronnenlijst = models.TextField("Bronnenlijst bij dit lemma", db_index=True, blank=True)
+    boek = models.TextField("Boekaanduiding", db_index=True, null=True,blank=True)
 
     def __str__(self):
         return self.gloss
+
+    def get_pk(self):
+        """Check if this lemma exists and return a PK"""
+        qs = Lemma.objects.filter(gloss__iexact=self['gloss'], 
+                                  bronnenlijst__iexact=self['bronnenlijst'], 
+                                  boek__iexact=self['boek'])
+        if len(qs) == 0:
+            iPk = -1
+        else:
+            iPk = qs[0].pk
+
+        return iPk
 
     def get_item(self):
         # Get the parameters
@@ -266,13 +449,24 @@ class Dialect(models.Model):
     class Meta:
         verbose_name_plural = "Dialecten"
 
-    stad = models.CharField("Dialectlocatie", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    stad = models.CharField("Dialectlocatie", db_index=True, blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
     code = models.CharField("Plaatscode (Kloeke)", blank=False, max_length=6, default="xxxxxx")
-    nieuw = models.CharField("Plaatscode (Nieuwe Kloeke)", blank=False, max_length=6, default="xxxxxx")
+    nieuw = models.CharField("Plaatscode (Nieuwe Kloeke)", db_index=True, blank=False, max_length=6, default="xxxxxx")
     toelichting = models.TextField("Toelichting bij dialect", blank=True)
 
     def __str__(self):
         return self.nieuw
+
+    def get_pk(self):
+        """Check if this dialect exists and return a PK"""
+        qs = Dialect.objects.filter(stad__iexact=self['stad'], 
+                                  nieuw__iexact=self['nieuw'])
+        if len(qs) == 0:
+            iPk = -1
+        else:
+            iPk = qs[0].pk
+
+        return iPk
 
     def get_item(self):
         # Get the parameters
@@ -301,11 +495,23 @@ class Trefwoord(models.Model):
     class Meta:
         verbose_name_plural = "Trefwoorden"
 
-    woord = models.CharField("Trefwoord", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    woord = models.CharField("Trefwoord", db_index=True, blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
     toelichting = models.TextField("Toelichting bij trefwoord", blank=True)
 
     def __str__(self):
         return self.woord
+
+    def get_pk(self):
+        """Check if this dialect exists and return a PK"""
+        qs = Trefwoord.objects.filter(woord__iexact=self['woord'])
+        if 'toelichting' in self: 
+            qs = qs.filter(toelichting__iexact=self['toelichting'])
+        if len(qs) == 0:
+            iPk = -1
+        else:
+            iPk = qs[0].pk
+
+        return iPk
 
     def get_item(self):
         toelichting = None
@@ -374,7 +580,8 @@ class Info(models.Model):
         # Has it been processed already?
         if self.processed == None or self.processed == "":
             # Process the file
-            bResult = handle_uploaded_csv(self.csv_file.path, self.deel, self.sectie, self.aflnum)
+            # bResult = handle_uploaded_csv(self.csv_file.path, self.deel, self.sectie, self.aflnum)
+            bResult = bulk_uploaded_csv(self.csv_file.path, self.deel, self.sectie, self.aflnum)
             # Do we have success?
             if bResult:
                 # Show it is processed
@@ -392,11 +599,11 @@ class Aflevering(models.Model):
     # The 'naam' is the full name of the PDF (without path) in which information is stored
     naam = models.CharField("PDF naam", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
     # The 'deel' is the main category of the books
-    deel = models.ForeignKey(Deel, blank=False)
+    deel = models.ForeignKey(Deel, db_index=True, blank=False)
     # The 'sectie' is a sub-category used for instance in deel 3
-    sectie = models.IntegerField("Sectie (optioneel)", blank=True, null=True)
+    sectie = models.IntegerField("Sectie (optioneel)", db_index=True, blank=True, null=True)
     # The 'aflnum' is the actual number of the aflevering 
-    aflnum = models.IntegerField("Aflevering", blank=False, default=0)
+    aflnum = models.IntegerField("Aflevering", db_index=True, blank=False, default=0)
     # A field that indicates this item also has an Inleiding
     inleiding = models.BooleanField("Heeft inleiding", blank=False, default=False)
     # The year of publication of the book
@@ -426,6 +633,20 @@ class Aflevering(models.Model):
         # sPdf =  "{}/static/dictionary/content/pdf{}/{}".format(APP_PREFIX, self.deel.nummer,self.naam)
         sPdf =  "wld-{}/{}".format(self.deel.nummer,self.naam)
         return sPdf
+
+    def get_pk(self):
+        """Check if this aflevering exists and return a PK"""
+        qs = Aflevering.objects.filter(deel__nummer__iexact=self['deel'], 
+                                  aflnum__iexact = self['aflnum'])
+        if self['sectie'] != None:
+            qs = qs.filter(sectie__iexact = self['sectie'])
+
+        if len(qs) == 0:
+            iPk = -1
+        else:
+            iPk = qs[0].pk
+
+        return iPk
 
     def get_item(self):
         # Get the parameters
@@ -463,6 +684,18 @@ class Mijn(models.Model):
     def __str__(self):
         return self.naam
 
+    def get_pk(self):
+        """Check if this [mijn] exists and return a PK"""
+        qs = Mijn.objects.filter(naam__iexact=self['naam'])
+        if len(qs) == 0:
+            iPk = -1
+        else:
+            iPk = qs[0].pk
+
+        return iPk
+
+
+
 
 class Entry(models.Model):
     """Dictionary entry"""
@@ -477,19 +710,19 @@ class Entry(models.Model):
         return self.woord + '_' + self.dialect.code
 
     # Lemma: obligatory
-    lemma = models.ForeignKey(Lemma, blank=False)
+    lemma = models.ForeignKey(Lemma, db_index=True, blank=False)
     # Dialect: obligatory
-    dialect = models.ForeignKey(Dialect, blank=False)
+    dialect = models.ForeignKey(Dialect, db_index=True, blank=False)
     # Trefwoord: obligatory
-    trefwoord = models.ForeignKey(Trefwoord, blank=False)
+    trefwoord = models.ForeignKey(Trefwoord, db_index=True, blank=False)
     # Mijn [0-1]
     mijn = models.ForeignKey(Mijn, blank = True, null=True)
     # Aflevering [1]
-    aflevering = models.ForeignKey(Aflevering, blank=False)
+    aflevering = models.ForeignKey(Aflevering, db_index=True, blank=False)
     # Dialectal entry: obligatory
-    woord = models.CharField("Dialectopgave", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    woord = models.CharField("Dialectopgave", db_index=True, blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
     # Notes to this entry: optional
-    toelichting = models.TextField("Toelichting", blank=True)
+    toelichting = models.TextField("Toelichting", db_index=True, blank=True)
 
     def get_trefwoord_woord(self):
         return self.trefwoord.woord + '_' + self.woord
@@ -508,6 +741,24 @@ class Entry(models.Model):
 
     def get_tsv(self):
         return self.lemma.gloss + '\t' + self.trefwoord.woord + '\t' + self.woord + '\t' + self.dialect.nieuw + '\t' + self.aflevering.naam
+
+    def get_pk(self):
+        """Check if this [entry] exists and return a PK"""
+        qs = Entry.objects.filter(woord__iexact=self['woord'], 
+                                  toelichting__iexact=self['toelichting'],
+                                  lemma__pk=self['lemma'],
+                                  dialect__pk = self['dialect'],
+                                  trefwoord__pk = self['trefwoord'],
+                                  aflevering__pk = self['aflevering'])
+        if 'mijn' in self:
+            qs = qs.filter(mijn__pk = self['naam'])
+
+        if len(qs) == 0:
+            iPk = -1
+        else:
+            iPk = qs[0].pk
+
+        return iPk
 
     def get_item(self):
         mijnPk = None
