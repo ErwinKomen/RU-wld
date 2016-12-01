@@ -9,7 +9,7 @@ import re
 
 from wld.dictionary.models import *
 from wld.dictionary.forms import *
-from wld.settings import APP_PREFIX
+from wld.settings import APP_PREFIX, MEDIA_ROOT
 from wld.dictionary.views import paginateSize, paginateValues
 
 def order_queryset_by_sort_order(get, qs):
@@ -161,4 +161,6 @@ class InfoListView(ListView):
 
     model = Info
     template_name = 'dictionary/admin_info_list.html'
+
+
 

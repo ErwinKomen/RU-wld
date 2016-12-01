@@ -9,10 +9,13 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db import transaction
 from datetime import datetime
-from wld.settings import APP_PREFIX
+from wld.settings import APP_PREFIX, MEDIA_ROOT
+import os
 import sys
+import io
 import codecs
 import html
+import json
                 
 
 
@@ -20,6 +23,44 @@ MAX_IDENTIFIER_LEN = 10
 MAX_LEMMA_LEN = 100
 
 
+# ============================= LOCAL CLASSES ======================================
+class ErrHandle:
+    """Error handling"""
+
+    # ======================= CLASS INITIALIZER ========================================
+    def __init__(self):
+        # Initialize a local error stack
+        self.loc_errStack = []
+
+    # ----------------------------------------------------------------------------------
+    # Name :    Status
+    # Goal :    Just give a status message
+    # History:
+    # 6/apr/2016    ERK Created
+    # ----------------------------------------------------------------------------------
+    def Status(self, msg):
+        # Just print the message
+        print(msg, file=sys.stderr)
+
+    # ----------------------------------------------------------------------------------
+    # Name :    DoError
+    # Goal :    Process an error
+    # History:
+    # 6/apr/2016    ERK Created
+    # ----------------------------------------------------------------------------------
+    def DoError(self, msg, bExit = False):
+        # Append the error message to the stack we have
+        self.loc_errStack.append(msg)
+        # Print the error message for the user
+        print("Error: "+msg+"\nSystem:", file=sys.stderr)
+        for nErr in sys.exc_info():
+            if (nErr != None):
+                print(nErr, file=sys.stderr)
+        # Is this a fatal error that requires exiting?
+        if (bExit):
+            sys.exit(2)
+
+errHandle = ErrHandle()
 
 class FieldChoice(models.Model):
 
@@ -426,17 +467,16 @@ class Lemma(models.Model):
         bronnenlijst = self['bronnenlijst']
         boek = self['boek']
         # Try find an existing item
-        qs = Lemma.objects.filter(gloss__iexact=gloss, bronnenlijst__iexact=bronnenlijst, boek__iexact=boek)
-        # see if we get one unique value back
-        iLen = len(qs)
-        if iLen == 0:
+        qItem = Lemma.objects.filter(gloss__iexact=gloss, bronnenlijst__iexact=bronnenlijst, boek__iexact=boek).first()
+        # see if we get one value back
+        if qItem == None:
             # add a new Dialect object
             lemma = Lemma(gloss=gloss, bronnenlijst=bronnenlijst, boek=boek)
             lemma.save()
             iPk = lemma.pk
         else:
             # Get the pk of the first hit
-            iPk = qs[0].pk
+            iPk = qItem.pk
 
         # Return the result
         return iPk
@@ -460,7 +500,7 @@ class Dialect(models.Model):
     def get_pk(self):
         """Check if this dialect exists and return a PK"""
         qs = Dialect.objects.filter(stad__iexact=self['stad'], 
-                                  nieuw__iexact=self['nieuw'])
+                                  nieuw__iexact=self['nieuw']).first()
         if len(qs) == 0:
             iPk = -1
         else:
@@ -473,17 +513,16 @@ class Dialect(models.Model):
         stad = self['stad']
         nieuw = self['nieuw']
         # Try find an existing item
-        qs = Dialect.objects.filter(stad__iexact=stad, nieuw__iexact=nieuw)
-        # see if we get one unique value back
-        iLen = len(qs)
-        if iLen == 0:
+        qItem = Dialect.objects.filter(stad__iexact=stad, nieuw__iexact=nieuw).first()
+        # see if we get one value back
+        if qItem == None:
             # add a new Dialect object
             dialect = Dialect(stad=stad, nieuw=nieuw, code='-')
             dialect.save()
             iPk = dialect.pk
         else:
             # Get the pk of the first hit
-            iPk = qs[0].pk
+            iPk = qItem.pk
 
         # Return the result
         return iPk
@@ -518,14 +557,14 @@ class Trefwoord(models.Model):
         # Get the parameters
         woord = self['woord']
         # Try find an existing item
-        qs = Trefwoord.objects.filter(woord__iexact=woord)
         if 'toelichting' in self:
             toelichting = self['toelichting']
             # Try find an existing item
-            qs = qs.filter(toelichting__iexact = toelichting)
-        # see if we get one unique value back
-        iLen = len(qs)
-        if iLen == 0:
+            qItem = Trefwoord.objects.filter(woord__iexact=woord, toelichting__iexact = toelichting).first()
+        else:
+            qItem = Trefwoord.objects.filter(woord__iexact=woord).first()
+        # see if we get one value back
+        if qItem == None:
             # add a new Dialect object
             trefwoord = Trefwoord(woord=woord)
             if toelichting != None:
@@ -534,7 +573,7 @@ class Trefwoord(models.Model):
             iPk = trefwoord.pk
         else:
             # Get the pk of the first hit
-            iPk = qs[0].pk
+            iPk = qItem.pk
 
         # Return the result
         return iPk
@@ -581,7 +620,7 @@ class Info(models.Model):
         if self.processed == None or self.processed == "":
             # Process the file
             # bResult = handle_uploaded_csv(self.csv_file.path, self.deel, self.sectie, self.aflnum)
-            bResult = bulk_uploaded_csv(self.csv_file.path, self.deel, self.sectie, self.aflnum)
+            bResult = csv_to_fixture(self.csv_file.path, self.deel, self.sectie, self.aflnum)
             # Do we have success?
             if bResult:
                 # Show it is processed
@@ -654,17 +693,20 @@ class Aflevering(models.Model):
         sectie = self['sectie']
         aflnum = self['aflnum']
         # Try find an existing item
-        qs = Aflevering.objects.filter(deel__nummer__iexact=deel, aflnum__iexact=aflnum)
-        if sectie != None:
-            qs = qs.filter(sectie__iexact = sectie)
-        # see if we get one unique value back
-        iLen = len(qs)
-        if iLen == 0:
+        if sectie == None:
+            qItem = Aflevering.objects.filter(deel__nummer__iexact=deel, 
+                                           aflnum__iexact=aflnum).first()
+        else:
+            qItem = Aflevering.objects.filter(deel__nummer__iexact=deel, 
+                                           aflnum__iexact=aflnum,
+                                           sectie__iexact = sectie).first()
+        # see if we get one value back
+        if qItem == None:
             # We cannot add a new item
             iPk = -1
         else:
             # Get the pk of the first hit
-            iPk = qs[0].pk
+            iPk = qItem.pk
 
         # Return the result
         return iPk
@@ -809,5 +851,326 @@ class Entry(models.Model):
         # Return the result
         return iPk
 
+
+
+# ============================= Fixture Database Classes ===========================
+class FixOut:
+    """Fixture output"""
+
+    bFirst = True      # Indicates that the first output string has been written
+    fl_out = None      # Output file
+
+    def __init__(self, output_file):
+        # Clear the output file, replacing it with a list starter
+        self.fl_out = io.open(output_file, "w", encoding='utf-8')
+        self.fl_out.write("[")
+        self.fl_out.close()
+        # Make sure we keep the output file name
+        self.output_file = output_file
+        # Open the file for appending
+        self.fl_out = io.open(output_file, "a", encoding='utf-8')
+
+    def append(self, sModel, iPk, **oFields):
+        # Possibly add comma
+        self.do_comma()
+        # Create entry object
+        oEntry = {"model": sModel, 
+                  "pk": iPk, "fields": oFields}
+        # Add the object         
+        self.fl_out.writelines(json.dumps(oEntry, indent=2))
+
+    def do_comma(self):
+        # Is this the first output?
+        if self.bFirst:
+            self.bFirst = False
+        else:
+            self.fl_out.writelines(",")
+
+    def close(self):
+        # Append the final [
+        self.fl_out.writelines("]")
+        # Close the output file
+        self.fl_out.close()
+
+    def findItem(self, arItem, **oFields):
+        try:
+            # Sanity check
+            if len(arItem) == 0:
+                return -1
+            # Check all the items given
+            for it in arItem:
+                # Assume we are okay
+                bFound = True
+                # Look through all the (k,v) pairs of [oFields]
+                for (k,v) in oFields.items():
+                    try:
+                        if k in oFields and getattr(it, k) != v:
+                            bFound = False
+                            break
+                    except:
+                        # No need to stop here
+                        a = 1
+                if bFound:
+                    return getattr(it, 'pk')
+    
+            # getting here means we haven't found it
+            return -1
+        except:
+            errHandle.DoError("FixOut/findItem", True)
+
+
+
+    def get_pk(self, oCls, sModel, bSearch, **oFields):
+        try:
+            iPkItem = -1
+            # Look for this item in the list that we have
+            if bSearch:
+                iPkItem = self.findItem(oCls.lstItem, **oFields)
+            if iPkItem < 0:
+                # it is not in the list: add it
+                iPkItem = len(oCls.lstItem)+1
+                newItem = fElement(iPkItem, **oFields)
+                oCls.lstItem.append(newItem)
+                # Add the item to the output
+                self.append(sModel, iPkItem, **oFields)
+
+            # Return the pK
+            return iPkItem
+        except:
+            errHandle.DoError("FixOut/get_pk", True)
+    
+
+class fElement:
+
+    def __init__(self, iPk, **kwargs):
+        for (k,v) in kwargs.items():
+            setattr(self, k, v)
+        self.pk = iPk
+
+
+class fLemma:
+    """Lemma information to fixture"""
+
+    pk = 0         # Initialise PK
+    lstItem = []   # Array of known lemma's
+
+    def load(self, qs):
+        if qs:
+            for item in qs:
+                # Add this item to the list we have
+                self.lstItem.append(fElement(item.pk, gloss=item.gloss, bronnenlijst=item.bronnenlijst, boek=item.boek))
+                self.pk = item.pk
+
+
+class fDialect:
+    """Dialect information to fixture"""
+
+    pk = 0         # Initialise PK
+    lstItem = []   # Array of known dialects
+
+    def load(self, qs):
+        if qs:
+            for item in qs:
+                # Add this item to the list we have
+                added = fElement(item.pk, stad=item.stad, nieuw=item.nieuw)
+                self.lstItem.append(added)
+                self.pk = item.pk
+
+
+class fTrefwoord:
+    """Trefwoord information to fixture"""
+
+    pk = 0         # Initialise PK
+    lstItem = []   # Array of known dialects
+
+    def load(self, qs):
+        if qs:
+            for item in qs:
+                # Add this item to the list we have
+                self.lstItem.append(fElement(item.pk, woord=item.woord))
+                self.pk = item.pk
+
+
+class fAflevering:
+    """Aflevering information to fixture"""
+
+    pk = 0         # Initialise PK
+    lstItem = []   # Array of known dialects
+
+    def load(self, qs):
+        try:
+            if qs:
+                for item in qs:
+                    # Add this item to the list we have
+                    if item.sectie != None:
+                        try:
+                            added = fElement(item.pk, deel=item.deel, sectie=item.sectie,aflnum=item.aflnum)
+                        except:
+                            a = 1
+                    else:
+                        try:
+                            added = fElement(item.pk, deel=item.deel, aflnum=item.aflnum)
+                        except:
+                            a = 1
+                    self.lstItem.append(added)
+                    self.pk = item.pk
+        except:
+            errHandle.DoError("fAflevering", True)
+
+
+class fEntry:
+    """Entry information to fixture"""
+
+    pk = 0         # Initialise PK
+    lstItem = []   # Array of known dialects
+
+    def load(self, qs):
+        if qs:
+            for item in qs:
+                # Add this item to the list we have
+                self.lstItem.append(fElement(item.pk, woord=item.woord, 
+                                      toelichting=item.toelichting, 
+                                      lemma=item.lemma, 
+                                      dialect=item.dialect, 
+                                      trefwoord=item.trefwoord, 
+                                      aflevering=item.aflevering))
+                self.pk = item.pk
+
+
+# ----------------------------------------------------------------------------------
+# Name :    csv_to_fixture
+# Goal :    Convert CSV file into a fixtures file
+# History:
+#  1/dec/2016   ERK Created
+# ----------------------------------------------------------------------------------
+def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseOld=False):
+    """Process a CSV with entry definitions"""
+
+    try:
+        # Validate: input file exists
+        if (not os.path.isfile(csv_file)): return False
+
+        # Start creating an array that will hold the fixture elements
+        arFixture = []
+        iPkLemma = 1        # The PK for each Lemma
+        iPkTrefwoord = 1    # The PK for each Trefwoord
+        iPkDialect = 1      # The PK for each Dialect
+        iPkEntry = 1        # The PK for each Entry
+        iPkAflevering = 1   # The PK for each Aflevering
+        iCounter = 0        # Loop counter for progress
+
+        # Create an output file writer
+        output_file = os.path.join(MEDIA_ROOT ,os.path.splitext(os.path.basename(csv_file))[0] + ".json")
+        oFix = FixOut(output_file)
+
+        # Create instances of the Lemma, Dialect and other classes
+        oLemma = fLemma()
+        oDialect = fDialect()
+        oTrefwoord = fTrefwoord()
+        oAflevering = fAflevering()
+        oEntry = fEntry()
+
+        # Initialise the lists in these instances (where needed)
+        oDialect.load(Dialect.objects.all())
+        oAflevering.load(Aflevering.objects.all())
+        if bUseOld:
+            oLemma.load(Lemma.objects.all())
+            oTrefwoord.load(Trefwoord.objects.all())
+            oEntry.load(Entry.objects.all())
+
+        # Open source file to read line-by-line
+        f = codecs.open(csv_file, "r", encoding='utf-8-sig')
+        bEnd = False
+        bFirst = True
+        bFirstOut = False
+        while (not bEnd):
+            # Show where we are
+            iCounter +=1
+            if iCounter % 1000 == 0:
+                errHandle.Status("Processing: " + str(iCounter))
+            # Read one line
+            strLine = f.readline()
+            if (strLine == ""):
+                bEnd = True
+                break
+            strLine = str(strLine)
+            strLine = strLine.strip(" \n\r")
+            # Only process substantial lines
+            if (strLine != ""):
+                # Split the line into parts
+                arPart = strLine.split('\t')
+                # IF this is the first line or an empty line, then skip
+                if bFirst:
+                    # Check if the line starts correctly
+                    if arPart[0] != 'Lemmanummer':
+                        # The first line does not start correctly -- return false
+                        return False
+                    # Indicate that the first item has been had
+                    bFirst = False
+                else:
+                    # Assuming this 'part' is entering an ENTRY
+
+                    if bUseDbase:
+                        # Find out which lemma this is
+                        iPkLemma = Lemma.get_item({'gloss': arPart[1], 
+                                                    'bronnenlijst': arPart[6], 
+                                                    'boek': arPart[7]})
+
+                        # Find out which dialect this is
+                        iPkDialect = Dialect.get_item({'stad': arPart[10], 
+                                                        'nieuw': arPart[15]})
+
+                        # Find out which trefwoord this is
+                        iPkTrefwoord = Trefwoord.get_item({'woord': arPart[3]})
+
+                        # Get an entry to aflevering
+                        iPkAflevering = Aflevering.get_item({'deel': iDeel, 
+                                                             'sectie': iSectie, 
+                                                             'aflnum': iAflevering})
+                    else:
+                        # Get a lemma number from this
+                        iPkLemma = oFix.get_pk(oLemma, "dictionary.lemma", True,
+                                               gloss=arPart[1], 
+                                               bronnenlijst=arPart[6], 
+                                               boek=arPart[7])
+
+                        # get a dialect number
+                        iPkDialect = oFix.get_pk(oDialect, "dictionary.dialect", True,
+                                                 stad=arPart[10], 
+                                                 nieuw=arPart[15])
+
+                        # get a trefwoord number
+                        iPkTrefwoord = oFix.get_pk(oTrefwoord, "dictionary.trefwoord", True,
+                                                   woord=arPart[3])
+
+                        # get a Aflevering number
+                        iPkAflevering = oFix.get_pk(oAflevering, "dictionary.aflevering", True,
+                                                    deel=iDeel,
+                                                    sectie=iSectie,
+                                                    aflnum = iAflevering)
+
+                    # Process the ENTRY
+                    sDialectWoord = arPart[5]
+                    sDialectWoord = html.unescape(sDialectWoord).strip('"')
+                    iPkEntry = oFix.get_pk(oEntry, "dictionary.entry", False,
+                                           woord=sDialectWoord,
+                                           toelichting=arPart[14],
+                                           lemma=iPkLemma,
+                                           dialect=iPkDialect,
+                                           trefwoord=iPkTrefwoord,
+                                           aflevering=iPkAflevering)
+
+
+        # CLose the input file
+        f.close()
+
+        # Finish the JSON array that contains the fixtures
+        oFix.close()
+
+        # return positively
+        return True
+    except:
+        errHandle.DoError("csv_to_fixture", True)
+        return False
 
 

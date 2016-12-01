@@ -789,3 +789,4 @@ class DeelListView(ListView):
 
         # Return the calculated context
         return context
+

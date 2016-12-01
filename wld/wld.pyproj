@@ -34,6 +34,9 @@
     <Compile Include="wld\dictionary\forms.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="wld\dictionary\fix.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="wld\dictionary\management\commands\permissions.py">
       <SubType>Code</SubType>
     </Compile>
