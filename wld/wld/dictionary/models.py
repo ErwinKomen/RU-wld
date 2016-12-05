@@ -1060,7 +1060,13 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
         iCounter = 0        # Loop counter for progress
 
         # Create an output file writer
-        output_file = os.path.join(MEDIA_ROOT ,os.path.splitext(os.path.basename(csv_file))[0] + ".json")
+        # Basename: derive from filename
+        # sBaseName = os.path.splitext(os.path.basename(csv_file))[0]
+        # Basename: derive from deel/section/aflevering
+        sBaseName = "fixture-d" + str(iDeel)
+        if iSectie != None: sBaseName = sBaseName + "-s" + str(iSectie)
+        sBaseName = sBaseName + "-a" + str(iAflevering)
+        output_file = os.path.join(MEDIA_ROOT ,sBaseName + ".json")
         oFix = FixOut(output_file)
 
         # Create instances of the Lemma, Dialect and other classes
@@ -1099,6 +1105,13 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
             if (strLine != ""):
                 # Split the line into parts
                 arPart = strLine.split('\t')
+                # Check if this line contains 'valid' data:
+                #  1 = lemma
+                #  3 = trefwoord
+                #  5 = Dialectwoord (fonetische variant)
+                # 10 = Dialect city name
+                # 15 = Kloeke code
+                bValid = isNullOrEmptyOrInt(arPart, [1, 3, 5, 10, 15])
                 # IF this is the first line or an empty line, then skip
                 if bFirst:
                     # Check if the line starts correctly
@@ -1107,7 +1120,7 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
                         return False
                     # Indicate that the first item has been had
                     bFirst = False
-                else:
+                elif bValid:
                     # Assuming this 'part' is entering an ENTRY
 
                     if bUseDbase:
@@ -1173,4 +1186,12 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
         errHandle.DoError("csv_to_fixture", True)
         return False
 
+def isNullOrEmptyOrInt(arPart, lstColumn):
+    for iIdx in lstColumn:
+        sItem = arPart[iIdx]
+        # Check if this item is empty, null or numeric
+        if sItem == "" or sItem == "NULL" or sItem.isnumeric():
+            return True
 
+    # When everything has been checked and there is no indication, return false
+    return False
