@@ -163,10 +163,16 @@
               {% endfor %}
             </td>
             <td>
-              <span class="toelichting">{{lem.toelichting}}</span>
-              {% if lem.bronnenlijst != "" %}
-              <span class="lemma-bronnen">[{{lem.bronnenlijst}}]</span>
-              {% endif %}
+              {% regroup lem.lmdescr.all|dictsort:"get_descr_sort" by toelichting as omschr_list %}
+              {% for omschr in omschr_list %}
+                <span class="toelichting">{{omschr.grouper}}</span>
+                {% spaceless %}
+                {% for bron in omschr.list %}
+                  <span class="lemma-bronnen">[{{bron.bronnenlijst}}]</span>
+                  <span>{% if not forloop.last %}, {% endif %}</span>
+                {% endfor %}
+                {% endspaceless %}
+              {% endfor %}
             </td>
           </tr>
         {% endfor %}

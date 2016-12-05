@@ -24,7 +24,7 @@ from wld.dictionary.forms import *
 from wld.settings import APP_PREFIX, WSGI_FILE
 
 # Global variables
-paginateSize = 20
+paginateSize = 10
 paginateValues = (1000, 500, 250, 100, 50, 40, 30, 20, 10, )
 outputColumns = ['begrip', 'trefwoord', 'dialectopgave', 'Kloekecode', 'aflevering']
 
@@ -226,7 +226,7 @@ class DictionaryDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         # Call the base implementation first to get a context
-        context = super(LemmaListView, self).get_context_data(**kwargs)
+        context = super(DictionaryDetailView, self).get_context_data(**kwargs)
 
         # Set the prefix
         context['app_prefix'] = APP_PREFIX
@@ -488,7 +488,7 @@ class LocationListView(ListView):
     """Listview of locations"""
 
     model = Dialect
-    paginate_by = 20
+    paginate_by = 10
     template_name = 'dictionary/location_list.html'
 
     def render_to_response(self, context, **response_kwargs):
@@ -603,7 +603,7 @@ class DialectListView(ListView):
     """Listview of dialects"""
 
     model = Dialect
-    paginate_by = 20
+    paginate_by = 10
     template_name = 'dictionary/dialect_list.html'
 
     def get_context_data(self, **kwargs):
@@ -685,7 +685,7 @@ class MijnListView(ListView):
     """Listview of mines"""
 
     model = Mijn
-    paginate_by = 20
+    paginate_by = 10
     template_name = 'dictionary/mijn_list.html'
 
 

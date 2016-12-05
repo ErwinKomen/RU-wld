@@ -438,22 +438,71 @@ def get_help(field):
     return help_text
 
 
+class Description(models.Model):
+    """Description for a lemma"""
+
+    toelichting = models.TextField("Omschrijving van het lemma", blank=True)
+    bronnenlijst = models.TextField("Bronnenlijst bij het lemma", db_index=True, blank=True)
+    boek = models.TextField("Boekaanduiding", db_index=True, null=True,blank=True)
+
+    def __str__(self):
+        return self.bronnenlijst
+
+    def get_descr_sort(self):
+        return self.toelichting
+
+    def get_pk(self):
+        """Check if this Description exists and return a PK"""
+        qs = Description.objects.filter(bronnenlijst__iexact=self['bronnenlijst'], 
+                                        boek__iexact=self['boek'],
+                                        toelichting__iexact=self['toelichting'])
+        if len(qs) == 0:
+            iPk = -1
+        else:
+            iPk = qs[0].pk
+
+        return iPk
+
+    def get_item(self):
+        # Get the parameters
+        bronnenlijst = self['bronnenlijst']
+        boek = self['boek']
+        toelichting = ""
+        if 'toelichting' in self:
+            toelichting = self['toelichting']
+        # Try find an existing item
+        qItem = Description.objects.filter(bronnenlijst__iexact=bronnenlijst, 
+                                           boek__iexact=boek,
+                                           toelichting__iexact=toelichting).first()
+        # see if we get one value back
+        if qItem == None:
+            # add a new Description object
+            descr = Description(bronnenlijst=bronnenlijst, boek=boek, toelichting=toelichting)
+            descr.save()
+            iPk = descr.pk
+        else:
+            # Get the pk of the first hit
+            iPk = qItem.pk
+
+        # Return the result
+        return iPk
+
+
 class Lemma(models.Model):
     """Lemma"""
 
     gloss = models.CharField("Gloss voor dit lemma", db_index=True, blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
-    toelichting = models.TextField("Omschrijving van het lemma", blank=True)
-    bronnenlijst = models.TextField("Bronnenlijst bij dit lemma", db_index=True, blank=True)
-    boek = models.TextField("Boekaanduiding", db_index=True, null=True,blank=True)
+    # toelichting = models.TextField("Omschrijving van het lemma", blank=True)
+    # bronnenlijst = models.TextField("Bronnenlijst bij dit lemma", db_index=True, blank=True)
+    # boek = models.TextField("Boekaanduiding", db_index=True, null=True,blank=True)
+    lmdescr = models.ManyToManyField(Description, through='LemmaDescr')
 
     def __str__(self):
         return self.gloss
 
     def get_pk(self):
         """Check if this lemma exists and return a PK"""
-        qs = Lemma.objects.filter(gloss__iexact=self['gloss'], 
-                                  bronnenlijst__iexact=self['bronnenlijst'], 
-                                  boek__iexact=self['boek'])
+        qs = Lemma.objects.filter(gloss__iexact=self['gloss'])
         if len(qs) == 0:
             iPk = -1
         else:
@@ -464,14 +513,12 @@ class Lemma(models.Model):
     def get_item(self):
         # Get the parameters
         gloss = self['gloss']
-        bronnenlijst = self['bronnenlijst']
-        boek = self['boek']
         # Try find an existing item
-        qItem = Lemma.objects.filter(gloss__iexact=gloss, bronnenlijst__iexact=bronnenlijst, boek__iexact=boek).first()
+        qItem = Lemma.objects.filter(gloss__iexact=gloss).first()
         # see if we get one value back
         if qItem == None:
             # add a new Dialect object
-            lemma = Lemma(gloss=gloss, bronnenlijst=bronnenlijst, boek=boek)
+            lemma = Lemma(gloss=gloss)
             lemma.save()
             iPk = lemma.pk
         else:
@@ -481,6 +528,12 @@ class Lemma(models.Model):
         # Return the result
         return iPk
 
+
+class LemmaDescr(models.Model):
+    """Description belonging to a lemma"""
+
+    lemma=models.ForeignKey(Lemma, on_delete=models.CASCADE)
+    description=models.ForeignKey(Description, on_delete=models.CASCADE)
 
 
 class Dialect(models.Model):
@@ -610,6 +663,9 @@ class Info(models.Model):
     aflnum = models.IntegerField("Aflevering", blank=False, default=0)
     # Whether/when processed
     processed = models.CharField("Verwerkt", blank=True, max_length=MAX_LEMMA_LEN)
+    # Number of read and skipped lines
+    read = models.IntegerField("Gelezen", blank=False, default=0)
+    skipped = models.IntegerField("Overgeslagen", blank=False, default=0)
     # Het bestand dat ge-upload wordt
     csv_file = models.FileField(upload_to="csv_files/")
 
@@ -620,11 +676,14 @@ class Info(models.Model):
         if self.processed == None or self.processed == "":
             # Process the file
             # bResult = handle_uploaded_csv(self.csv_file.path, self.deel, self.sectie, self.aflnum)
-            bResult = csv_to_fixture(self.csv_file.path, self.deel, self.sectie, self.aflnum)
+            oResult = csv_to_fixture(self.csv_file.path, self.deel, self.sectie, self.aflnum)
             # Do we have success?
-            if bResult:
+            if oResult['result']:
                 # Show it is processed
                 self.processed =  datetime.now().strftime("%d/%B/%Y - %H:%M:%S")
+                # Show how much has been read
+                self.read = oResult['read']
+                self.skipped = oResult['skipped']
                 # Save the revised information
                 super(Info, self).save(*args, **kwargs)
 
@@ -852,8 +911,35 @@ class Entry(models.Model):
         return iPk
 
 
-
 # ============================= Fixture Database Classes ===========================
+class FixSkip:
+    """Fixture skips"""
+
+    bFirst = True
+    fl_out = None
+
+    def __init__(self, output_file):
+        # Clear the output file, replacing it with a list starter
+        self.fl_out = io.open(output_file, "w", encoding='utf-8')
+        self.fl_out.write("")
+        self.fl_out.close()
+        # Make sure we keep the output file name
+        self.output_file = output_file
+        # Open the file for appending
+        self.fl_out = io.open(output_file, "a", encoding='utf-8')
+
+    def append(self, sLine):
+        # Add a newline
+        sLine += "\n"
+        # Add the object         
+        self.fl_out.writelines(sLine)
+
+    def close(self):
+        # Close the output file
+        self.fl_out.close()
+
+
+
 class FixOut:
     """Fixture output"""
 
@@ -958,7 +1044,38 @@ class fLemma:
         if qs:
             for item in qs:
                 # Add this item to the list we have
-                self.lstItem.append(fElement(item.pk, gloss=item.gloss, bronnenlijst=item.bronnenlijst, boek=item.boek))
+                self.lstItem.append(fElement(item.pk, gloss=item.gloss))
+                self.pk = item.pk
+
+
+class fDescr:
+    """Description information to fixture"""
+
+    pk = 0         # Initialise PK
+    lstItem = []   # Array of known lemma's
+
+    def load(self, qs):
+        if qs:
+            for item in qs:
+                # Add this item to the list we have
+                self.lstItem.append(fElement(item.pk, 
+                                             bronnenlijst=item.bronnenlijst, 
+                                             toelichting=item.toelichting, 
+                                             boek=item.boek))
+                self.pk = item.pk
+
+
+class fLemmaDescr:
+    """Connection between lemma and description information to fixture"""
+
+    pk = 0         # Initialise PK
+    lstItem = []   # Array of known lemma's
+
+    def load(self, qs):
+        if qs:
+            for item in qs:
+                # Add this item to the list we have
+                self.lstItem.append(fElement(item.pk, lemma=item.lemma, description=item.description))
                 self.pk = item.pk
 
 
@@ -1046,18 +1163,24 @@ class fEntry:
 def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseOld=False):
     """Process a CSV with entry definitions"""
 
+    oBack = {}      # What we return
+
     try:
+        oBack['result'] = False
         # Validate: input file exists
-        if (not os.path.isfile(csv_file)): return False
+        if (not os.path.isfile(csv_file)): return oBack
 
         # Start creating an array that will hold the fixture elements
         arFixture = []
         iPkLemma = 1        # The PK for each Lemma
+        iPkDescr = 1        # The PK for each Description (lemma-toelichting many-to-many)
         iPkTrefwoord = 1    # The PK for each Trefwoord
         iPkDialect = 1      # The PK for each Dialect
         iPkEntry = 1        # The PK for each Entry
         iPkAflevering = 1   # The PK for each Aflevering
         iCounter = 0        # Loop counter for progress
+        iRead = 0           # Number read correctly
+        iSkipped = 0        # Number skipped
 
         # Create an output file writer
         # Basename: derive from filename
@@ -1067,10 +1190,14 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
         if iSectie != None: sBaseName = sBaseName + "-s" + str(iSectie)
         sBaseName = sBaseName + "-a" + str(iAflevering)
         output_file = os.path.join(MEDIA_ROOT ,sBaseName + ".json")
+        skip_file = os.path.join(MEDIA_ROOT, sBaseName + ".skip")
         oFix = FixOut(output_file)
+        oSkip = FixSkip(skip_file)
 
         # Create instances of the Lemma, Dialect and other classes
         oLemma = fLemma()
+        oDescr = fDescr()
+        oLemmaDescr = fLemmaDescr()
         oDialect = fDialect()
         oTrefwoord = fTrefwoord()
         oAflevering = fAflevering()
@@ -1083,6 +1210,11 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
             oLemma.load(Lemma.objects.all())
             oTrefwoord.load(Trefwoord.objects.all())
             oEntry.load(Entry.objects.all())
+        else:
+            # Remove the existing objects from Lemma, Trefwoord and Entry
+            Lemma.objects.all().delete()
+            Trefwoord.objects.all().delete()
+            Entry.objects.all().delete()
 
         # Open source file to read line-by-line
         f = codecs.open(csv_file, "r", encoding='utf-8-sig')
@@ -1111,23 +1243,28 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
                 #  5 = Dialectwoord (fonetische variant)
                 # 10 = Dialect city name
                 # 15 = Kloeke code
-                bValid = isNullOrEmptyOrInt(arPart, [1, 3, 5, 10, 15])
+                iValid = isNullOrEmptyOrInt(arPart, [1, 3, 5, 10, 15])
                 # IF this is the first line or an empty line, then skip
                 if bFirst:
                     # Check if the line starts correctly
                     if arPart[0] != 'Lemmanummer':
                         # The first line does not start correctly -- return false
-                        return False
+                        return oBack
                     # Indicate that the first item has been had
                     bFirst = False
-                elif bValid:
+                elif iValid == 0:
                     # Assuming this 'part' is entering an ENTRY
 
                     if bUseDbase:
                         # Find out which lemma this is
-                        iPkLemma = Lemma.get_item({'gloss': arPart[1], 
-                                                    'bronnenlijst': arPart[6], 
-                                                    'boek': arPart[7]})
+                        iPkLemma = Lemma.get_item({'gloss': arPart[1]})
+
+                        # Find out which lemma-description this is
+                        iPkDescr = Description.get_item({'bronnenlijst': arPart[6],
+                                                         'toelichting': arPart[2], 
+                                                         'boek': arPart[7]})
+
+                        # TODO: add the [iPkDescr] to the Lemma--but only if it is not already there
 
                         # Find out which dialect this is
                         iPkDialect = Dialect.get_item({'stad': arPart[10], 
@@ -1141,11 +1278,27 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
                                                              'sectie': iSectie, 
                                                              'aflnum': iAflevering})
                     else:
+                        # Adapt any part-elements that need this
+                        for idx in [2,6,7,14]:
+                            if arPart[idx] == "NULL":
+                                arPart[idx] = ""
+
                         # Get a lemma number from this
+                        # NOTE: assume 2 = toelichting 
                         iPkLemma = oFix.get_pk(oLemma, "dictionary.lemma", True,
-                                               gloss=arPart[1], 
+                                               gloss=arPart[1])
+
+                        # Get a description number
+                        iPkDescr = oFix.get_pk(oDescr, "dictionary.description", True,
                                                bronnenlijst=arPart[6], 
+                                               toelichting=arPart[2], 
                                                boek=arPart[7])
+
+                        # Add the Lemma-Description connection
+                        iPkLemmaDescr = oFix.get_pk(oLemmaDescr, "dictionary.lemmadescr", True,
+                                                    lemma=iPkLemma,
+                                                    description=iPkDescr)
+
 
                         # get a dialect number
                         iPkDialect = oFix.get_pk(oDialect, "dictionary.dialect", True,
@@ -1153,8 +1306,10 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
                                                  nieuw=arPart[15])
 
                         # get a trefwoord number
+                        sTrefWoord = arPart[3]
+                        sTrefWoord = html.unescape(sTrefWoord).strip('"')
                         iPkTrefwoord = oFix.get_pk(oTrefwoord, "dictionary.trefwoord", True,
-                                                   woord=arPart[3])
+                                                   woord=sTrefWoord)
 
                         # get a Aflevering number
                         iPkAflevering = oFix.get_pk(oAflevering, "dictionary.aflevering", True,
@@ -1172,26 +1327,42 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
                                            dialect=iPkDialect,
                                            trefwoord=iPkTrefwoord,
                                            aflevering=iPkAflevering)
+                    iRead += 1
+                else:
+                    # This line is being skipped
+                    oSkip.append(strLine)
+                    iSkipped += 1
+                    sIdx = 'line-' + str(iValid)
+                    if not sIdx in oBack:
+                        oBack[sIdx] = 0
+                    oBack[sIdx] +=1
 
 
         # CLose the input file
         f.close()
 
+        # Close the skip file
+        oSkip.close()
+
         # Finish the JSON array that contains the fixtures
         oFix.close()
 
         # return positively
-        return True
+        oBack['result'] = True
+        oBack['skipped'] = iSkipped
+        oBack['read'] = iRead
+        return oBack
     except:
         errHandle.DoError("csv_to_fixture", True)
-        return False
+        return oBack
 
 def isNullOrEmptyOrInt(arPart, lstColumn):
     for iIdx in lstColumn:
         sItem = arPart[iIdx]
         # Check if this item is empty, null or numeric
         if sItem == "" or sItem == "NULL" or sItem.isnumeric():
-            return True
+            # Indicate where the error was
+            return iIdx
 
     # When everything has been checked and there is no indication, return false
-    return False
+    return 0

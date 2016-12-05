@@ -62,7 +62,7 @@ class LemmaSearchForm(forms.ModelForm):
         ATTRS_FOR_FORMS = {'class': 'form-control'};
 
         model = Lemma
-        fields = ('gloss', 'toelichting', 'bronnenlijst', 'optdialect')
+        fields = ('gloss', 'optdialect')
 
 
 class TrefwoordSearchForm(forms.ModelForm):
