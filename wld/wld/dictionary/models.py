@@ -535,6 +535,27 @@ class LemmaDescr(models.Model):
     lemma=models.ForeignKey(Lemma, on_delete=models.CASCADE)
     description=models.ForeignKey(Description, on_delete=models.CASCADE)
 
+    def get_item(self):
+        # Get the parameters
+        lemma = self['lemma']
+        description = self['description']
+        # Try find an existing item
+        qItem = LemmaDescr.objects.filter(lemma__iexact=lemma, 
+                                          description__iexact=description).first()
+        # see if we get one value back
+        if qItem == None:
+            # add a new Description object
+            lemdescr = LemmaDescr(lemma=lemma, description=description)
+            lemdescr.save()
+            iPk = lemdescr.pk
+        else:
+            # Get the pk of the first hit
+            iPk = qItem.pk
+
+        # Return the result
+        return iPk
+
+
 
 class Dialect(models.Model):
     """Dialect"""
@@ -674,9 +695,16 @@ class Info(models.Model):
         super(Info, self).save(*args, **kwargs)
         # Has it been processed already?
         if self.processed == None or self.processed == "":
+
+            # Get the value of UseOld
+            bUseOld = True    # Should be determined from the admin form...
+
+            # Get the value of UseDbase
+            bUseDbase = True  # Should be determined from the admin form...
+
             # Process the file
             # bResult = handle_uploaded_csv(self.csv_file.path, self.deel, self.sectie, self.aflnum)
-            oResult = csv_to_fixture(self.csv_file.path, self.deel, self.sectie, self.aflnum)
+            oResult = csv_to_fixture(self.csv_file.path, self.deel, self.sectie, self.aflnum, bUseDbase=bUseDbase, bUseOld=bUseOld)
             # Do we have success?
             if oResult['result']:
                 # Show it is processed
@@ -1210,11 +1238,13 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
             oLemma.load(Lemma.objects.all())
             oTrefwoord.load(Trefwoord.objects.all())
             oEntry.load(Entry.objects.all())
-        else:
-            # Remove the existing objects from Lemma, Trefwoord and Entry
-            Lemma.objects.all().delete()
-            Trefwoord.objects.all().delete()
-            Entry.objects.all().delete()
+            oLemmaDescr.load(LemmaDescr.objects.all())
+            oDescr.load(Description.objects.all())
+        #else:
+        #    # Remove the existing objects from Lemma, Trefwoord and Entry
+        #    Lemma.objects.all().delete()
+        #    Trefwoord.objects.all().delete()
+        #    Entry.objects.all().delete()
 
         # Open source file to read line-by-line
         f = codecs.open(csv_file, "r", encoding='utf-8-sig')
@@ -1255,6 +1285,11 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
                 elif iValid == 0:
                     # Assuming this 'part' is entering an ENTRY
 
+                    # Adapt the part-elements that need this
+                    for idx in [2,6,7,14]:
+                        if arPart[idx] == "NULL":
+                            arPart[idx] = ""
+
                     if bUseDbase:
                         # Find out which lemma this is
                         iPkLemma = Lemma.get_item({'gloss': arPart[1]})
@@ -1264,7 +1299,9 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
                                                          'toelichting': arPart[2], 
                                                          'boek': arPart[7]})
 
-                        # TODO: add the [iPkDescr] to the Lemma--but only if it is not already there
+                        # TODO: add the [iPkDescr] to the LemmaDescr--but only if it is not already there
+                        iPkLemmaDescr = LemmaDescr.get_item({'lemma': iPkLemma,
+                                                             'description': iPkDescr})
 
                         # Find out which dialect this is
                         iPkDialect = Dialect.get_item({'stad': arPart[10], 
@@ -1278,11 +1315,6 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
                                                              'sectie': iSectie, 
                                                              'aflnum': iAflevering})
                     else:
-                        # Adapt any part-elements that need this
-                        for idx in [2,6,7,14]:
-                            if arPart[idx] == "NULL":
-                                arPart[idx] = ""
-
                         # Get a lemma number from this
                         # NOTE: assume 2 = toelichting 
                         iPkLemma = oFix.get_pk(oLemma, "dictionary.lemma", True,
