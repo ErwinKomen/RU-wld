@@ -6,6 +6,8 @@ $(document).ready(function () {
   $('[data-toggle="popover"]').popover();
 });
 
+var oProgressTimer = null;
+
 /**
  * Goal: initiate a lemma search
  * Source: http://www.javascript-coder.com/javascript-form/javascript-reset-form.phtml
@@ -148,3 +150,95 @@ function do_dialect(el) {
   return true;
 }
 
+function import_start(bUseDbase) {
+  // Retrieve the values Deel/Sectie/AflNum
+  var sDeel = $("#id_deel").val();
+  var sSectie = $("#id_sectie").val();
+  var sAflnum = $("#id_aflnum").val();
+  // Get the value of the CSV file
+  var sCsvFile = $("#id_csv_file").val();
+  if (sCsvFile === undefined || sCsvFile === "") {
+    sCsvFile = $("#id_csv_file").parent().find('a').text();
+  }
+  if (sCsvFile === undefined || sCsvFile === "") {
+    // It is no use to start--
+    var sMsg = "Eerst dit record opslaan (SAVE) en dan hiernaartoe terugkeren";
+    $("#info_progress").html(sMsg);
+    $("#info_button").addClass("hidden");
+    $("#info_button2").addClass("hidden");
+  }
+  // Start the regular progress indication
+  oProgressTimer = window.setInterval(progress_request, 1000);
+  // Start reading this file
+  sUrl = $("#info_button").attr('import-start');
+  var oData = {
+    'deel': sDeel, 'sectie': sSectie,
+    'aflnum': sAflnum, 'filename': sCsvFile,
+    'usedbase': bUseDbase
+  };
+  $.ajax({
+    "url": sUrl,
+    "dataType": "json",
+    "data": oData,
+    "cache": false,
+    "success": function () { progress_stop(); }
+  })(jQuery);
+}
+
+function progress_request() {
+  // Prepare an AJAX call to ask for the progress
+  sUrl = $("#info_button").attr('import-progress');
+  $.ajax({
+    "url": sUrl,
+    "dataType": "json",
+    "data": null,
+    "cache": false,
+    "success": function (json) { progress_handle(json); }
+  })(jQuery);
+}
+
+function progress_handle(json) {
+  // Handle the progress report
+  var sStatus = json.status;
+  var iRead = json.read;
+  var iSkipped = json.skipped;
+  var sProgress = "";
+  var sMsg = json.msg;
+  // Deal with error
+  if (sStatus === "error") {
+    // Stop the progress calling
+    window.clearInterval(oProgressTimer);
+    sProgress = "An error has occurred - stopped";
+  } else {
+    if (sMsg === undefined || sMsg === "") {
+      sProgress = sStatus + " (read=" + iRead + ", skipped=" + iSkipped + ")";
+    } else {
+      sProgress = sStatus + " (read=" + iRead + ", skipped=" + iSkipped + "): " + sMsg;
+    }
+    if (iRead > 0 || iSkipped > 0) {
+      $("#id_read").val(iRead);
+      $("#id_skipped").val(iSkipped);
+    }
+  }
+  if (sStatus !== "idle") {
+    $("#info_progress").html(sProgress);
+    if (sStatus === "done") {
+      progress_stop();
+    }
+  }
+}
+
+function progress_stop() {
+  var currentdate = new Date();
+  var sDateString = currentdate.getDate() + "/"
+                + (currentdate.getMonth() + 1) + "/"
+                + currentdate.getFullYear() + " @ "
+                + currentdate.getHours() + ":"
+                + currentdate.getMinutes() + ":"
+                + currentdate.getSeconds();
+  var sMsg = "Processed on: " + sDateString;
+  $("#id_processed").val(sMsg);
+  $("#info_progress").html("The conversion is completely ready");
+  // Stop the progress calling
+  window.clearInterval(oProgressTimer);
+}

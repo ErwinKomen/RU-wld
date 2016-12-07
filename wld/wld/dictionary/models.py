@@ -8,6 +8,7 @@ The dialects are identified by locations, and the locations are indicated by a '
 from django.db import models
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime
 from wld.settings import APP_PREFIX, MEDIA_ROOT
 import os
@@ -21,6 +22,7 @@ import json
 
 MAX_IDENTIFIER_LEN = 10
 MAX_LEMMA_LEN = 100
+oCsvImport = {'read': 0, 'skipped': 0, 'status': 'idle'}
 
 
 # ============================= LOCAL CLASSES ======================================
@@ -396,6 +398,17 @@ def bulk_uploaded_csv(fPath, iDeel, iSectie, iAflevering):
     # return correctly
     return True
   
+def isNullOrEmptyOrInt(arPart, lstColumn):
+    for iIdx in lstColumn:
+        sItem = arPart[iIdx]
+        # Check if this item is empty, null or numeric
+        if sItem == "" or sItem == "NULL" or sItem.isnumeric():
+            # Indicate where the error was
+            return iIdx
+
+    # When everything has been checked and there is no indication, return false
+    return 0
+
 
 class HelpChoice(models.Model):
     """Define the URL to link to for the help-text"""
@@ -514,16 +527,24 @@ class Lemma(models.Model):
         # Get the parameters
         gloss = self['gloss']
         # Try find an existing item
-        qItem = Lemma.objects.filter(gloss__iexact=gloss).first()
-        # see if we get one value back
-        if qItem == None:
-            # add a new Dialect object
+        # qItem = Lemma.objects.filter(gloss__iexact=gloss).first()
+        ## see if we get one value back
+        #if qItem == None:
+        #    # add a new Dialect object
+        #    lemma = Lemma(gloss=gloss)
+        #    lemma.save()
+        #    iPk = lemma.pk
+        #else:
+        #    # Get the pk of the first hit
+        #    iPk = qItem.pk
+        try:
+            qItem = Lemma.objects.get(gloss__iexact=gloss)
+            # Get the pk of the first hit
+            iPk = qItem.pk
+        except ObjectDoesNotExist:
             lemma = Lemma(gloss=gloss)
             lemma.save()
             iPk = lemma.pk
-        else:
-            # Get the pk of the first hit
-            iPk = qItem.pk
 
         # Return the result
         return iPk
@@ -540,12 +561,12 @@ class LemmaDescr(models.Model):
         lemma = self['lemma']
         description = self['description']
         # Try find an existing item
-        qItem = LemmaDescr.objects.filter(lemma__iexact=lemma, 
-                                          description__iexact=description).first()
+        qItem = LemmaDescr.objects.filter(lemma=lemma, 
+                                          description=description).first()
         # see if we get one value back
         if qItem == None:
             # add a new Description object
-            lemdescr = LemmaDescr(lemma=lemma, description=description)
+            lemdescr = LemmaDescr(lemma=Lemma.objects.get(id=lemma), description=Description.objects.get(id=description))
             lemdescr.save()
             iPk = lemdescr.pk
         else:
@@ -690,7 +711,7 @@ class Info(models.Model):
     # Het bestand dat ge-upload wordt
     csv_file = models.FileField(upload_to="csv_files/")
 
-    def save(self, *args, **kwargs):
+    def save_attempt(self, *args, **kwargs):
         # Standard treatment: first save it
         super(Info, self).save(*args, **kwargs)
         # Has it been processed already?
@@ -1011,8 +1032,9 @@ class FixOut:
             # Sanity check
             if len(arItem) == 0:
                 return -1
-            # Check all the items given
-            for it in arItem:
+            # Make sure numeric values are 
+            # Check all the items given: do it reversed, because then we have the best chance of getting something
+            for it in reversed(arItem):
                 # Assume we are okay
                 bFound = True
                 # Look through all the (k,v) pairs of [oFields]
@@ -1042,7 +1064,13 @@ class FixOut:
                 iPkItem = self.findItem(oCls.lstItem, **oFields)
             if iPkItem < 0:
                 # it is not in the list: add it
-                iPkItem = len(oCls.lstItem)+1
+                if 'pk' in oFields:
+                    # Get the pk value and *remove* the key from the field
+                    iPkItem = oFields.pop('pk')                    
+                else:
+                    iPkItem = len(oCls.lstItem)
+
+                iPkItem += 1
                 newItem = fElement(iPkItem, **oFields)
                 oCls.lstItem.append(newItem)
                 # Add the item to the output
@@ -1194,8 +1222,13 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
     oBack = {}      # What we return
 
     try:
+        oCsvImport['status'] = 'preparing'
         oBack['result'] = False
         # Validate: input file exists
+        if not "/" in csv_file and not "\\" in csv_file:
+            csv_file = os.path.join(MEDIA_ROOT, "csv_files", csv_file)
+        elif csv_file.startswith("csv_files"):
+            csv_file = os.path.join(MEDIA_ROOT, csv_file)
         if (not os.path.isfile(csv_file)): return oBack
 
         # Start creating an array that will hold the fixture elements
@@ -1237,9 +1270,27 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
         if bUseOld:
             oLemma.load(Lemma.objects.all())
             oTrefwoord.load(Trefwoord.objects.all())
-            oEntry.load(Entry.objects.all())
             oLemmaDescr.load(LemmaDescr.objects.all())
             oDescr.load(Description.objects.all())
+            # It should *not* be necessary to load all existing ENTRY objects
+            #    since we assume that any object to be added is UNIQUE
+            # oEntry.load(Entry.objects.all())
+
+            # Determine what the maximum [pk] for [Entry] currently in use is
+            if Entry.objects.all().count() == 0:
+                iPkEntry = 0
+            else:
+                iPkEntry = Entry.objects.latest('id').id
+
+        # get a Aflevering number
+        if str(iDeel).isnumeric(): iDeel = int(iDeel)
+        if str(iSectie).isnumeric(): iSectie = int(iSectie)
+        if str(iAflevering).isnumeric(): iAflevering = int(iAflevering)
+        iPkAflevering = oFix.get_pk(oAflevering, "dictionary.aflevering", True,
+                                    deel=iDeel,
+                                    sectie=iSectie,
+                                    aflnum = iAflevering)
+
         #else:
         #    # Remove the existing objects from Lemma, Trefwoord and Entry
         #    Lemma.objects.all().delete()
@@ -1290,6 +1341,11 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
                         if arPart[idx] == "NULL":
                             arPart[idx] = ""
 
+                    # Make sure we got TREFWOORD correctly
+                    sTrefWoord = arPart[3]
+                    sTrefWoord = html.unescape(sTrefWoord).strip('"')
+
+
                     if bUseDbase:
                         # Find out which lemma this is
                         iPkLemma = Lemma.get_item({'gloss': arPart[1]})
@@ -1308,12 +1364,8 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
                                                         'nieuw': arPart[15]})
 
                         # Find out which trefwoord this is
-                        iPkTrefwoord = Trefwoord.get_item({'woord': arPart[3]})
+                        iPkTrefwoord = Trefwoord.get_item({'woord': sTrefWoord})
 
-                        # Get an entry to aflevering
-                        iPkAflevering = Aflevering.get_item({'deel': iDeel, 
-                                                             'sectie': iSectie, 
-                                                             'aflnum': iAflevering})
                     else:
                         # Get a lemma number from this
                         # NOTE: assume 2 = toelichting 
@@ -1338,21 +1390,14 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
                                                  nieuw=arPart[15])
 
                         # get a trefwoord number
-                        sTrefWoord = arPart[3]
-                        sTrefWoord = html.unescape(sTrefWoord).strip('"')
                         iPkTrefwoord = oFix.get_pk(oTrefwoord, "dictionary.trefwoord", True,
                                                    woord=sTrefWoord)
-
-                        # get a Aflevering number
-                        iPkAflevering = oFix.get_pk(oAflevering, "dictionary.aflevering", True,
-                                                    deel=iDeel,
-                                                    sectie=iSectie,
-                                                    aflnum = iAflevering)
 
                     # Process the ENTRY
                     sDialectWoord = arPart[5]
                     sDialectWoord = html.unescape(sDialectWoord).strip('"')
                     iPkEntry = oFix.get_pk(oEntry, "dictionary.entry", False,
+                                           pk=iPkEntry,
                                            woord=sDialectWoord,
                                            toelichting=arPart[14],
                                            lemma=iPkLemma,
@@ -1368,6 +1413,10 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
                     if not sIdx in oBack:
                         oBack[sIdx] = 0
                     oBack[sIdx] +=1
+            # Keep track of progress
+            oCsvImport['skipped'] = iSkipped
+            oCsvImport['read'] = iRead
+            oCsvImport['status'] = 'working'
 
 
         # CLose the input file
@@ -1383,18 +1432,10 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
         oBack['result'] = True
         oBack['skipped'] = iSkipped
         oBack['read'] = iRead
+        oCsvImport['status'] = 'done'
         return oBack
     except:
+        oCsvImport['status'] = 'error'
         errHandle.DoError("csv_to_fixture", True)
         return oBack
 
-def isNullOrEmptyOrInt(arPart, lstColumn):
-    for iIdx in lstColumn:
-        sItem = arPart[iIdx]
-        # Check if this item is empty, null or numeric
-        if sItem == "" or sItem == "NULL" or sItem.isnumeric():
-            # Indicate where the error was
-            return iIdx
-
-    # When everything has been checked and there is no indication, return false
-    return 0

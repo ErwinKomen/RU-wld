@@ -1,0 +1,22 @@
+﻿{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+{% block after_related_objects %}
+
+<div class="row">
+  <div class="col-md-3">
+    <span><a id="info_button" class="btn btn-primary" 
+       import-start="{% url 'import_start' %}" 
+       import-progress="{% url 'import_progress' %}" 
+       onclick="import_start(false)">Verwerk CSV</a>
+    </span>
+    <span><a id="info_button2" class="btn btn-primary" 
+       import-start="{% url 'import_start' %}" 
+       import-progress="{% url 'import_progress' %}" 
+       onclick="import_start(true)">Verwerk: dbase</a>
+    </span>
+  </div>
+  <div id="info_progress" class="col-md-9">
+    <!-- This is where the progress will be reported -->
+  </div>
+</div>
+{% endblock %}

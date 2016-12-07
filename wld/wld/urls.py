@@ -49,6 +49,8 @@ urlpatterns = [
     url(r'^list/$', permission_required('dictionary.search_gloss')(EntryListView.as_view()), name='admin_entry_list'), 
     url(r'^dictionary/search/$', permission_required('dictionary.search_gloss')(EntryListView.as_view())),
     url(r'^entry/(?P<pk>\d+)', DictionaryDetailView.as_view(), name='output'),
+    url(r'^import/start/$', wld.dictionary.views.import_csv_start, name='import_start'),
+    url(r'^import/progress/$', wld.dictionary.views.import_csv_progress, name='import_progress'),
 
     url(r'^login/$',
         django.contrib.auth.views.login,

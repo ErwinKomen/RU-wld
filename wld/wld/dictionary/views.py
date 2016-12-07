@@ -9,6 +9,7 @@ from django.http import HttpRequest, HttpResponse
 from django.core.urlresolvers import reverse
 from django.template import RequestContext, loader
 from django.db.models import Q
+from django.http import JsonResponse
 from datetime import datetime
 from xml.dom import minidom
 import xml.etree.ElementTree as ET
@@ -216,6 +217,43 @@ def export_html(qs, sFileName):
     response['Content-Disposition'] = 'attachment; filename="'+sFileName+'.htm"'
      
     return response
+
+def import_csv_start(request):
+    # x = request.POST
+    iDeel = request.GET.get('deel', 1)
+    iSectie = request.GET.get('sectie', None)
+    iAflnum = request.GET.get('aflnum', 1)
+    sFile = request.GET.get('filename', '')
+
+    bUseDbase = request.GET.get('usedbase', False)
+    if bUseDbase:
+        if bUseDbase == "true":
+            bUseDbase = True
+
+    # Formulate a response
+    data = {'status': 'done'}
+
+    # Note that we are starting
+    oCsvImport['status'] = "starting"
+
+    # Call the process
+    oResult = csv_to_fixture(sFile, iDeel, iSectie, iAflnum, bUseDbase = bUseDbase, bUseOld = True)
+    if oResult == None or oResult['result'] == False:
+        data.status = 'error'
+
+    # Return this response
+    return JsonResponse(data)
+
+def import_csv_progress(request):
+    # Find out how far importing is going
+    data = oCsvImport
+    # Checking...
+    if data['status'] == "idle":
+        data['msg'] = "Idle status in import_csv_progress"
+    else:
+        data['msg'] = ""
+    # Return where we are
+    return JsonResponse(data)
 
 
 class DictionaryDetailView(DetailView):

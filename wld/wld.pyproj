@@ -37,13 +37,13 @@
     <Compile Include="wld\dictionary\fix.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="wld\dictionary\management\commands\permissions.py">
+    <Compile Include="wld\dictionary\fixtures\management\commands\permissions.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="wld\dictionary\management\commands\__init__.py">
+    <Compile Include="wld\dictionary\fixtures\management\commands\__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="wld\dictionary\management\__init__.py">
+    <Compile Include="wld\dictionary\fixtures\management\__init__.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="wld\dictionary\migrations\__init__.py" />
@@ -63,10 +63,10 @@
   <ItemGroup>
     <Folder Include="wld\" />
     <Folder Include="wld\dictionary\" />
-    <Folder Include="wld\dictionary\management\commands\" />
+    <Folder Include="wld\dictionary\fixtures\management\commands\" />
     <Folder Include="wld\dictionary\migrations\" />
     <Folder Include="wld\dictionary\fixtures\" />
-    <Folder Include="wld\dictionary\management\" />
+    <Folder Include="wld\dictionary\fixtures\management\" />
     <Folder Include="wld\dictionary\static\" />
     <Folder Include="wld\dictionary\static\dictionary\" />
     <Folder Include="wld\dictionary\static\dictionary\content\" />
@@ -76,6 +76,8 @@
     <Folder Include="wld\dictionary\templates\dictionary\" />
     <Folder Include="wld\templates\" />
     <Folder Include="wld\templates\admin\" />
+    <Folder Include="wld\templates\admin\dictionary\" />
+    <Folder Include="wld\templates\admin\dictionary\Info\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="wld\dictionary\fixtures\initial_data.json" />
@@ -105,6 +107,7 @@
     <Content Include="wld\dictionary\templates\dictionary\topnav.html" />
     <Content Include="wld\templates\admin\base.html" />
     <Content Include="wld\templates\admin\base_site.html" />
+    <Content Include="wld\templates\admin\dictionary\Info\change_form.html" />
     <None Include="wld\dictionary\static\dictionary\scripts\_references.js" />
     <Content Include="wld\dictionary\static\dictionary\scripts\bootstrap.js" />
     <Content Include="wld\dictionary\static\dictionary\scripts\bootstrap.min.js" />
