@@ -25,8 +25,15 @@ def remove_from_fieldsets(fieldsets, fields):
                 break
 
 class LemmaAdmin(admin.ModelAdmin):
-    fieldsets = ( ('Editable', {'fields': ('gloss', 'toelichting', 'bronnenlijst',)}),
+    fieldsets = ( ('Editable', {'fields': ('gloss', )}),
                 )
+    list_display = ['gloss']
+
+
+class DescriptionAdmin(admin.ModelAdmin):
+    fieldsets = ( ('Editable', {'fields': ('toelichting', 'bronnenlijst', 'boek',)}),
+                )
+    list_display = ['toelichting', 'bronnenlijst', 'boek']
 
 
 class DialectAdmin(admin.ModelAdmin):
@@ -38,6 +45,7 @@ class DialectAdmin(admin.ModelAdmin):
 class TrefwoordAdmin(admin.ModelAdmin):
     fieldsets = ( ('Editable', {'fields': ('woord', 'toelichting',)}),
                 )
+    list_display = ['woord', 'toelichting']
 
 
 class EntryAdmin(admin.ModelAdmin):
@@ -67,6 +75,7 @@ admin.site.register(Trefwoord, TrefwoordAdmin)
 admin.site.register(Aflevering, AfleveringAdmin)
 admin.site.register(Mijn)
 admin.site.register(Info, InfoAdmin)
+admin.site.register(Description, DescriptionAdmin)
 
 # -- Components of a publication
 admin.site.register(Deel)

@@ -22,7 +22,7 @@ import json
 
 MAX_IDENTIFIER_LEN = 10
 MAX_LEMMA_LEN = 100
-oCsvImport = {'read': 0, 'skipped': 0, 'status': 'idle'}
+oCsvImport = {'read': 0, 'skipped': 0, 'status': 'idle', 'method': 'none'}
 
 
 # ============================= LOCAL CLASSES ======================================
@@ -402,7 +402,7 @@ def isNullOrEmptyOrInt(arPart, lstColumn):
     for iIdx in lstColumn:
         sItem = arPart[iIdx]
         # Check if this item is empty, null or numeric
-        if sItem == "" or sItem == "NULL" or sItem.isnumeric():
+        if sItem == "" or sItem == "NULL" or sItem.startswith('#') or sItem == "?" or sItem == "-" or sItem.isnumeric():
             # Indicate where the error was
             return iIdx
 
@@ -1223,6 +1223,11 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
 
     try:
         oCsvImport['status'] = 'preparing'
+        if bUseDbase:
+          oCsvImport['method'] = 'db'
+        else:
+          oCsvImport['method'] = 'lst'
+
         oBack['result'] = False
         # Validate: input file exists
         if not "/" in csv_file and not "\\" in csv_file:

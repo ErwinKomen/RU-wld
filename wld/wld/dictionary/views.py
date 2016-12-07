@@ -229,6 +229,8 @@ def import_csv_start(request):
     if bUseDbase:
         if bUseDbase == "true":
             bUseDbase = True
+        else:
+            bUseDbase = False
 
     # Formulate a response
     data = {'status': 'done'}

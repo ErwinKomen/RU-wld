@@ -204,6 +204,7 @@ function progress_handle(json) {
   var iSkipped = json.skipped;
   var sProgress = "";
   var sMsg = json.msg;
+  var sMethod = json.method;
   // Deal with error
   if (sStatus === "error") {
     // Stop the progress calling
@@ -211,9 +212,9 @@ function progress_handle(json) {
     sProgress = "An error has occurred - stopped";
   } else {
     if (sMsg === undefined || sMsg === "") {
-      sProgress = sStatus + " (read=" + iRead + ", skipped=" + iSkipped + ")";
+      sProgress = sStatus + " " + sMethod + " (read=" + iRead + ", skipped=" + iSkipped + ")";
     } else {
-      sProgress = sStatus + " (read=" + iRead + ", skipped=" + iSkipped + "): " + sMsg;
+      sProgress = sStatus + " " + sMethod + " (read=" + iRead + ", skipped=" + iSkipped + "): " + sMsg;
     }
     if (iRead > 0 || iSkipped > 0) {
       $("#id_read").val(iRead);
