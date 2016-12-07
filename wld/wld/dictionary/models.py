@@ -1286,10 +1286,12 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
         if str(iDeel).isnumeric(): iDeel = int(iDeel)
         if str(iSectie).isnumeric(): iSectie = int(iSectie)
         if str(iAflevering).isnumeric(): iAflevering = int(iAflevering)
-        iPkAflevering = oFix.get_pk(oAflevering, "dictionary.aflevering", True,
-                                    deel=iDeel,
-                                    sectie=iSectie,
-                                    aflnum = iAflevering)
+        #iPkAflevering = oFix.get_pk(oAflevering, "dictionary.aflevering", True,
+        #                            deel=iDeel,
+        #                            sectie=iSectie,
+        #                            aflnum = iAflevering)
+        oAfl = Aflevering.objects.filter(deel__nummer=iDeel, sectie=iSectie, aflnum=iAflevering).first()
+        iPkAflevering = oAfl.pk
 
         #else:
         #    # Remove the existing objects from Lemma, Trefwoord and Entry
