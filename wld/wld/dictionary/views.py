@@ -285,7 +285,11 @@ def import_csv_progress(request):
         if data['status'] == "idle":
             data['msg'] = "Idle status in import_csv_progress"
     else:
-        data['status'] = "No status object for info=" + str(info.id) + " has been created yet"
+        # Do we have an INFO object?
+        if info == None:
+            data['status'] = "Please supply [deel], [sectie] and [aflnum]"
+        else:
+            data['status'] = "No status object for info=" + str(info.id) + " has been created yet"
     # Return where we are
     return JsonResponse(data)
 
