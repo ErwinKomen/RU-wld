@@ -575,8 +575,7 @@ class LemmaDescr(models.Model):
 
         # Return the result
         return iPk
-
-
+    
 
 class Dialect(models.Model):
     """Dialect"""
@@ -692,8 +691,7 @@ class Deel(models.Model):
 
     def romeins(self):
         return int_to_roman(self.nummer)
-
-
+    
 
 class Info(models.Model):
     """Informatiebestand (csv)"""
@@ -711,31 +709,6 @@ class Info(models.Model):
     skipped = models.IntegerField("Overgeslagen", blank=False, default=0)
     # Het bestand dat ge-upload wordt
     csv_file = models.FileField(upload_to="csv_files/")
-
-    def save_attempt(self, *args, **kwargs):
-        # Standard treatment: first save it
-        super(Info, self).save(*args, **kwargs)
-        # Has it been processed already?
-        if self.processed == None or self.processed == "":
-
-            # Get the value of UseOld
-            bUseOld = True    # Should be determined from the admin form...
-
-            # Get the value of UseDbase
-            bUseDbase = True  # Should be determined from the admin form...
-
-            # Process the file
-            # bResult = handle_uploaded_csv(self.csv_file.path, self.deel, self.sectie, self.aflnum)
-            oResult = csv_to_fixture(self.csv_file.path, self.deel, self.sectie, self.aflnum, bUseDbase=bUseDbase, bUseOld=bUseOld)
-            # Do we have success?
-            if oResult['result']:
-                # Show it is processed
-                self.processed =  datetime.now().strftime("%d/%B/%Y - %H:%M:%S")
-                # Show how much has been read
-                self.read = oResult['read']
-                self.skipped = oResult['skipped']
-                # Save the revised information
-                super(Info, self).save(*args, **kwargs)
 
 
 class Status(models.Model):
@@ -789,6 +762,13 @@ class Aflevering(models.Model):
             iNumber = self.sectie * 10 + self.aflnum
         return iNumber
 
+    def get_summary(self):
+        sSum = int_to_roman(self.deel.nummer) + "-"
+        if self.sectie != None:
+            sSum += str(self.sectie) + "-"
+        sSum += str(self.aflnum)
+        return sSum
+
     def get_pdf(self):
         # sPdf =  "{}/static/dictionary/content/pdf{}/{}".format(APP_PREFIX, self.deel.nummer,self.naam)
         sPdf =  "wld-{}/{}".format(self.deel.nummer,self.naam)
@@ -833,7 +813,6 @@ class Aflevering(models.Model):
         return iPk
 
 
-
 class Mijn(models.Model):
     """De mijn waar de sprekers werken"""
 
@@ -856,8 +835,6 @@ class Mijn(models.Model):
             iPk = qs[0].pk
 
         return iPk
-
-
 
 
 class Entry(models.Model):
@@ -889,6 +866,14 @@ class Entry(models.Model):
 
     def get_trefwoord_woord(self):
         return self.trefwoord.woord + '_' + self.woord
+
+    def get_aflevering(self):
+        afl = self.aflevering
+        sAfl = "d" + str(afl.deel.nummer) + "-"
+        if afl.sectie != None:
+            sAfl += "s" + str(afl.sectie) + "-"
+        sAfl += "a" + str(afl.aflnum)
+        return sAfl
 
     def get_lemma_gloss(self):
         return self.lemma.gloss + '_' + self.woord

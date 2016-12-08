@@ -43,7 +43,8 @@
 
 
             <div id="searchdefault" class="row">
-              <div class="col-sm-3">
+              <div class="col-sm-4">
+                <div><label>&nbsp;</label></div>
                 <div class='input-group'>
                   <label class='input-group-addon' 
                          data-toggle="popover" data-trigger="hover"
@@ -52,25 +53,8 @@
                   <input name='search' class='form-control' {% if searchform.search.value %}value='{{searchform.search.value}}'{% endif %}>
                 </div>
               </div>
-              <div class="col-sm-3">
-                <div class='input-group'>
-                  <label class='input-group-addon' 
-                         data-toggle="popover" data-trigger="hover"
-                         data-placement="right" data-content="Willekeurige tekens: ? (één) * (0 of meer). Groep tekens: [m-n]"
-                         for='id_lemma'>{{searchform.lemma.label}}</label>
-                  <input name='lemma' class='form-control' {% if searchform.lemma.value %}value='{{searchform.lemma.value}}'{% endif %}>
-                </div>
-              </div>
-              <div class="col-sm-3">
-                <div class='input-group'>
-                  <label class='input-group-addon' 
-                         data-toggle="popover" data-trigger="hover"
-                         data-placement="right" data-content="Willekeurige tekens: ? (één) * (0 of meer). Groep tekens: [m-n]"
-                         for='id_dialectwoord'>{{searchform.dialectwoord.label}}</label>
-                  <input name='dialectwoord' class='form-control' {% if searchform.dialectwoord.value %}value='{{searchform.dialectwoord.value}}'{% endif %}>
-                </div>
-              </div>
-              <div class="col-sm-3">
+              <div class="col-sm-4 col-sm-offset-2">
+                <div><label>&nbsp;</label></div>
                 <div class='btn-group'>
                     <!-- Make sure no button has the *name* 'submit', otherwise submit() cannot be used -->
                     <input class='btn btn-primary' type="submit" onclick="do_search(this, 'trefwoord', 'simple');" value="Zoek">
@@ -83,6 +67,16 @@
                       <li><a href="#" onclick="do_search(this, 'trefwoord', 'Excel');" >Excel</a></li>
                       <li><a href="#" onclick="do_search(this, 'trefwoord', 'Html');" >Html</a></li>
                     </ul>
+                </div>
+              </div>
+              <div class="col-sm-2">
+                <div class='form-group' id='paginate_by'>
+                  <label for='paginate_by'>Resultaten per pagina</label>
+                  <select class='form-control' name="paginate_by">
+                    {% for pag in paginateValues %}
+                    <option {% if pag == paginateSize %} selected {% endif %}>{{pag}}</option>
+                    {% endfor %}
+                  </select>
                 </div>
               </div>
             </div>
@@ -103,9 +97,21 @@
                         <tr>
                           <td>
                             <div class='input-group'>
-                              <label class='input-group-addon' for='id_code'>{{searchform.dialectCode.label}}</label>
-                              <input name='dialectCode' class='form-control' {% if searchform.dialectCode.value %}value='{{searchform.dialectCode.value}}'{% endif %}>
+                              <label class='input-group-addon' 
+                                      data-toggle="popover" data-trigger="hover"
+                                      data-placement="right" data-content="Willekeurige tekens: ? (één) * (0 of meer). Groep tekens: [m-n]"
+                                      for='id_lemma'>{{searchform.lemma.label}}</label>
+                              <input name='lemma' class='form-control' {% if searchform.lemma.value %}value='{{searchform.lemma.value}}'{% endif %}>
                             </div>
+                            <div><label>&nbsp;</label></div>
+                            <div class='input-group'>
+                              <label class='input-group-addon' 
+                                      data-toggle="popover" data-trigger="hover"
+                                      data-placement="right" data-content="Willekeurige tekens: ? (één) * (0 of meer). Groep tekens: [m-n]"
+                                      for='id_dialectwoord'>{{searchform.dialectwoord.label}}</label>
+                              <input name='dialectwoord' class='form-control' {% if searchform.dialectwoord.value %}value='{{searchform.dialectwoord.value}}'{% endif %}>
+                            </div>
+                            <div><label>&nbsp;</label></div>
                             <div class='input-group'>
                               <label class='input-group-addon' for='id_toelichting'>{{searchform.toelichting.label}}</label>
                               <input name='toelichting' class='form-control' {% if searchform.toelichting.value %}value='{{searchform.toelichting.value}}'{% endif %}>
@@ -116,15 +122,12 @@
                               <label class='input-group-addon' for='id_city'>{{searchform.dialectCity.label}}</label>
                               <input name='dialectCity' class='form-control' {% if searchform.dialectCity.value %}value='{{searchform.dialectCity.value}}'{% endif %}>
                             </div>
-
-                            <div class='form-group' id='paginate_by'>
-                            <label for='paginate_by'>Resultaten per pagina</label>
-                            <select class='form-control' name="paginate_by">
-                              {% for pag in paginateValues %}
-                              <option {% if pag == paginateSize %} selected {% endif %}>{{pag}}</option>
-                              {% endfor %}
-                            </select>
+                            <div><label>&nbsp;</label></div>
+                            <div class='input-group'>
+                              <label class='input-group-addon' for='id_code'>{{searchform.dialectCode.label}}</label>
+                              <input name='dialectCode' class='form-control' {% if searchform.dialectCode.value %}value='{{searchform.dialectCode.value}}'{% endif %}>
                             </div>
+
                           </td>
                         </tr>
 
@@ -182,6 +185,10 @@
                     <span>){% if not forloop.last %}, {% endif %}</span>
                     {% endspaceless %}
                 {% endfor %}
+              {% endfor %}
+              {% regroup tw.entry_set.all|dictsort:"get_aflevering" by aflevering as afl_list  %}
+              {% for afl in afl_list %}
+                <span class="lemma-aflevering"><a href="/{{app_prefix}}static/dictionary/content/pdf/{{afl.grouper.get_pdf}}">{{afl.grouper.get_summary}}</a></span>
               {% endfor %}
             </td>
             <td>

@@ -97,7 +97,7 @@
           <div class="col-sm-8"><span class="step-links">{% include 'dictionary/pagination.html' %}</span></div>
       </div>
       <table class="table table-hover">
-        <thead><tr><th class="hidden">id</th><th>Plaats</th><th>Begrip: trefwoord (dialectopgave)</th></tr></thead>
+        <thead><tr><th class="hidden">id</th><th>Plaats</th><th>Begrip: trefwoord (dialectopgave)</th><th>Boek(en)</th></tr></thead>
         <tbody>
         {% for dialect in object_list %}
           <tr class="dict-entry">
@@ -128,6 +128,12 @@
                   {% endspaceless %}
                 {% endfor %}
 
+              {% endfor %}
+            </td>
+            <td>
+              {% regroup dialect.entry_set.all|dictsort:"get_aflevering" by aflevering as afl_list  %}
+              {% for afl in afl_list %}
+                <span class="lemma-aflevering"><a href="/{{app_prefix}}static/dictionary/content/pdf/{{afl.grouper.get_pdf}}">{{afl.grouper.get_summary}}</a></span>
               {% endfor %}
             </td>
           </tr>

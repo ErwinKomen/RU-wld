@@ -56,6 +56,7 @@ class LemmaSearchForm(forms.ModelForm):
     dialectCity = forms.CharField(label=_("Stad"))
     bronnen = forms.CharField(label=_("Bronnen"))
     optdialect = forms.CharField(label=_("Dialectweergave"))
+    aflevering = forms.CharField(label=_("Deel/sectie/aflevering"))
 
     class Meta:
 
@@ -75,6 +76,7 @@ class TrefwoordSearchForm(forms.ModelForm):
     dialectCity = forms.CharField(label=_("Plaats"))
     bronnen = forms.CharField(label=_("Bronnen"))
     optdialect = forms.CharField(label=_("Dialectweergave"))
+    aflevering = forms.CharField(label=_("Deel/sectie/aflevering"))
 
     class Meta:
 

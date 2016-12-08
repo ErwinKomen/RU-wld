@@ -415,6 +415,13 @@ class TrefwoordListView(ListView):
             # Apply the filter
             qs = qs.filter(query)
 
+        # Check for 'toelichting'
+        if 'toelichting' in get and get['toelichting'] != '':
+            val = adapt_search(get['toelichting'])
+            # Try to get to the dialectwoord
+            query = Q(toelichting__iregex=val)
+            qs = qs.filter(query)
+
         # Check for dialectwoord
         if 'dialectwoord' in get and get['dialectwoord'] != '':
             val = adapt_search(get['dialectwoord'])
@@ -505,6 +512,9 @@ class LemmaListView(ListView):
         # Set the title of the application
         context['title'] = "e-WLD begrippen"
 
+        # Set the afleveringen that are available
+        context['afleveringen'] = [afl for afl in Aflevering.objects.all()]
+
         # Return the calculated context
         return context
 
@@ -547,6 +557,13 @@ class LemmaListView(ListView):
             val = adapt_search(get['dialectCode'])
             # query = Q(entry__dialect__code__istartswith=val)
             query = Q(entry__dialect__code__iregex=val)
+            qs = qs.filter(query)
+
+        # Check for dialect word
+        if 'woord' in get and get['woord'] != '':
+            val = adapt_search(get['woord'])
+            # query = Q(entry__dialect__code__istartswith=val)
+            query = Q(entry__woord__iregex=val)
             qs = qs.filter(query)
 
 
