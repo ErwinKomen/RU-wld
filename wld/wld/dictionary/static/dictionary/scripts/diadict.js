@@ -166,9 +166,12 @@ function import_start(bUseDbase) {
     $("#info_progress").html(sMsg);
     $("#info_button").addClass("hidden");
     $("#info_button2").addClass("hidden");
+    return;
+  } else {
+    $("#info_progress").html("Please wait...");
   }
-  // Start the regular progress indication
-  oProgressTimer = window.setInterval(progress_request, 1000);
+  // Start looking only after some time
+  oProgressTimer = window.setTimeout(progress_request, 3000);
   // Start reading this file
   sUrl = $("#info_button").attr('import-start');
   var oData = {
@@ -188,10 +191,19 @@ function import_start(bUseDbase) {
 function progress_request() {
   // Prepare an AJAX call to ask for the progress
   sUrl = $("#info_button").attr('import-progress');
+  // Retrieve the values Deel/Sectie/AflNum
+  var sDeel = $("#id_deel").val();
+  var sSectie = $("#id_sectie").val();
+  var sAflnum = $("#id_aflnum").val();
+  // Prepare these values for the request
+  var oData = {
+    'deel': sDeel, 'sectie': sSectie,
+    'aflnum': sAflnum
+  };
   $.ajax({
     "url": sUrl,
     "dataType": "json",
-    "data": null,
+    "data": oData,
     "cache": false,
     "success": function (json) { progress_handle(json); }
   })(jQuery);
@@ -208,7 +220,7 @@ function progress_handle(json) {
   // Deal with error
   if (sStatus === "error") {
     // Stop the progress calling
-    window.clearInterval(oProgressTimer);
+    // window.clearInterval(oProgressTimer);
     sProgress = "An error has occurred - stopped";
   } else {
     if (sMsg === undefined || sMsg === "") {
@@ -223,10 +235,23 @@ function progress_handle(json) {
   }
   if (sStatus !== "idle") {
     $("#info_progress").html(sProgress);
-    if (sStatus === "done") {
-      progress_stop();
-    }
   }
+  switch (sStatus) {
+    case "error":
+      break;
+    case "done":
+      progress_stop();
+      break;
+    case "idle":
+      // Make an additional request but wait longer
+      oProgressTimer = window.setTimeout(progress_request, 5000);
+      break;
+    default:
+      // Make an additional request in 1 second
+      oProgressTimer = window.setTimeout(progress_request, 1000);
+      break;
+  }
+
 }
 
 function progress_stop() {

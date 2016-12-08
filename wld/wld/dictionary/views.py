@@ -232,14 +232,29 @@ def import_csv_start(request):
         else:
             bUseDbase = False
 
+    # Get the id of the Info object
+    if iSectie==None:
+        info = Info.objects.filter(deel=iDeel, aflnum=iAflnum).first()
+    else:
+        info = Info.objects.filter(deel=iDeel, sectie=iSectie, aflnum=iAflnum).first()
+
+    # Remove any previous status objects for this info
+    Status.objects.filter(info=info).delete()
+
+    # Create a new import-status object
+    oStatus = Status(info=info)
+    iStatus = oStatus.id
+
     # Formulate a response
     data = {'status': 'done'}
 
     # Note that we are starting
-    oCsvImport['status'] = "starting"
+    oStatus.status = "starting"
+    oStatus.save()
+    # oCsvImport['status'] = "starting"
 
     # Call the process
-    oResult = csv_to_fixture(sFile, iDeel, iSectie, iAflnum, bUseDbase = bUseDbase, bUseOld = True)
+    oResult = csv_to_fixture(sFile, iDeel, iSectie, iAflnum, iStatus, bUseDbase = bUseDbase, bUseOld = True)
     if oResult == None or oResult['result'] == False:
         data.status = 'error'
 
@@ -247,13 +262,28 @@ def import_csv_start(request):
     return JsonResponse(data)
 
 def import_csv_progress(request):
-    # Find out how far importing is going
-    data = oCsvImport
-    # Checking...
-    if data['status'] == "idle":
-        data['msg'] = "Idle status in import_csv_progress"
+    iDeel = request.GET.get('deel', 1)
+    iSectie = request.GET.get('sectie', None)
+    iAflnum = request.GET.get('aflnum', 1)
+    # Get the id of the Info object
+    if iSectie==None:
+        info = Info.objects.filter(deel=iDeel, aflnum=iAflnum).first()
     else:
-        data['msg'] = ""
+        info = Info.objects.filter(deel=iDeel, sectie=iSectie, aflnum=iAflnum).first()
+    # Find out how far importing is going
+    qs = Status.objects.filter(info=info)
+    if qs != None and len(qs) > 0:
+        iStatus = qs[0].id
+        # data = oCsvImport
+        data = Status.getStatus(iStatus)
+        # Checking...
+        if data['status'] == "idle":
+            data['msg'] = "Idle status in import_csv_progress"
+        else:
+            data['msg'] = ""
+    else:
+        data = {'read':0, 'skipped':0, 'method': '(unknown)'}
+        data['status'] = "No status object for info=" + str(info.id) + " has been created yet"
     # Return where we are
     return JsonResponse(data)
 

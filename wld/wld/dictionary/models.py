@@ -22,7 +22,7 @@ import json
 
 MAX_IDENTIFIER_LEN = 10
 MAX_LEMMA_LEN = 100
-oCsvImport = {'read': 0, 'skipped': 0, 'status': 'idle', 'method': 'none'}
+# oCsvImport = {'read': 0, 'skipped': 0, 'status': 'idle', 'method': 'none'}
 
 
 # ============================= LOCAL CLASSES ======================================
@@ -694,6 +694,7 @@ class Deel(models.Model):
         return int_to_roman(self.nummer)
 
 
+
 class Info(models.Model):
     """Informatiebestand (csv)"""
 
@@ -735,6 +736,18 @@ class Info(models.Model):
                 self.skipped = oResult['skipped']
                 # Save the revised information
                 super(Info, self).save(*args, **kwargs)
+
+
+class Status(models.Model):
+    """Status of importing a CSV file """
+
+    # Number of read and skipped lines
+    read = models.IntegerField("Gelezen", blank=False, default=0)
+    skipped = models.IntegerField("Overgeslagen", blank=False, default=0)
+    status = models.TextField("Status", blank=False, default="idle")
+    method = models.CharField("Reading method", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    # Link to the Info
+    info = models.ForeignKey(Info, blank=False)
 
 
 class Aflevering(models.Model):
@@ -1216,17 +1229,27 @@ class fEntry:
 # History:
 #  1/dec/2016   ERK Created
 # ----------------------------------------------------------------------------------
-def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseOld=False):
+def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=False, bUseOld=False):
     """Process a CSV with entry definitions"""
 
     oBack = {}      # What we return
 
     try:
-        oCsvImport['status'] = 'preparing'
+        # Retrieve the correct instance of the status object
+        oStatus = Status.objects.filter(id=iStatus).first()
+        oStatus.status = "preparing"
         if bUseDbase:
-          oCsvImport['method'] = 'db'
+            oStatus.method = "db"
         else:
-          oCsvImport['method'] = 'lst'
+            oStatus.method = "lst"
+        # Save the status to the database
+        oStatus.save()
+
+        #oCsvImport['status'] = 'preparing'
+        #if bUseDbase:
+        #  oCsvImport['method'] = 'db'
+        #else:
+        #  oCsvImport['method'] = 'lst'
 
         oBack['result'] = False
         # Validate: input file exists
@@ -1421,9 +1444,13 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
                         oBack[sIdx] = 0
                     oBack[sIdx] +=1
             # Keep track of progress
-            oCsvImport['skipped'] = iSkipped
-            oCsvImport['read'] = iRead
-            oCsvImport['status'] = 'working'
+            #oCsvImport['skipped'] = iSkipped
+            #oCsvImport['read'] = iRead
+            #oCsvImport['status'] = 'working'
+            oStatus.skipped = iSkipped
+            oStatus.read = iRead
+            oStatus.status = "working"
+            oStatus.save()
 
 
         # CLose the input file
@@ -1439,10 +1466,14 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, bUseDbase=False, bUseO
         oBack['result'] = True
         oBack['skipped'] = iSkipped
         oBack['read'] = iRead
-        oCsvImport['status'] = 'done'
+        # oCsvImport['status'] = 'done'
+        oStatus.status = "done"
+        oStatus.save()
         return oBack
     except:
-        oCsvImport['status'] = 'error'
+        # oCsvImport['status'] = 'error'
+        oStatus.status = "error"
+        oStatus.save()
         errHandle.DoError("csv_to_fixture", True)
         return oBack
 
