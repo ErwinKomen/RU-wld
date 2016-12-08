@@ -243,7 +243,6 @@ def import_csv_start(request):
 
     # Create a new import-status object
     oStatus = Status(info=info)
-    iStatus = oStatus.id
 
     # Formulate a response
     data = {'status': 'done'}
@@ -251,6 +250,7 @@ def import_csv_start(request):
     # Note that we are starting
     oStatus.status = "starting"
     oStatus.save()
+    iStatus = oStatus.id
     # oCsvImport['status'] = "starting"
 
     # Call the process
@@ -270,19 +270,21 @@ def import_csv_progress(request):
         info = Info.objects.filter(deel=iDeel, aflnum=iAflnum).first()
     else:
         info = Info.objects.filter(deel=iDeel, sectie=iSectie, aflnum=iAflnum).first()
+    # Prepare a return object
+    data = {'read':0, 'skipped':0, 'method': '(unknown)', 'msg': ''}
     # Find out how far importing is going
     qs = Status.objects.filter(info=info)
     if qs != None and len(qs) > 0:
-        iStatus = qs[0].id
-        # data = oCsvImport
-        data = Status.getStatus(iStatus)
+        oStatus = qs[0]
+        # Fill in the return object
+        data['read'] = oStatus.read
+        data['skipped'] = oStatus.skipped
+        data['method'] = oStatus.method
+        data['status'] = oStatus.status
         # Checking...
         if data['status'] == "idle":
             data['msg'] = "Idle status in import_csv_progress"
-        else:
-            data['msg'] = ""
     else:
-        data = {'read':0, 'skipped':0, 'method': '(unknown)'}
         data['status'] = "No status object for info=" + str(info.id) + " has been created yet"
     # Return where we are
     return JsonResponse(data)
