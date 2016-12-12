@@ -470,9 +470,10 @@ def partToLine(sVersie, arPart, bDoMijnen):
         oBack['trefwoord_name'] = html.unescape(oBack['trefwoord_name'])
         # Remove quotation marks everywhere and adapt NULL where needed
         for (k,v) in oBack.items():
-            oBack[k] = v.strip('"')
-            if oBack[k] == "NULL":
-                oBack[k] = ""
+            if oBack[k] != None:
+                oBack[k] = v.strip('"')
+                if oBack[k] == "NULL":
+                    oBack[k] = ""
         # Need to treat the Mines??
         if bDoMijnen:
             # Check for unknown dialect location
