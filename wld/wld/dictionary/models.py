@@ -409,6 +409,102 @@ def isNullOrEmptyOrInt(arPart, lstColumn):
     # When everything has been checked and there is no indication, return false
     return 0
 
+def isLineOkay(oLine):
+    # Define which items need to be checked
+    lCheck = ['lemma_name', 'trefwoord_name', 'dialectopgave_name', 'dialect_stad', 'dialect_nieuw']
+    iIdx = 0
+    # Walk all key-value pairs
+    for (k,v) in oLine.items():
+        iIdx += 1
+        # Is this key part of the range that needs checking?
+        if k in lCheck:
+            # Perform the check here
+            if v=="" or v=="NULL" or v.startswith('#') or v=="?" or v=="-" or v.isnumeric():
+                # Indicate where the error was
+                return iIdx
+
+    # When everything has been checked and there is no indication, return false
+    return 0
+
+
+# ----------------------------------------------------------------------------------
+# Name :    partToLine
+# Goal :    Convert an array of values into a structure
+# History:
+#  12/dec/2016   ERK Created
+# ----------------------------------------------------------------------------------
+def partToLine(sVersie, arPart, bDoMijnen):
+    """Convert an array of values [arPart] into a structure"""
+
+    oBack = {}
+    if sVersie == "Lemmanummer":
+        oBack['lemma_name'] = arPart[1]
+        oBack['lemma_bronnenlijst'] = arPart[6]
+        oBack['lemma_toelichting'] = arPart[2]
+        oBack['lemma_boek'] = arPart[7]
+        oBack['dialect_stad'] = arPart[10]
+        oBack['dialect_nieuw'] = arPart[15]
+        oBack['dialect_toelichting'] = None
+        oBack['dialect_kloeke'] = None
+        oBack['trefwoord_name'] = arPart[3]
+        oBack['trefwoord_toelichting'] = ""
+        oBack['dialectopgave_name'] = arPart[5]
+        oBack['dialectopgave_toelichting'] = arPart[14]
+    elif sVersie == "lemma.name":
+        oBack['lemma_name'] = arPart[0]
+        oBack['lemma_bronnenlijst'] = arPart[2]
+        oBack['lemma_toelichting'] = arPart[1]
+        oBack['lemma_boek'] = ""
+        oBack['dialect_stad'] = arPart[9]
+        oBack['dialect_nieuw'] = arPart[8]
+        oBack['dialect_toelichting'] = arPart[10]
+        oBack['dialect_kloeke'] = arPart[7]         # OLD KloekeCode
+        oBack['trefwoord_name'] = arPart[3]
+        oBack['trefwoord_toelichting'] = arPart[4]
+        oBack['dialectopgave_name'] = arPart[5]
+        oBack['dialectopgave_toelichting'] = arPart[6]
+
+    if sVersie != "":
+        # Unescape two items
+        oBack['dialectopgave_name'] = html.unescape(oBack['dialectopgave_name'])
+        oBack['trefwoord_name'] = html.unescape(oBack['trefwoord_name'])
+        # Remove quotation marks everywhere and adapt NULL where needed
+        for (k,v) in oBack.items():
+            oBack[k] = v.strip('"')
+            if oBack[k] == "NULL":
+                oBack[k] = ""
+        # Need to treat the Mines??
+        if bDoMijnen:
+            # Check for unknown dialect location
+            if oBack['dialect_stad'].lower() == "onbekend":
+                oBack['dialect_stad'] = "Zie mijnen"
+            # Get the list of mines
+            sMijnen = oBack['dialect_toelichting'].replace('(', '').replace(')', '').strip()
+            # Sanity check
+            if sMijnen == "":
+                lMijnen = []
+            else:
+                # Adaptations for Oranje nassau mijnen
+                sMijnen = sMijnen.replace('Oranje-Nassau I-IV', 'Oranje-Nassau I / Oranje-Nassau II / Oranje-Nassau III / Oranje-Nassau IV')
+                lMijnen = sMijnen.split('/')
+                # Remove spaces from the mines
+                for i, s in enumerate(lMijnen):
+                    s = s.strip()
+                    if s == "I": 
+                        s = "Oranje-Nassau I"
+                    elif s == "II":
+                        s = "Oranje-Nassau II"
+                    elif s == "III":
+                        s = "Oranje-Nassau III"
+                    elif s == "IV":
+                        s = "Oranje-Nassau IV"
+                    lMijnen[i] = s
+                    
+            # Add the list of Mijnen
+            oBack['mijn_list'] = lMijnen
+
+    # Return what we found
+    return oBack
 
 class HelpChoice(models.Model):
     """Define the URL to link to for the help-text"""
@@ -856,7 +952,9 @@ class Entry(models.Model):
     # Trefwoord: obligatory
     trefwoord = models.ForeignKey(Trefwoord, db_index=True, blank=False)
     # Mijn [0-1]
-    mijn = models.ForeignKey(Mijn, blank = True, null=True)
+    # mijn = models.ForeignKey(Mijn, blank = True, null=True)
+    # Mijn [0-n]
+    mijnlijst = models.ManyToManyField(Mijn, db_index=True, through='EntryMijn')
     # Aflevering [1]
     aflevering = models.ForeignKey(Aflevering, db_index=True, blank=False)
     # Dialectal entry: obligatory
@@ -956,6 +1054,35 @@ class Entry(models.Model):
 
         # Return the result
         return iPk
+
+
+class EntryMijn(models.Model):
+    """Connection between Entry and Mijn"""
+
+    entry=models.ForeignKey(Entry, db_index=True, on_delete=models.CASCADE)
+    mijn=models.ForeignKey(Mijn, db_index=True, on_delete=models.CASCADE)
+
+    def get_item(self):
+        # Get the parameters
+        entry = self['entry']
+        mijn = self['mijn']
+        # Try find an existing item
+        qItem = EntryMijn.objects.filter(entry=entry, 
+                                         mijn=mijn).first()
+        # see if we get one value back
+        if qItem == None:
+            # add a new Description object
+            entrymijn = EntryMijn(entry=Entry.objects.get(id=entry), mijn=Mijn.objects.get(id=mijn))
+            entrymijn.save()
+            iPk = entrymijn.pk
+        else:
+            # Get the pk of the first hit
+            iPk = qItem.pk
+
+        # Return the result
+        return iPk
+    
+
 
 
 # ============================= Fixture Database Classes ===========================
@@ -1133,6 +1260,20 @@ class fLemmaDescr:
                 self.pk = item.pk
 
 
+class fEntryMijn:
+    """Connection between entry and mijn information to fixture"""
+
+    pk = 0         # Initialise PK
+    lstItem = []   # Array of known items
+
+    def load(self, qs):
+        if qs:
+            for item in qs:
+                # Add this item to the list we have
+                self.lstItem.append(fElement(item.pk, entry=item.entry, mijn=item.mijn))
+                self.pk = item.pk
+
+
 class fDialect:
     """Dialect information to fixture"""
 
@@ -1152,13 +1293,27 @@ class fTrefwoord:
     """Trefwoord information to fixture"""
 
     pk = 0         # Initialise PK
-    lstItem = []   # Array of known dialects
+    lstItem = []   # Array of known items
 
     def load(self, qs):
         if qs:
             for item in qs:
                 # Add this item to the list we have
                 self.lstItem.append(fElement(item.pk, woord=item.woord))
+                self.pk = item.pk
+
+
+class fMijn:
+    """Mijn information to fixture"""
+
+    pk = 0         # Initialise PK
+    lstItem = []   # Array of known items
+
+    def load(self, qs):
+        if qs:
+            for item in qs:
+                # Add this item to the list we have
+                self.lstItem.append(fElement(item.pk, naam=item.naam))
                 self.pk = item.pk
 
 
@@ -1206,7 +1361,7 @@ class fEntry:
                                       trefwoord=item.trefwoord, 
                                       aflevering=item.aflevering))
                 self.pk = item.pk
-
+    
 
 # ----------------------------------------------------------------------------------
 # Name :    csv_to_fixture
@@ -1218,6 +1373,7 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
     """Process a CSV with entry definitions"""
 
     oBack = {}      # What we return
+    sVersie = ""    # The version we are using--this depends on the column names
 
     try:
         # Retrieve the correct instance of the status object
@@ -1229,12 +1385,6 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
             oStatus.method = "lst"
         # Save the status to the database
         oStatus.save()
-
-        #oCsvImport['status'] = 'preparing'
-        #if bUseDbase:
-        #  oCsvImport['method'] = 'db'
-        #else:
-        #  oCsvImport['method'] = 'lst'
 
         oBack['result'] = False
         # Validate: input file exists
@@ -1252,6 +1402,8 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
         iPkDialect = 1      # The PK for each Dialect
         iPkEntry = 1        # The PK for each Entry
         iPkAflevering = 1   # The PK for each Aflevering
+        iPkMijn = 1         # The PK for each Mijn
+        iPkEntryMijn = 1    # The PK for each Entry/Mijn
         iCounter = 0        # Loop counter for progress
         iRead = 0           # Number read correctly
         iSkipped = 0        # Number skipped
@@ -1276,10 +1428,13 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
         oTrefwoord = fTrefwoord()
         oAflevering = fAflevering()
         oEntry = fEntry()
+        oMijn = fMijn()
+        oEntryMijn = fEntryMijn()
 
         # Initialise the lists in these instances (where needed)
         oDialect.load(Dialect.objects.all())
         oAflevering.load(Aflevering.objects.all())
+        oMijn.load(Mijn.objects.all())
         if bUseOld:
             oLemma.load(Lemma.objects.all())
             oTrefwoord.load(Trefwoord.objects.all())
@@ -1288,6 +1443,7 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
             # It should *not* be necessary to load all existing ENTRY objects
             #    since we assume that any object to be added is UNIQUE
             # oEntry.load(Entry.objects.all())
+            oEntryMijn.load(EntryMijn.objects.all())
 
             # Determine what the maximum [pk] for [Entry] currently in use is
             if Entry.objects.all().count() == 0:
@@ -1299,24 +1455,19 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
         if str(iDeel).isnumeric(): iDeel = int(iDeel)
         if str(iSectie).isnumeric(): iSectie = int(iSectie)
         if str(iAflevering).isnumeric(): iAflevering = int(iAflevering)
-        #iPkAflevering = oFix.get_pk(oAflevering, "dictionary.aflevering", True,
-        #                            deel=iDeel,
-        #                            sectie=iSectie,
-        #                            aflnum = iAflevering)
-        oAfl = Aflevering.objects.filter(deel__nummer=iDeel, sectie=iSectie, aflnum=iAflevering).first()
+        if iSectie == None or iSectie == "":
+            oAfl = Aflevering.objects.filter(deel__nummer=iDeel, aflnum=iAflevering).first()
+        else:
+            oAfl = Aflevering.objects.filter(deel__nummer=iDeel, sectie=iSectie, aflnum=iAflevering).first()
         iPkAflevering = oAfl.pk
-
-        #else:
-        #    # Remove the existing objects from Lemma, Trefwoord and Entry
-        #    Lemma.objects.all().delete()
-        #    Trefwoord.objects.all().delete()
-        #    Entry.objects.all().delete()
 
         # Open source file to read line-by-line
         f = codecs.open(csv_file, "r", encoding='utf-8-sig')
         bEnd = False
         bFirst = True
         bFirstOut = False
+        bDoMijnen = (iDeel == 2 and iAflevering == 5)   # Treat 'Mijn' for WLD-II-5
+        lMijnen = []
         while (not bEnd):
             # Show where we are
             iCounter +=1
@@ -1333,17 +1484,32 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
             if (strLine != ""):
                 # Split the line into parts
                 arPart = strLine.split('\t')
+                # Convert the array of values to a structure
+                oLine = partToLine(sVersie, arPart, bDoMijnen)
                 # Check if this line contains 'valid' data:
-                #  1 = lemma
-                #  3 = trefwoord
-                #  5 = Dialectwoord (fonetische variant)
-                # 10 = Dialect city name
-                # 15 = Kloeke code
-                iValid = isNullOrEmptyOrInt(arPart, [1, 3, 5, 10, 15])
+                iValid = isLineOkay(oLine)
+                #if sVersie == "Lemmanummer":
+                #    #  1 = lemma
+                #    #  3 = trefwoord
+                #    #  5 = Dialectwoord (fonetische variant)
+                #    # 10 = Dialect city name
+                #    # 15 = Kloeke code
+                #    iValid = isNullOrEmptyOrInt(arPart, [1, 3, 5, 10, 15])
+                #elif sVersie == "lemma.name":
+                #    #  1 = lemma        (lemma.name)
+                #    #  3 = trefwoord    (trefwoord.name)
+                #    #  5 = Dialectwoord (dialectopgave.name)
+                #    #  9 = Dialect city (kloekestad)
+                #    #  8 = Kloeke new   (newkloekecode)
+                #    iValid = isNullOrEmptyOrInt(arPart, [1, 3, 5, 9, 8])
+                #else:
+                #    iValid = True
                 # IF this is the first line or an empty line, then skip
                 if bFirst:
+                    # Get the version from cell 0, line 0
+                    sVersie = arPart[0]
                     # Check if the line starts correctly
-                    if arPart[0] != 'Lemmanummer':
+                    if sVersie != 'Lemmanummer' and sVersie != "lemma.name":
                         # The first line does not start correctly -- return false
                         return oBack
                     # Indicate that the first item has been had
@@ -1351,32 +1517,36 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
                 elif iValid == 0:
                     # Assuming this 'part' is entering an ENTRY
 
-                    # Adapt the part-elements that need this
-                    for idx in [2,6,7,14]:
-                        if arPart[idx] == "NULL":
-                            arPart[idx] = ""
+                    ## Adapt the part-elements that need this
+                    #for idx in [2,6,7,14]:
+                    #    if arPart[idx] == "NULL":
+                    #        arPart[idx] = ""
 
                     # Make sure we got TREFWOORD correctly
-                    sTrefWoord = arPart[3]
-                    sTrefWoord = html.unescape(sTrefWoord).strip('"')
+                    #sTrefWoord = arPart[3]
+                    #sTrefWoord = html.unescape(sTrefWoord).strip('"')
+                    sTrefWoord = oLine['trefwoord_name']
+
+                    if bDoMijnen and 'mijn_list' in oLine:
+                        lMijnen = oLine['mijn_list']
 
 
                     if bUseDbase:
                         # Find out which lemma this is
-                        iPkLemma = Lemma.get_item({'gloss': arPart[1]})
+                        iPkLemma = Lemma.get_item({'gloss': oLine['lemma_name']})
 
                         # Find out which lemma-description this is
-                        iPkDescr = Description.get_item({'bronnenlijst': arPart[6],
-                                                         'toelichting': arPart[2], 
-                                                         'boek': arPart[7]})
+                        iPkDescr = Description.get_item({'bronnenlijst': oLine['lemma_bronnenlijst'],
+                                                         'toelichting': oLine['lemma_toelichting'], 
+                                                         'boek': oLine['lemma_boek']})
 
                         # TODO: add the [iPkDescr] to the LemmaDescr--but only if it is not already there
                         iPkLemmaDescr = LemmaDescr.get_item({'lemma': iPkLemma,
                                                              'description': iPkDescr})
 
                         # Find out which dialect this is
-                        iPkDialect = Dialect.get_item({'stad': arPart[10], 
-                                                        'nieuw': arPart[15]})
+                        iPkDialect = Dialect.get_item({'stad': oLine['dialect_stad'], 
+                                                        'nieuw': oLine['dialect_nieuw']})
 
                         # Find out which trefwoord this is
                         iPkTrefwoord = Trefwoord.get_item({'woord': sTrefWoord})
@@ -1385,13 +1555,13 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
                         # Get a lemma number from this
                         # NOTE: assume 2 = toelichting 
                         iPkLemma = oFix.get_pk(oLemma, "dictionary.lemma", True,
-                                               gloss=arPart[1])
+                                               gloss=oLine['lemma_name'])
 
                         # Get a description number
                         iPkDescr = oFix.get_pk(oDescr, "dictionary.description", True,
-                                               bronnenlijst=arPart[6], 
-                                               toelichting=arPart[2], 
-                                               boek=arPart[7])
+                                               bronnenlijst=oLine['lemma_bronnenlijst'], 
+                                               toelichting=oLine['lemma_toelichting'], 
+                                               boek=oLine['lemma_boek'])
 
                         # Add the Lemma-Description connection
                         iPkLemmaDescr = oFix.get_pk(oLemmaDescr, "dictionary.lemmadescr", True,
@@ -1400,25 +1570,61 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
 
 
                         # get a dialect number
-                        iPkDialect = oFix.get_pk(oDialect, "dictionary.dialect", True,
-                                                 stad=arPart[10], 
-                                                 nieuw=arPart[15])
+                        if oLine['dialect_toelichting'] != None and oLine['dialect_kloeke'] != None:
+                            iPkDialect = oFix.get_pk(oDialect, "dictionary.dialect", True,
+                                                     stad=oLine['dialect_stad'], 
+                                                     nieuw=oLine['dialect_nieuw'],
+                                                     code=oLine['dialect_kloeke'],
+                                                     toelichting=oLine['dialect_toelichting'])
+                        else:
+                            iPkDialect = oFix.get_pk(oDialect, "dictionary.dialect", True,
+                                                     stad=oLine['dialect_stad'], 
+                                                     nieuw=oLine['dialect_nieuw'])
 
                         # get a trefwoord number
-                        iPkTrefwoord = oFix.get_pk(oTrefwoord, "dictionary.trefwoord", True,
-                                                   woord=sTrefWoord)
+                        sTwToel = oLine['trefwoord_toelichting']
+                        if sTwToel == None or sTwToel == "":
+                            iPkTrefwoord = oFix.get_pk(oTrefwoord, "dictionary.trefwoord", True,
+                                                       woord=sTrefWoord)
+                        else:
+                            iPkTrefwoord = oFix.get_pk(oTrefwoord, "dictionary.trefwoord", True,
+                                                       woord=sTrefWoord,
+                                                       toelichting=sTwToel)
 
                     # Process the ENTRY
-                    sDialectWoord = arPart[5]
-                    sDialectWoord = html.unescape(sDialectWoord).strip('"')
+                    #sDialectWoord = arPart[5]
+                    #sDialectWoord = html.unescape(sDialectWoord).strip('"')
+                    sDialectWoord = oLine['dialectopgave_name']
                     iPkEntry = oFix.get_pk(oEntry, "dictionary.entry", False,
                                            pk=iPkEntry,
                                            woord=sDialectWoord,
-                                           toelichting=arPart[14],
+                                           toelichting=oLine['dialectopgave_toelichting'],
                                            lemma=iPkLemma,
                                            dialect=iPkDialect,
                                            trefwoord=iPkTrefwoord,
                                            aflevering=iPkAflevering)
+
+                    if bDoMijnen:
+                        if bUseDbase:
+                            # Walk all the mijnen for this entry
+                            for sMijn in lMijnen:
+                                # Get the PK for this mijn
+                                iPkMijn = Mijn.get_item({'naam': sMijn})
+                                # Process the PK for EntryMijn
+                                iPkEntryMijn = EntryMijn.get_item({'entry': iPkEntry,
+                                                                   'mijn': iPkMijn})
+
+                        else:
+                            # Walk all the mijnen for this entry
+                            for sMijn in lMijnen:
+                                # Get the PK for this mijn
+                                iPkMijn = oFix.get_pk(oMijn, "dictionary.mijn", True,
+                                                      naam=sMijn)
+                                # Process the PK for EntryMijn
+                                iPkEntryMijn = oFix.get_pk(oEntryMijn, "dictionary.entrymijn", False,
+                                                           pk=iPkEntryMijn,
+                                                           entry=iPkEntry,
+                                                           mijn=iPkMijn)
                     iRead += 1
                 else:
                     # This line is being skipped
@@ -1429,9 +1635,6 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
                         oBack[sIdx] = 0
                     oBack[sIdx] +=1
             # Keep track of progress
-            #oCsvImport['skipped'] = iSkipped
-            #oCsvImport['read'] = iRead
-            #oCsvImport['status'] = 'working'
             oStatus.skipped = iSkipped
             oStatus.read = iRead
             oStatus.status = "working"

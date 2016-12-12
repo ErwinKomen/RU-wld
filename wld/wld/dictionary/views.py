@@ -233,10 +233,14 @@ def import_csv_start(request):
             bUseDbase = False
 
     # Get the id of the Info object
-    if iSectie==None:
+    if iSectie==None or iSectie == "":
         info = Info.objects.filter(deel=iDeel, aflnum=iAflnum).first()
     else:
         info = Info.objects.filter(deel=iDeel, sectie=iSectie, aflnum=iAflnum).first()
+
+    if info == None:
+        data.status = 'error: no Info object found'
+        return JsonResponse(data)
 
     # Remove any previous status objects for this info
     Status.objects.filter(info=info).delete()
@@ -266,7 +270,7 @@ def import_csv_progress(request):
     iSectie = request.GET.get('sectie', None)
     iAflnum = request.GET.get('aflnum', 1)
     # Get the id of the Info object
-    if iSectie==None:
+    if iSectie==None or iSectie == "":
         info = Info.objects.filter(deel=iDeel, aflnum=iAflnum).first()
     else:
         info = Info.objects.filter(deel=iDeel, sectie=iSectie, aflnum=iAflnum).first()

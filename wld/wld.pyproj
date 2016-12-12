@@ -84,6 +84,8 @@
     <Content Include="wld\dictionary\static\dictionary\content\boeken-wld.jpg" />
     <Content Include="wld\dictionary\static\dictionary\content\bootstrap.css" />
     <Content Include="wld\dictionary\static\dictionary\content\bootstrap.min.css" />
+    <Content Include="wld\dictionary\static\dictionary\content\taalkaart-wld-750.jpg" />
+    <Content Include="wld\dictionary\static\dictionary\content\taalkaart-wld.jpg" />
     <Content Include="wld\dictionary\static\dictionary\content\taalkaart-wld.png" />
     <Content Include="wld\dictionary\static\dictionary\content\site.css" />
     <Content Include="wld\dictionary\static\dictionary\content\taalkaart-limburg.jpg" />

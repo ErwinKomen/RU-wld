@@ -52,8 +52,9 @@ SECRET_KEY = '485c409a-daf7-47d3-81af-257049728c58'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+TEMPLATE_DEBUG = DEBUG
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'e-wld.nl', 'www.e-wld.nl']
 
 
 # Application definition

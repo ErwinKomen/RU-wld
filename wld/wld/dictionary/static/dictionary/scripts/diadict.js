@@ -268,3 +268,11 @@ function progress_stop() {
   // Stop the progress calling
   window.clearInterval(oProgressTimer);
 }
+
+function set_search(sId) {
+  var lSearchId = ['lemmasearch', 'locationsearch', 'trefwoordsearch'];
+  for (i = 0; i < lSearchId.length; i++) {
+    $("#" + lSearchId[i]).addClass("hidden");
+  }
+  $("#" + sId).removeClass("hidden");
+}
