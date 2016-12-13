@@ -133,13 +133,28 @@ def afleveringen(request):
         }
     )
 
+def do_repair(request):
+    """Renders the REPAIR page."""
+    assert isinstance(request, HttpRequest)
+    return render(
+        request,
+        'dictionary/repair.html',
+        {
+            'title':'e-WLD reparatie',
+            'message':'Radboud Universiteit Nijmegen - Dialectenwoordenboek.',
+            'year':datetime.now().year,
+        }
+    )
+
+
+
 def adapt_search(val):
     # First trim
     val = val.strip()
-    val = fnmatch.translate(val)
-    val = '^' + val + '$'
-    #if not '^' in val and not '$' in val: 
-    #    val = '^' + val + '$'
+    # fnmatch.translate() works okay, but note beginning and ending spaces
+    # val = fnmatch.translate('^' + val + '$')
+    val = '^' + fnmatch.translate(val) + '$'
+    # val = '^' + val.replace("?", ".").replace("*", ".*") + '$'
     return val
 
 def export_csv(qs, sFileName):
@@ -218,12 +233,53 @@ def export_html(qs, sFileName):
      
     return response
 
+def do_repair_start(request):
+    """Start up the repair action"""
+    sRepairType = request.GET.get('repairtype', '')
+
+    # Formulate a response
+    data = {'status': 'done'}
+
+    # Remove any previous repair objects of this type
+    Repair.objects.filter(repairtype=sRepairType).delete()
+    # Retrieve the Repair object with the correct type
+    oRepair = Repair(repairtype=sRepairType)
+    oRepair.save()
+    if sRepairType == "lemma":
+        bResult = do_repair_lemma(oRepair)
+        if not bResult:
+            data.status = "error"
+
+    # Return this response
+    return JsonResponse(data)
+
+def do_repair_progress(request):
+    """Show the progress of where we are in repairing"""
+
+    sRepairType = request.GET.get('repairtype', '')
+
+    # Formulate a response
+    data = {'status': 'not found'}
+
+    # Get the repair object
+    qs = Repair.objects.filter(repairtype=sRepairType)
+    if qs != None and len(qs) > 0:
+        oRepair = qs[0]
+        data['status'] = oRepair.status
+
+    # Return this response
+    return JsonResponse(data)
+
+
 def import_csv_start(request):
     # x = request.POST
     iDeel = request.GET.get('deel', 1)
     iSectie = request.GET.get('sectie', None)
     iAflnum = request.GET.get('aflnum', 1)
     sFile = request.GET.get('filename', '')
+
+    # Formulate a response
+    data = {'status': 'done'}
 
     bUseDbase = request.GET.get('usedbase', False)
     if bUseDbase:
@@ -247,9 +303,6 @@ def import_csv_start(request):
 
     # Create a new import-status object
     oStatus = Status(info=info)
-
-    # Formulate a response
-    data = {'status': 'done'}
 
     # Note that we are starting
     oStatus.status = "starting"
@@ -548,7 +601,7 @@ class LemmaListView(ListView):
 
             # Apply the filter
             qs = qs.filter(query)
-
+ 
         # Check for dialect city
         if 'dialectCity' in get and get['dialectCity'] != '':
             val = adapt_search(get['dialectCity'])

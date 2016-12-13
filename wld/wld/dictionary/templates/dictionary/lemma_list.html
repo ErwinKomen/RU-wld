@@ -69,7 +69,7 @@
               </div>
               <div class="col-sm-2">
                 <div class='form-group' id='paginate_by'>
-                  <label for='paginate_by'>Resultaten per pagina</label>
+                  <label for='paginate_by'>Per pagina</label>
                   <select class='form-control' name="paginate_by">
                     {% for pag in paginateValues %}
                     <option {% if pag == paginateSize %} selected {% endif %}>{{pag}}</option>
@@ -191,11 +191,15 @@
                   <span>{% if not forloop.last %}, {% endif %}</span>
                 {% endfor %}
                 {% endspaceless %}
+                {% if not forloop.last %} || {% endif %}
               {% endfor %}
               {% regroup lem.entry_set.all|dictsort:"get_aflevering" by aflevering as afl_list  %}
+              {% spaceless %}
               {% for afl in afl_list %}
                 <span class="lemma-aflevering"><a href="/{{app_prefix}}static/dictionary/content/pdf/{{afl.grouper.get_pdf}}">{{afl.grouper.get_summary}}</a></span>
+                <span>{% if not forloop.last %}, {% endif %}</span>
               {% endfor %}
+              {% endspaceless %}
             </td>
           </tr>
         {% endfor %}

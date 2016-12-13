@@ -150,6 +150,65 @@ function do_dialect(el) {
   return true;
 }
 
+function repair_start(sRepairType) {
+  // Indicate that we are starting
+  $("#repair_progress_" + sRepairType).html("Repair is starting: "+sRepairType);
+  // Start looking only after some time
+  var oJson = { 'status': 'started' };
+  oRepairTimer = window.setTimeout(function () { repair_progress(sRepairType, oJson); }, 3000);
+
+  // Make sure that at the end: we stop
+  var oData = { 'type': sRepairType };
+  sUrl = $("#repair_start_"+sRepairType).attr('repair-start');
+  $.ajax({
+    "url": sUrl,
+    "dataType": "json",
+    "data": oData,
+    "cache": false,
+    "success": function () { repair_stop(); }
+  })(jQuery);
+}
+
+function repair_progress(sRepairType) {
+
+  var oData = { 'type': sRepairType };
+  sUrl = $("#repair_start_" + sRepairType).attr('repair-progress');
+  $.ajax({
+    "url": sUrl,
+    "dataType": "json",
+    "data": oData,
+    "cache": false,
+    "success": function (json) {
+      repair_handle(sRepairType, json); }
+  })(jQuery);
+}
+
+function repair_handle(sRepairType, json) {
+  // Action depends on the status in [json]
+  switch (json.status) {
+    case 'error':
+      // Show we are ready
+      $("#repair_progress_" + sRepairType).html("Error repairing: " + sRepairType);
+      // Stop the progress calling
+      window.clearInterval(oRepairTimer);
+      // Leave the routine, and don't return anymore
+      return;
+    default:
+      // Default action is to show the status
+      $("#repair_progress_" + sRepairType).html(json.status);
+      oRepairTimer = window.setTimeout(function (json) { repair_progress(sRepairType); }, 1000);
+      break;
+  }
+}
+
+function repair_stop(sRepairType) {
+  // Show we are ready
+  $("#repair_progress_" + sRepairType).html("Finished repair: " + sRepairType);
+
+  // Stop the progress calling
+  window.clearInterval(oRepairTimer);
+}
+
 function import_start(bUseDbase) {
   // Retrieve the values Deel/Sectie/AflNum
   var sDeel = $("#id_deel").val();

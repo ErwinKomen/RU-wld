@@ -820,6 +820,15 @@ class Status(models.Model):
     info = models.ForeignKey(Info, blank=False)
 
 
+class Repair(models.Model):
+    """Definition and status of a repair action"""
+
+    # Definition of this repair type
+    repairtype = models.CharField("Soort reparatie", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    # Status of this repair action
+    status = models.TextField("Status", blank=False, default="idle")
+
+
 class Aflevering(models.Model):
     """Aflevering van een woordenboek"""
 
@@ -1666,3 +1675,53 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
         errHandle.DoError("csv_to_fixture", True)
         return oBack
 
+
+# ----------------------------------------------------------------------------------
+# Name :    do_repair_lemma
+# Goal :    Repair the lemma's
+# History:
+#  13/dec/2016   ERK Created
+# ----------------------------------------------------------------------------------
+def do_repair_lemma(oRepair):
+    """Repair lemma stuff"""
+
+    # Get all the lemma's
+    qs = Lemma.objects.all()
+
+    # Walk all the lemma's
+    iStart = 0
+    iLen = qs.count()
+    iRepair = 0
+    for oLem in qs:
+        # Note progress
+        iStart += 1
+        bChange = False
+        # Show where we are
+        oRepair.status = "Working on {} (of {})".format(iStart,iLen)
+        oRepair.save()
+        # Remove spaces from lemma
+        sGloss = oLem.gloss.strip()
+        if sGloss != oLem.gloss:
+            iRepair +=1
+            oLem.gloss = sGloss
+            bChange = True
+        # Check for trailing and following quotation marks
+        sGloss = oLem.gloss
+        if sGloss.startswith('"') and sGloss.endswith('"'):
+            oLem.gloss = sGloss.strip('"')
+            iRepair += 1
+            bChange = True
+        sGloss = oLem.gloss
+        if sGloss.startswith("'") and sGloss.endswith("'"):
+            oLem.gloss = sGloss.strip("'")
+            iRepair += 1
+            bChange = True
+        # Have any changes been made?
+        if bChange:
+            # save the changes
+            oLem.save()
+            oRepair.status = "Saved changes in {} (of {})".format(iStart,iLen)
+            oRepair.save()
+
+    # Return positively
+    return True

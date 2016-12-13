@@ -16,7 +16,7 @@
 
 {% block extrajs %}
 
- 
+
 {% endblock %}
 
 </head>
@@ -27,13 +27,12 @@
     {% block content %}
     <div class="container body-content">
       <div class="panel panel-default">
-        <form name='trefwoordsearch' id='trefwoordsearch' action="" method='get' 
-              onsubmit="return do_search('#id_submit_button', 'trefwoord', 'simple');" >
+        <form name='lemmasearch' id='lemmasearch' action="" method='get' onsubmit="return do_search('#id_submit_button', 'lemma', 'simple');" >
             <!-- EK: A sort-order specification is in a hidden form field, which is filled by JS:do_sort_column() -->
             <div class="hidden">
-                <input name='sortOrder' class='form-control' value='woord' >
-                <input name='search_type' class='form-control' value='woord'>
-                <input id="submit_type" name="submit_type" class='form-control' value="simple">
+                <input name='sortOrder' class='form-control' value='gloss' >
+                <input name='search_type' class='form-control' value='lemma'>
+                <input id="submit_type" name='submit_type' class='form-control' value='simple'>
             </div>
 
             {% include 'dictionary/dialectviewing.html' %}
@@ -44,7 +43,7 @@
 
             <div id="searchdefault" class="row">
               <div class="col-sm-4">
-                <div><label>&nbsp;</label></div>
+                <label>&nbsp;</label>
                 <div class='input-group'>
                   <label class='input-group-addon' 
                          data-toggle="popover" data-trigger="hover"
@@ -57,15 +56,14 @@
                 <div><label>&nbsp;</label></div>
                 <div class='btn-group'>
                     <!-- Make sure no button has the *name* 'submit', otherwise submit() cannot be used -->
-                    <input class='btn btn-primary' type="submit" onclick="do_search(this, 'trefwoord', 'simple');" value="Zoek">
-                    <input class='btn btn-default' type="submit" onclick="do_search(this, 'trefwoord', 'Herstel');" value="Herstel">
-                    <!-- <input class='btn btn-default' type="submit" onclick="do_search(this, 'trefwoord', 'Csv');" name="submit_type" value="Csv"> -->
+                    <input class='btn btn-primary' type="submit" onclick="do_search(this, 'lemma', 'simple');" value="Zoek">
+                    <input class='btn btn-default' type="submit" onclick="do_search(this, 'lemma', 'Herstel');" value="Herstel">
                     <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" 
                         aria-haspopup="true" aria-expanded="false">Download <span class="caret"></span></button>
                     <ul class="dropdown-menu">
-                      <li><a href="#" onclick="do_search(this, 'trefwoord', 'Csv');" >Tab gescheiden lijst</a></li>
-                      <li><a href="#" onclick="do_search(this, 'trefwoord', 'Excel');" >Excel</a></li>
-                      <li><a href="#" onclick="do_search(this, 'trefwoord', 'Html');" >Html</a></li>
+                      <li><a href="#" onclick="do_search(this, 'lemma', 'Csv');" >Tab gescheiden lijst</a></li>
+                      <li><a href="#" onclick="do_search(this, 'lemma', 'Excel');" >Excel</a></li>
+                      <li><a href="#" onclick="do_search(this, 'lemma', 'Html');" >Html</a></li>
                     </ul>
                 </div>
               </div>
@@ -97,24 +95,16 @@
                         <tr>
                           <td>
                             <div class='input-group'>
-                              <label class='input-group-addon' 
-                                      data-toggle="popover" data-trigger="hover"
-                                      data-placement="right" data-content="Willekeurige tekens: ? (één) * (0 of meer). Groep tekens: [m-n]"
-                                      for='id_lemma'>{{searchform.lemma.label}}</label>
-                              <input name='lemma' class='form-control' {% if searchform.lemma.value %}value='{{searchform.lemma.value}}'{% endif %}>
+                              <label class='input-group-addon' for='id_code'>{{searchform.dialectCode.label}}</label>
+                              <input name='dialectCode' class='form-control' {% if searchform.dialectCode.value %}value='{{searchform.dialectCode.value}}'{% endif %}>
                             </div>
                             <div><label>&nbsp;</label></div>
                             <div class='input-group'>
-                              <label class='input-group-addon' 
-                                      data-toggle="popover" data-trigger="hover"
-                                      data-placement="right" data-content="Willekeurige tekens: ? (één) * (0 of meer). Groep tekens: [m-n]"
-                                      for='id_dialectwoord'>{{searchform.dialectwoord.label}}</label>
-                              <input name='dialectwoord' class='form-control' {% if searchform.dialectwoord.value %}value='{{searchform.dialectwoord.value}}'{% endif %}>
-                            </div>
-                            <div><label>&nbsp;</label></div>
-                            <div class='input-group'>
-                              <label class='input-group-addon' for='id_toelichting'>{{searchform.toelichting.label}}</label>
-                              <input name='toelichting' class='form-control' {% if searchform.toelichting.value %}value='{{searchform.toelichting.value}}'{% endif %}>
+                                <label class='input-group-addon' 
+                                        data-toggle="popover" data-trigger="hover"
+                                        data-placement="right" data-content="Willekeurige tekens: ? (één) * (0 of meer). Groep tekens: [m-n]"
+                                        for='id_woord'>{{searchform.woord.label}}</label>
+                                <input name='woord' class='form-control' {% if searchform.woord.value %}value='{{searchform.woord.value}}'{% endif %}>
                             </div>
                           </td>
                           <td>
@@ -124,10 +114,14 @@
                             </div>
                             <div><label>&nbsp;</label></div>
                             <div class='input-group'>
-                              <label class='input-group-addon' for='id_code'>{{searchform.dialectCode.label}}</label>
-                              <input name='dialectCode' class='form-control' {% if searchform.dialectCode.value %}value='{{searchform.dialectCode.value}}'{% endif %}>
+                              <label class='input-group-addon' for='id_aflevering'>{{searchform.aflevering.label}}</label>
+                              <select id="id_aflevering">
+                                <option value="0">-</option>
+                                {% for opt in afleveringen %}
+                                  <option value="{{opt.id}}">{{opt.get_summary}}</option>
+                                {% endfor %}
+                              </select>
                             </div>
-
                           </td>
                         </tr>
 
@@ -156,56 +150,51 @@
           </div>
       </div>
       <table class="table table-hover">
-        <thead><tr><th class="hidden">id</th><th>Trefwoord</th><th>Begrip: dialectopgave (plaats)</th><th>Toelichting</th></tr></thead>
+        <thead><tr><th class="hidden">id</th><th>Begrip</th><th>Trefwoord: dialectopgave (plaats)</th><th>Omschrijving</th></tr></thead>
         <tbody>
-        {% for tw in object_list %}
+        {% for lem in object_list %}
           <tr class="dict-entry">
             <td class="hidden"> {{ lem.id }} </td>
             <td>
-              <span class="trefwoord-name">{{tw.woord}}</span>
+              <span class="lemma-list-name">{{lem.gloss}}</span>
             </td>
             <td>
               <!-- See: https://docs.djangoproject.com/en/dev/ref/templates/builtins/?from=olddocs#regroup -->
-              {% regroup tw.entry_set.all|dictsort:"get_lemma_gloss" by lemma as lemma_list %}
-              {% for lem in lemma_list %}
-                <span class="lemma-name"><a href="{% url 'lemmasearch' %}?search={{lem.grouper}}">{{lem.grouper}}</a>:</span>
-                {% regroup lem.list|dictsort:"get_lemma_gloss" by woord as word_list %}
-                {% for wrd in word_list %}    
-                    <span class="lemma-word">{{wrd.grouper}}</span>
-                    {% spaceless %}
-                    <span>(</span>
-                    {% for entry in wrd.list %}
-                      <span class="lemma-word-dialect">
-                        <span class="lemma-word-dialect-code hidden">{{entry.dialect.nieuw}}</span>
-                        <span class="lemma-word-dialect-space hidden">&nbsp;</span>
-                        <span class="lemma-word-dialect-stad">{{entry.dialect.stad}}</span>
-                        <span>{% if not forloop.last %}, {% endif %}</span>
-                      </span>
-                    {% endfor %}
-                    <span>){% if not forloop.last %}, {% endif %}</span>
-                    {% endspaceless %}
-                {% endfor %}
+              {% regroup lem.entry_set.all|dictsort:"get_trefwoord_woord" by trefwoord as trefwoord_list %}
+              {% spaceless %}
+              {% for tref in trefwoord_list %}
+                <span class="lemma-trefwoord"><a href="{% url 'trefwoordsearch' %}?search={{tref.grouper}}">{{tref.grouper}}</a></span>
+                <span>{% if not forloop.last %}, {% endif %}</span>
               {% endfor %}
-              {% regroup tw.entry_set.all|dictsort:"get_aflevering" by aflevering as afl_list  %}
-              {% for afl in afl_list %}
-                <span class="lemma-aflevering"><a href="/{{app_prefix}}static/dictionary/content/pdf/{{afl.grouper.get_pdf}}">{{afl.grouper.get_summary}}</a></span>
-              {% endfor %}
+              {% endspaceless %}
             </td>
             <td>
-              <span class="toelichting">{{tw.toelichting}}</span>
+              {% regroup lem.lmdescr.all|dictsort:"get_descr_sort" by toelichting as omschr_list %}
+              {% for omschr in omschr_list %}
+                <span class="toelichting">{{omschr.grouper}}</span>
+                {% if not forloop.last %} || {% endif %}
+              {% endfor %}
+              {% regroup lem.entry_set.all|dictsort:"get_aflevering" by aflevering as afl_list  %}
+              {% spaceless %}
+              {% for afl in afl_list %}
+                <span class="lemma-aflevering"><a href="/{{app_prefix}}static/dictionary/content/pdf/{{afl.grouper.get_pdf}}">{{afl.grouper.get_summary}}</a></span>
+                <span>{% if not forloop.last %}, {% endif %}</span>
+              {% endfor %}
+              {% endspaceless %}
             </td>
           </tr>
         {% endfor %}
         </tbody>
       </table>
     {% else %}
-      <p>No keywords are available.</p>
+      <p>No lemma's are available.</p>
     {% endif %}
 
       <div class="pagination">
           <span class="step-links">
 
           {% include 'dictionary/pagination.html' %}
+
           </span>
       </div>
     </div>

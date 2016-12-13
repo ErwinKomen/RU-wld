@@ -95,11 +95,14 @@
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.woff" />
     <Content Include="wld\dictionary\static\dictionary\scripts\diadict.js" />
     <Content Include="wld\dictionary\templates\dictionary\about-OUD.html" />
+    <Content Include="wld\dictionary\templates\dictionary\lemma_list_short.html" />
+    <Content Include="wld\dictionary\templates\dictionary\repair.html" />
     <Content Include="wld\dictionary\templates\dictionary\aflevering_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\afleveringen.html" />
     <Content Include="wld\dictionary\templates\dictionary\contact-OUD.html" />
     <Content Include="wld\dictionary\templates\dictionary\dialectviewing.html" />
     <Content Include="wld\dictionary\templates\dictionary\import_csv.html" />
+    <Content Include="wld\dictionary\templates\dictionary\lemma_list_full.html" />
     <Content Include="wld\dictionary\templates\dictionary\location_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\mijn_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\dialect_list.html" />
