@@ -49,10 +49,11 @@ class TrefwoordAdmin(admin.ModelAdmin):
 
 
 class EntryAdmin(admin.ModelAdmin):
-    fieldsets = ( ('Editable', {'fields': ('woord', 'lemma', 'dialect', 'trefwoord', 'toelichting',)}),
+    fieldsets = ( ('Editable', {'fields': ('woord', 'lemma', 'dialect', 'trefwoord', 'toelichting', 'aflevering')}),
                 )
     list_display = ['woord', 'lemma', 'dialect', 'trefwoord', 'toelichting']
     list_filter = ['lemma', 'dialect']
+    search_fields = ['woord', 'trefwoord__woord', 'lemma__gloss']
 
 
 class AfleveringAdmin(admin.ModelAdmin):

@@ -1,11 +1,4 @@
-﻿{% block scripts %}
-
-    {% load staticfiles %}
-    <script src="{% static 'dictionary/scripts/diadict.js' %}"></script>
-
-{% endblock %}
-
-
+﻿    <div name="topnav"></div>
 
     <div class="navbar navbar-custom navbar-fixed-top">
         <div class="container" url_home="{% url 'home' %}">
@@ -37,7 +30,6 @@
                       <ul class="dropdown-menu">
                         <li><a href="{% url 'definitions' %}">Definities</a></li>
                         <li><a href="{% url 'entries' %}">Bewerken</a></li>
-                        <!-- <li><a href="{% url 'admin_import_list' %}">Importeren (csv)</a></li> -->
                         <li role="separator" class="divider"></li>
                         <li><a href="{% url 'admin_entry_list' %}">Dialectopgaven</a></li>
                         <li role="separator" class="divider"></li>
@@ -94,7 +86,7 @@
                         {% else %}
                           <li><a href="{% url 'login' %}"><span class="glyphicon glyphicon-user" aria-hidden="true"></span> Beheer</a></li>
                         {% endif %}
-                      </u>
+                      </ul>
                     </li>
                 </ul>
             </div>

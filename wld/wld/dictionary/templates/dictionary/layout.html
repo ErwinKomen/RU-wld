@@ -5,16 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
     {% load staticfiles %}
+    {% load static %}
     <link rel="stylesheet" type="text/css" href="{% static 'dictionary/content/bootstrap.min.css' %}" />
     <link rel="stylesheet" type="text/css" href="{% static 'dictionary/content/site.css' %}" />
     <script src="{% static 'dictionary/scripts/modernizr-2.6.2.js' %}"></script>
     <script src="{% static 'dictionary/scripts/jquery-1.10.2.js' %}"></script>
     <script src="{% static 'dictionary/scripts/bootstrap.js' %}"></script>
     <script src="{% static 'dictionary/scripts/respond.js' %}"></script>
+    <script src="{% static 'dictionary/scripts/diadict.js' %}"></script>
 </head>
 
 <body>
     {% include 'dictionary/topnav.html' %}
+
+    <div name="layout"></div>
 
     <div class="container body-content">
 {% block content %}{% endblock %}
