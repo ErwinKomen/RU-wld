@@ -149,12 +149,12 @@ table tbody tr:hover {
 
 /* navbar */
 .navbar-custom {
-    background-color: green;
-    border-color: darkgreen;
+    background-color: green !important;
+    border-color: darkgreen !important;
 }
 /* title */
 .navbar-custom .navbar-brand {
-    color: lightgreen;
+    color: lightgreen !important;
 }
 .navbar-custom .navbar-brand:hover,
 .navbar-custom .navbar-brand:focus {
@@ -166,8 +166,8 @@ table tbody tr:hover {
 }
 .navbar-custom .navbar-nav > li > a:hover,
 .navbar-custom .navbar-nav > li > a:focus {
-    color: lightgreen;
-    background-color: darkgreen;
+    color: lightgreen !important;
+    background-color: darkgreen !important;
 }
 .navbar-custom .navbar-nav > .active > a, 
 .navbar-custom .navbar-nav > .active > a:hover, 
@@ -191,30 +191,41 @@ table tbody tr:hover {
     border-top-color: #ffe6d1;
     border-bottom-color: #ffe6d1;
 }
+.navbar-custom > .navbar-nav > .dropdown > .dropdown-menu > li > a,
+.navbar-custom > .navbar-nav > .dropdown > .dropdown-menu > li > a:link,
+.navbar-custom > .navbar-nav > .dropdown > .dropdown-menu > li > a:visited {
+  color: black !important;
+}
+
 .navbar-custom .navbar-nav > .open > a .caret, 
 .navbar-custom .navbar-nav > .open > a:hover .caret, 
 .navbar-custom .navbar-nav > .open > a:focus .caret {
-    border-top-color: #ffe6d1;
-    border-bottom-color: #ffe6d1;
+    border-top-color: #ffe6d1 !important;
+    border-bottom-color: #ffe6d1 !important;
 }
 /* mobile version */
 .navbar-custom .navbar-toggle {
-    border-color: #d35400;
+    border-color: #d35400 !important;
 }
 .navbar-custom .navbar-toggle:hover,
 .navbar-custom .navbar-toggle:focus {
-    background-color: #d35400;
+    background-color: #d35400 !important;
 }
 .navbar-custom .navbar-toggle .icon-bar {
-    background-color: #ecf0f1;
+    background-color: #ecf0f1 !important;
 }
 @media (max-width: 767px) {
     .navbar-custom .navbar-nav .open .dropdown-menu > li > a {
-        color: #ecf0f1;
+        color: #ecf0f1 !important;
     }
     .navbar-custom .navbar-nav .open .dropdown-menu > li > a:hover,
     .navbar-custom .navbar-nav .open .dropdown-menu > li > a:focus {
-        color: #ffe6d1;
-        background-color: #d35400;
+        color: #ffe6d1 !important;
+        background-color: #d35400 !important;
     }
+}
+
+#header  .navbar-custom  .open .dropdown-menu li  a:link,
+#header  .navbar-custom  .open .dropdown-menu li  a:visited {
+  color: black !important;
 }

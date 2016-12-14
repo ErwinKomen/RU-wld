@@ -1388,6 +1388,8 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
 
     oBack = {}      # What we return
     sVersie = ""    # The version we are using--this depends on the column names
+    bUsdDbaseMijnen = False
+
 
     try:
         # Retrieve the correct instance of the status object
@@ -1434,13 +1436,45 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
         iPkDescr = 1        # The PK for each Description (lemma-toelichting many-to-many)
         iPkTrefwoord = 1    # The PK for each Trefwoord
         iPkDialect = 1      # The PK for each Dialect
-        iPkEntry = 1        # The PK for each Entry
+        iPkEntry = 0        # The PK for each Entry
         iPkAflevering = 1   # The PK for each Aflevering
         iPkMijn = 1         # The PK for each Mijn
         iPkEntryMijn = 1    # The PK for each Entry/Mijn
         iCounter = 0        # Loop counter for progress
         iRead = 0           # Number read correctly
         iSkipped = 0        # Number skipped
+
+        # Create instances of the Lemma, Dialect and other classes
+        oLemma = fLemma()
+        oDescr = fDescr()
+        oLemmaDescr = fLemmaDescr()
+        oDialect = fDialect()
+        oTrefwoord = fTrefwoord()
+        oAflevering = fAflevering()
+        oEntry = fEntry()
+        oMijn = fMijn()
+        oEntryMijn = fEntryMijn()
+
+        # Initialise the lists in these instances (where needed)
+        oDialect.load(Dialect.objects.all())
+        oAflevering.load(Aflevering.objects.all())
+        oMijn.load(Mijn.objects.all())
+        if bUseOld:
+            oLemma.load(Lemma.objects.all())
+            oTrefwoord.load(Trefwoord.objects.all())
+            oLemmaDescr.load(LemmaDescr.objects.all())
+            oDescr.load(Description.objects.all())
+            # It should *not* be necessary to load all existing ENTRY objects
+            #    since we assume that any object to be added is UNIQUE
+            # oEntry.load(Entry.objects.all())
+            oEntryMijn.load(EntryMijn.objects.all())
+
+            # Determine what the maximum [pk] for [Entry] currently in use is
+            if Entry.objects.all().count() == 0:
+                iPkEntry = 0
+            else:
+                iPkEntry = Entry.objects.latest('id').id
+
 
         # Process all the objects in [lstInfo]
         for oInfo in lstInfo:
@@ -1449,6 +1483,9 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
             iDeel = oInfo.deel
             iSectie = oInfo.sectie
             iAflevering = oInfo.aflnum
+
+            # Make sure 'NONE' sectie is turned into an empty string
+            if iSectie == None: iSectie = ""
 
             iRead = 0           # Number read correctly
             iSkipped = 0        # Number skipped
@@ -1466,37 +1503,6 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
             skip_file = os.path.join(MEDIA_ROOT, sBaseName + ".skip")
             oFix = FixOut(output_file)
             oSkip = FixSkip(skip_file)
-
-            # Create instances of the Lemma, Dialect and other classes
-            oLemma = fLemma()
-            oDescr = fDescr()
-            oLemmaDescr = fLemmaDescr()
-            oDialect = fDialect()
-            oTrefwoord = fTrefwoord()
-            oAflevering = fAflevering()
-            oEntry = fEntry()
-            oMijn = fMijn()
-            oEntryMijn = fEntryMijn()
-
-            # Initialise the lists in these instances (where needed)
-            oDialect.load(Dialect.objects.all())
-            oAflevering.load(Aflevering.objects.all())
-            oMijn.load(Mijn.objects.all())
-            if bUseOld:
-                oLemma.load(Lemma.objects.all())
-                oTrefwoord.load(Trefwoord.objects.all())
-                oLemmaDescr.load(LemmaDescr.objects.all())
-                oDescr.load(Description.objects.all())
-                # It should *not* be necessary to load all existing ENTRY objects
-                #    since we assume that any object to be added is UNIQUE
-                # oEntry.load(Entry.objects.all())
-                oEntryMijn.load(EntryMijn.objects.all())
-
-                # Determine what the maximum [pk] for [Entry] currently in use is
-                if Entry.objects.all().count() == 0:
-                    iPkEntry = 0
-                else:
-                    iPkEntry = Entry.objects.latest('id').id
 
             # get a Aflevering number
             if str(iDeel).isnumeric(): iDeel = int(iDeel)
@@ -1564,16 +1570,27 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
                                                              'toelichting': oLine['lemma_toelichting'], 
                                                              'boek': oLine['lemma_boek']})
 
-                            # TODO: add the [iPkDescr] to the LemmaDescr--but only if it is not already there
+                            # Add the [iPkDescr] to the LemmaDescr--but only if it is not already there
                             iPkLemmaDescr = LemmaDescr.get_item({'lemma': iPkLemma,
                                                                  'description': iPkDescr})
 
                             # Find out which dialect this is
-                            iPkDialect = Dialect.get_item({'stad': oLine['dialect_stad'], 
-                                                            'nieuw': oLine['dialect_nieuw']})
+                            if oLine['dialect_toelichting'] != None and oLine['dialect_kloeke'] != None:
+                                iPkDialect = Dialect.get_item({'stad': oLine['dialect_stad'], 
+                                                                'nieuw': oLine['dialect_nieuw'],
+                                                                'code': oLine['dialect_kloeke'],
+                                                                'toelichting': oLine['dialect_toelichting']})
+                            else:
+                                iPkDialect = Dialect.get_item({'stad': oLine['dialect_stad'], 
+                                                                'nieuw': oLine['dialect_nieuw']})
 
                             # Find out which trefwoord this is
-                            iPkTrefwoord = Trefwoord.get_item({'woord': sTrefWoord})
+                            sTwToel = oLine['trefwoord_toelichting']
+                            if sTwToel == None or sTwToel == "":
+                                iPkTrefwoord = Trefwoord.get_item({'woord': sTrefWoord})
+                            else:
+                                iPkTrefwoord = Trefwoord.get_item({'woord': sTrefWoord,
+                                                                   'toelichting': sTwToel})
 
                         else:
                             # Get a lemma number from this
@@ -1616,10 +1633,11 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
                                                            toelichting=sTwToel)
 
                         # Process the ENTRY
-                        #sDialectWoord = arPart[5]
-                        #sDialectWoord = html.unescape(sDialectWoord).strip('"')
                         sDialectWoord = oLine['dialectopgave_name']
-                        iPkEntry = oFix.get_pk(oEntry, "dictionary.entry", False,
+                        # Make sure that I use my OWN continuous [pk] for Entry
+                        iPkEntry += 1
+                        # Do *NOT* use the Entry PK that is returned 
+                        iDummy = oFix.get_pk(oEntry, "dictionary.entry", False,
                                                pk=iPkEntry,
                                                woord=sDialectWoord,
                                                toelichting=oLine['dialectopgave_toelichting'],
@@ -1629,7 +1647,7 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
                                                aflevering=iPkAflevering)
 
                         if bDoMijnen:
-                            if bUseDbase:
+                            if bUseDbase and bUsdDbaseMijnen:
                                 # Walk all the mijnen for this entry
                                 for sMijn in lMijnen:
                                     # Get the PK for this mijn
@@ -1673,6 +1691,12 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
 
             # Finish the JSON array that contains the fixtures
             oFix.close()
+
+            # Note the results for this info object
+            oInfo.read = iRead
+            oInfo.skipped = iSkipped
+            oInfo.processed = "Processed at {:%d/%b/%Y %H:%M:%S}".format(datetime.now())
+            oInfo.save()
 
         # return positively
         oBack['result'] = True

@@ -66,7 +66,7 @@ class AfleveringAdmin(admin.ModelAdmin):
 
 
 class InfoAdmin(admin.ModelAdmin):
-    list_display = ['deel', 'sectie', 'aflnum', 'csv_file', 'processed']
+    list_display = ['deel', 'sectie', 'aflnum', 'csv_file', 'processed', 'read', 'skipped']
 
 
 # -- Components of an entry
