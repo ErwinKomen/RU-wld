@@ -410,21 +410,25 @@ def isNullOrEmptyOrInt(arPart, lstColumn):
     return 0
 
 def isLineOkay(oLine):
-    # Define which items need to be checked
-    lCheck = ['lemma_name', 'trefwoord_name', 'dialectopgave_name', 'dialect_stad', 'dialect_nieuw']
-    iIdx = 0
-    # Walk all key-value pairs
-    for (k,v) in oLine.items():
-        iIdx += 1
-        # Is this key part of the range that needs checking?
-        if k in lCheck:
-            # Perform the check here
-            if v=="" or v=="NULL" or v.startswith('#') or v=="?" or v=="-" or v.isnumeric():
-                # Indicate where the error was
-                return iIdx
+    try:
+        # Define which items need to be checked
+        lCheck = ['lemma_name', 'trefwoord_name', 'dialectopgave_name', 'dialect_stad', 'dialect_nieuw']
+        iIdx = 0
+        # Walk all key-value pairs
+        for (k,v) in oLine.items():
+            iIdx += 1
+            # Is this key part of the range that needs checking?
+            if k in lCheck:
+                # Perform the check here
+                if v=="" or v=="NULL" or v.startswith('#') or v=="?" or v=="-" or v.isnumeric():
+                    # Indicate where the error was
+                    return iIdx
 
-    # When everything has been checked and there is no indication, return false
-    return 0
+        # When everything has been checked and there is no indication, return false
+        return 0
+    except:
+        errHandle.DoError("isLineOkay", True)
+        return 0
 
 
 # ----------------------------------------------------------------------------------
@@ -436,80 +440,84 @@ def isLineOkay(oLine):
 def partToLine(sVersie, arPart, bDoMijnen):
     """Convert an array of values [arPart] into a structure"""
 
-    oBack = {}
-    # Preposing of all the parts
-    if sVersie == "Lemmanummer":
-        oBack['lemma_name'] = arPart[1]
-        oBack['lemma_bronnenlijst'] = arPart[6]
-        oBack['lemma_toelichting'] = arPart[2]
-        oBack['lemma_boek'] = arPart[7]
-        oBack['dialect_stad'] = arPart[10]
-        oBack['dialect_nieuw'] = arPart[15]
-        oBack['dialect_toelichting'] = None
-        oBack['dialect_kloeke'] = None
-        oBack['trefwoord_name'] = arPart[3]
-        oBack['trefwoord_toelichting'] = ""
-        oBack['dialectopgave_name'] = arPart[5]
-        oBack['dialectopgave_toelichting'] = arPart[14]
-    elif sVersie == "lemma.name":
-        oBack['lemma_name'] = arPart[0]
-        oBack['lemma_bronnenlijst'] = arPart[2]
-        oBack['lemma_toelichting'] = arPart[1]
-        oBack['lemma_boek'] = ""
-        oBack['dialect_stad'] = arPart[9]
-        oBack['dialect_nieuw'] = arPart[8]
-        oBack['dialect_toelichting'] = arPart[10]
-        oBack['dialect_kloeke'] = arPart[7]         # OLD KloekeCode
-        oBack['trefwoord_name'] = arPart[3]
-        oBack['trefwoord_toelichting'] = arPart[4]
-        oBack['dialectopgave_name'] = arPart[5]
-        oBack['dialectopgave_toelichting'] = arPart[6]
+    try:
+        oBack = {}
+        # Preposing of all the parts
+        if sVersie == "Lemmanummer":
+            oBack['lemma_name'] = arPart[1]
+            oBack['lemma_bronnenlijst'] = arPart[6]
+            oBack['lemma_toelichting'] = arPart[2]
+            oBack['lemma_boek'] = arPart[7]
+            oBack['dialect_stad'] = arPart[10]
+            oBack['dialect_nieuw'] = arPart[15]
+            oBack['dialect_toelichting'] = None
+            oBack['dialect_kloeke'] = None
+            oBack['trefwoord_name'] = arPart[3]
+            oBack['trefwoord_toelichting'] = ""
+            oBack['dialectopgave_name'] = arPart[5]
+            oBack['dialectopgave_toelichting'] = arPart[14]
+        elif sVersie == "lemma.name":
+            oBack['lemma_name'] = arPart[0]
+            oBack['lemma_bronnenlijst'] = arPart[2]
+            oBack['lemma_toelichting'] = arPart[1]
+            oBack['lemma_boek'] = ""
+            oBack['dialect_stad'] = arPart[9]
+            oBack['dialect_nieuw'] = arPart[8]
+            oBack['dialect_toelichting'] = arPart[10]
+            oBack['dialect_kloeke'] = arPart[7]         # OLD KloekeCode
+            oBack['trefwoord_name'] = arPart[3]
+            oBack['trefwoord_toelichting'] = arPart[4]
+            oBack['dialectopgave_name'] = arPart[5]
+            oBack['dialectopgave_toelichting'] = arPart[6]
 
-    if sVersie != "":
-        # Unescape two items
-        oBack['dialectopgave_name'] = html.unescape(oBack['dialectopgave_name'])
-        oBack['trefwoord_name'] = html.unescape(oBack['trefwoord_name'])
-        # Remove quotation marks everywhere and adapt NULL where needed
-        for (k,v) in oBack.items():
-            if oBack[k] != None:
-                oBack[k] = v.strip('"')
-                oBack[k] = oBack[k].strip()
-                if oBack[k].startswith("'") and oBack[k].endswith("'"):
-                  oBack[k] = oBack[k].strip("'")
-                if oBack[k] == "NULL":
-                    oBack[k] = ""
-        # Need to treat the Mines??
-        if bDoMijnen:
-            # Check for unknown dialect location
-            if oBack['dialect_stad'].lower() == "onbekend":
-                oBack['dialect_stad'] = "Zie mijnen"
-            # Get the list of mines
-            sMijnen = oBack['dialect_toelichting'].replace('(', '').replace(')', '').strip()
-            # Sanity check
-            if sMijnen == "":
-                lMijnen = []
-            else:
-                # Adaptations for Oranje nassau mijnen
-                sMijnen = sMijnen.replace('Oranje-Nassau I-IV', 'Oranje-Nassau I / Oranje-Nassau II / Oranje-Nassau III / Oranje-Nassau IV')
-                lMijnen = sMijnen.split('/')
-                # Remove spaces from the mines
-                for i, s in enumerate(lMijnen):
-                    s = s.strip()
-                    if s == "I": 
-                        s = "Oranje-Nassau I"
-                    elif s == "II":
-                        s = "Oranje-Nassau II"
-                    elif s == "III":
-                        s = "Oranje-Nassau III"
-                    elif s == "IV":
-                        s = "Oranje-Nassau IV"
-                    lMijnen[i] = s
+        if sVersie != "":
+            # Unescape two items
+            oBack['dialectopgave_name'] = html.unescape(oBack['dialectopgave_name'])
+            oBack['trefwoord_name'] = html.unescape(oBack['trefwoord_name'])
+            # Remove quotation marks everywhere and adapt NULL where needed
+            for (k,v) in oBack.items():
+                if oBack[k] != None:
+                    oBack[k] = v.strip('"')
+                    oBack[k] = oBack[k].strip()
+                    if oBack[k].startswith("'") and oBack[k].endswith("'"):
+                      oBack[k] = oBack[k].strip("'")
+                    if oBack[k] == "NULL":
+                        oBack[k] = ""
+            # Need to treat the Mines??
+            if bDoMijnen:
+                # Check for unknown dialect location
+                if oBack['dialect_stad'].lower() == "onbekend":
+                    oBack['dialect_stad'] = "Zie mijnen"
+                # Get the list of mines
+                sMijnen = oBack['dialect_toelichting'].replace('(', '').replace(')', '').strip()
+                # Sanity check
+                if sMijnen == "":
+                    lMijnen = []
+                else:
+                    # Adaptations for Oranje nassau mijnen
+                    sMijnen = sMijnen.replace('Oranje-Nassau I-IV', 'Oranje-Nassau I / Oranje-Nassau II / Oranje-Nassau III / Oranje-Nassau IV')
+                    lMijnen = sMijnen.split('/')
+                    # Remove spaces from the mines
+                    for i, s in enumerate(lMijnen):
+                        s = s.strip()
+                        if s == "I": 
+                            s = "Oranje-Nassau I"
+                        elif s == "II":
+                            s = "Oranje-Nassau II"
+                        elif s == "III":
+                            s = "Oranje-Nassau III"
+                        elif s == "IV":
+                            s = "Oranje-Nassau IV"
+                        lMijnen[i] = s
                     
-            # Add the list of Mijnen
-            oBack['mijn_list'] = lMijnen
+                # Add the list of Mijnen
+                oBack['mijn_list'] = lMijnen
 
-    # Return what we found
-    return oBack
+        # Return what we found
+        return oBack
+    except:
+        errHandle.DoError("partToLine", True)
+        return None
 
 class HelpChoice(models.Model):
     """Define the URL to link to for the help-text"""
@@ -1483,220 +1491,227 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
             iDeel = oInfo.deel
             iSectie = oInfo.sectie
             iAflevering = oInfo.aflnum
+            sProcessed = ""
+            if oInfo.processed != None:
+                sProcessed = oInfo.processed
 
-            # Make sure 'NONE' sectie is turned into an empty string
-            if iSectie == None: iSectie = ""
+            # Determine whether we will process this item or not
+            bDoThisItem = (sProcessed == "")
 
-            iRead = 0           # Number read correctly
-            iSkipped = 0        # Number skipped
+            if bDoThisItem:
+                # Make sure 'NONE' sectie is turned into an empty string
+                if iSectie == None: iSectie = ""
 
-            sWorking = "working {}/{}/{}".format(iDeel, iSectie, iAflevering)
+                iRead = 0           # Number read correctly
+                iSkipped = 0        # Number skipped
 
-            # Create an output file writer
-            # Basename: derive from filename
-            # sBaseName = os.path.splitext(os.path.basename(csv_file))[0]
-            # Basename: derive from deel/section/aflevering
-            sBaseName = "fixture-d" + str(iDeel)
-            if iSectie != None: sBaseName = sBaseName + "-s" + str(iSectie)
-            sBaseName = sBaseName + "-a" + str(iAflevering)
-            output_file = os.path.join(MEDIA_ROOT ,sBaseName + ".json")
-            skip_file = os.path.join(MEDIA_ROOT, sBaseName + ".skip")
-            oFix = FixOut(output_file)
-            oSkip = FixSkip(skip_file)
+                sWorking = "working {}/{}/{}".format(iDeel, iSectie, iAflevering)
 
-            # get a Aflevering number
-            if str(iDeel).isnumeric(): iDeel = int(iDeel)
-            if str(iSectie).isnumeric(): iSectie = int(iSectie)
-            if str(iAflevering).isnumeric(): iAflevering = int(iAflevering)
-            if iSectie == None or iSectie == "":
-                oAfl = Aflevering.objects.filter(deel__nummer=iDeel, aflnum=iAflevering).first()
-            else:
-                oAfl = Aflevering.objects.filter(deel__nummer=iDeel, sectie=iSectie, aflnum=iAflevering).first()
-            iPkAflevering = oAfl.pk
+                # Create an output file writer
+                # Basename: derive from filename
+                # sBaseName = os.path.splitext(os.path.basename(csv_file))[0]
+                # Basename: derive from deel/section/aflevering
+                sBaseName = "fixture-d" + str(iDeel)
+                if iSectie != None: sBaseName = sBaseName + "-s" + str(iSectie)
+                sBaseName = sBaseName + "-a" + str(iAflevering)
+                output_file = os.path.join(MEDIA_ROOT ,sBaseName + ".json")
+                skip_file = os.path.join(MEDIA_ROOT, sBaseName + ".skip")
+                oFix = FixOut(output_file)
+                oSkip = FixSkip(skip_file)
 
-            # Open source file to read line-by-line
-            f = codecs.open(csv_file, "r", encoding='utf-8-sig')
-            bEnd = False
-            bFirst = True
-            bFirstOut = False
-            bDoMijnen = (iDeel == 2 and iAflevering == 5)   # Treat 'Mijn' for WLD-II-5
-            lMijnen = []
-            while (not bEnd):
-                # Show where we are
-                iCounter +=1
-                if iCounter % 1000 == 0:
-                    errHandle.Status("Processing: " + str(iCounter))
-                # Read one line
-                strLine = f.readline()
-                if (strLine == ""):
-                    bEnd = True
-                    break
-                strLine = str(strLine)
-                strLine = strLine.strip(" \n\r")
-                # Only process substantial lines
-                if (strLine != ""):
-                    # Split the line into parts
-                    arPart = strLine.split('\t')
-                    # Convert the array of values to a structure
-                    oLine = partToLine(sVersie, arPart, bDoMijnen)
-                    # Check if this line contains 'valid' data:
-                    iValid = isLineOkay(oLine)
-                    # IF this is the first line or an empty line, then skip
-                    if bFirst:
-                        # Get the version from cell 0, line 0
-                        sVersie = arPart[0]
-                        # Check if the line starts correctly
-                        if sVersie != 'Lemmanummer' and sVersie != "lemma.name":
-                            # The first line does not start correctly -- return false
-                            return oBack
-                        # Indicate that the first item has been had
-                        bFirst = False
-                    elif iValid == 0:
-                        # Assuming this 'part' is entering an ENTRY
+                # get a Aflevering number
+                if str(iDeel).isnumeric(): iDeel = int(iDeel)
+                if str(iSectie).isnumeric(): iSectie = int(iSectie)
+                if str(iAflevering).isnumeric(): iAflevering = int(iAflevering)
+                if iSectie == None or iSectie == "":
+                    oAfl = Aflevering.objects.filter(deel__nummer=iDeel, aflnum=iAflevering).first()
+                else:
+                    oAfl = Aflevering.objects.filter(deel__nummer=iDeel, sectie=iSectie, aflnum=iAflevering).first()
+                iPkAflevering = oAfl.pk
 
-                        # Make sure we got TREFWOORD correctly
-                        sTrefWoord = oLine['trefwoord_name']
+                # Open source file to read line-by-line
+                f = codecs.open(csv_file, "r", encoding='utf-8-sig')
+                bEnd = False
+                bFirst = True
+                bFirstOut = False
+                bDoMijnen = (iDeel == 2 and iAflevering == 5)   # Treat 'Mijn' for WLD-II-5
+                lMijnen = []
+                while (not bEnd):
+                    # Show where we are
+                    iCounter +=1
+                    if iCounter % 1000 == 0:
+                        errHandle.Status("Processing: " + str(iCounter))
+                    # Read one line
+                    strLine = f.readline()
+                    if (strLine == ""):
+                        bEnd = True
+                        break
+                    strLine = str(strLine)
+                    strLine = strLine.strip(" \n\r")
+                    # Only process substantial lines
+                    if (strLine != ""):
+                        # Split the line into parts
+                        arPart = strLine.split('\t')
+                        # Convert the array of values to a structure
+                        oLine = partToLine(sVersie, arPart, bDoMijnen)
+                        # Check if this line contains 'valid' data:
+                        iValid = isLineOkay(oLine)
+                        # IF this is the first line or an empty line, then skip
+                        if bFirst:
+                            # Get the version from cell 0, line 0
+                            sVersie = arPart[0]
+                            # Check if the line starts correctly
+                            if sVersie != 'Lemmanummer' and sVersie != "lemma.name":
+                                # The first line does not start correctly -- return false
+                                return oBack
+                            # Indicate that the first item has been had
+                            bFirst = False
+                        elif iValid == 0:
+                            # Assuming this 'part' is entering an ENTRY
 
-                        if bDoMijnen and 'mijn_list' in oLine:
-                            lMijnen = oLine['mijn_list']
+                            # Make sure we got TREFWOORD correctly
+                            sTrefWoord = oLine['trefwoord_name']
+
+                            if bDoMijnen and 'mijn_list' in oLine:
+                                lMijnen = oLine['mijn_list']
 
 
-                        if bUseDbase:
-                            # Find out which lemma this is
-                            iPkLemma = Lemma.get_item({'gloss': oLine['lemma_name']})
+                            if bUseDbase:
+                                # Find out which lemma this is
+                                iPkLemma = Lemma.get_item({'gloss': oLine['lemma_name']})
 
-                            # Find out which lemma-description this is
-                            iPkDescr = Description.get_item({'bronnenlijst': oLine['lemma_bronnenlijst'],
-                                                             'toelichting': oLine['lemma_toelichting'], 
-                                                             'boek': oLine['lemma_boek']})
+                                # Find out which lemma-description this is
+                                iPkDescr = Description.get_item({'bronnenlijst': oLine['lemma_bronnenlijst'],
+                                                                 'toelichting': oLine['lemma_toelichting'], 
+                                                                 'boek': oLine['lemma_boek']})
 
-                            # Add the [iPkDescr] to the LemmaDescr--but only if it is not already there
-                            iPkLemmaDescr = LemmaDescr.get_item({'lemma': iPkLemma,
-                                                                 'description': iPkDescr})
+                                # Add the [iPkDescr] to the LemmaDescr--but only if it is not already there
+                                iPkLemmaDescr = LemmaDescr.get_item({'lemma': iPkLemma,
+                                                                     'description': iPkDescr})
 
-                            # Find out which dialect this is
-                            if oLine['dialect_toelichting'] != None and oLine['dialect_kloeke'] != None:
-                                iPkDialect = Dialect.get_item({'stad': oLine['dialect_stad'], 
-                                                                'nieuw': oLine['dialect_nieuw'],
-                                                                'code': oLine['dialect_kloeke'],
-                                                                'toelichting': oLine['dialect_toelichting']})
+                                # Find out which dialect this is
+                                if oLine['dialect_toelichting'] != None and oLine['dialect_kloeke'] != None:
+                                    iPkDialect = Dialect.get_item({'stad': oLine['dialect_stad'], 
+                                                                    'nieuw': oLine['dialect_nieuw'],
+                                                                    'code': oLine['dialect_kloeke'],
+                                                                    'toelichting': oLine['dialect_toelichting']})
+                                else:
+                                    iPkDialect = Dialect.get_item({'stad': oLine['dialect_stad'], 
+                                                                    'nieuw': oLine['dialect_nieuw']})
+
+                                # Find out which trefwoord this is
+                                sTwToel = oLine['trefwoord_toelichting']
+                                if sTwToel == None or sTwToel == "":
+                                    iPkTrefwoord = Trefwoord.get_item({'woord': sTrefWoord})
+                                else:
+                                    iPkTrefwoord = Trefwoord.get_item({'woord': sTrefWoord,
+                                                                       'toelichting': sTwToel})
+
                             else:
-                                iPkDialect = Dialect.get_item({'stad': oLine['dialect_stad'], 
-                                                                'nieuw': oLine['dialect_nieuw']})
+                                # Get a lemma number from this
+                                # NOTE: assume 2 = toelichting 
+                                iPkLemma = oFix.get_pk(oLemma, "dictionary.lemma", True,
+                                                       gloss=oLine['lemma_name'])
 
-                            # Find out which trefwoord this is
-                            sTwToel = oLine['trefwoord_toelichting']
-                            if sTwToel == None or sTwToel == "":
-                                iPkTrefwoord = Trefwoord.get_item({'woord': sTrefWoord})
-                            else:
-                                iPkTrefwoord = Trefwoord.get_item({'woord': sTrefWoord,
-                                                                   'toelichting': sTwToel})
+                                # Get a description number
+                                iPkDescr = oFix.get_pk(oDescr, "dictionary.description", True,
+                                                       bronnenlijst=oLine['lemma_bronnenlijst'], 
+                                                       toelichting=oLine['lemma_toelichting'], 
+                                                       boek=oLine['lemma_boek'])
 
+                                # Add the Lemma-Description connection
+                                iPkLemmaDescr = oFix.get_pk(oLemmaDescr, "dictionary.lemmadescr", True,
+                                                            lemma=iPkLemma,
+                                                            description=iPkDescr)
+
+
+                                # get a dialect number
+                                if oLine['dialect_toelichting'] != None and oLine['dialect_kloeke'] != None:
+                                    iPkDialect = oFix.get_pk(oDialect, "dictionary.dialect", True,
+                                                             stad=oLine['dialect_stad'], 
+                                                             nieuw=oLine['dialect_nieuw'],
+                                                             code=oLine['dialect_kloeke'],
+                                                             toelichting=oLine['dialect_toelichting'])
+                                else:
+                                    iPkDialect = oFix.get_pk(oDialect, "dictionary.dialect", True,
+                                                             stad=oLine['dialect_stad'], 
+                                                             nieuw=oLine['dialect_nieuw'])
+
+                                # get a trefwoord number
+                                sTwToel = oLine['trefwoord_toelichting']
+                                if sTwToel == None or sTwToel == "":
+                                    iPkTrefwoord = oFix.get_pk(oTrefwoord, "dictionary.trefwoord", True,
+                                                               woord=sTrefWoord)
+                                else:
+                                    iPkTrefwoord = oFix.get_pk(oTrefwoord, "dictionary.trefwoord", True,
+                                                               woord=sTrefWoord,
+                                                               toelichting=sTwToel)
+
+                            # Process the ENTRY
+                            sDialectWoord = oLine['dialectopgave_name']
+                            # Make sure that I use my OWN continuous [pk] for Entry
+                            iPkEntry += 1
+                            # Do *NOT* use the Entry PK that is returned 
+                            iDummy = oFix.get_pk(oEntry, "dictionary.entry", False,
+                                                   pk=iPkEntry,
+                                                   woord=sDialectWoord,
+                                                   toelichting=oLine['dialectopgave_toelichting'],
+                                                   lemma=iPkLemma,
+                                                   dialect=iPkDialect,
+                                                   trefwoord=iPkTrefwoord,
+                                                   aflevering=iPkAflevering)
+
+                            if bDoMijnen:
+                                if bUseDbase and bUsdDbaseMijnen:
+                                    # Walk all the mijnen for this entry
+                                    for sMijn in lMijnen:
+                                        # Get the PK for this mijn
+                                        iPkMijn = Mijn.get_item({'naam': sMijn})
+                                        # Process the PK for EntryMijn
+                                        iPkEntryMijn = EntryMijn.get_item({'entry': iPkEntry,
+                                                                           'mijn': iPkMijn})
+
+                                else:
+                                    # Walk all the mijnen for this entry
+                                    for sMijn in lMijnen:
+                                        # Get the PK for this mijn
+                                        iPkMijn = oFix.get_pk(oMijn, "dictionary.mijn", True,
+                                                              naam=sMijn)
+                                        # Process the PK for EntryMijn
+                                        iPkEntryMijn = oFix.get_pk(oEntryMijn, "dictionary.entrymijn", False,
+                                                                   pk=iPkEntryMijn,
+                                                                   entry=iPkEntry,
+                                                                   mijn=iPkMijn)
+                            iRead += 1
                         else:
-                            # Get a lemma number from this
-                            # NOTE: assume 2 = toelichting 
-                            iPkLemma = oFix.get_pk(oLemma, "dictionary.lemma", True,
-                                                   gloss=oLine['lemma_name'])
-
-                            # Get a description number
-                            iPkDescr = oFix.get_pk(oDescr, "dictionary.description", True,
-                                                   bronnenlijst=oLine['lemma_bronnenlijst'], 
-                                                   toelichting=oLine['lemma_toelichting'], 
-                                                   boek=oLine['lemma_boek'])
-
-                            # Add the Lemma-Description connection
-                            iPkLemmaDescr = oFix.get_pk(oLemmaDescr, "dictionary.lemmadescr", True,
-                                                        lemma=iPkLemma,
-                                                        description=iPkDescr)
+                            # This line is being skipped
+                            oSkip.append(strLine)
+                            iSkipped += 1
+                            sIdx = 'line-' + str(iValid)
+                            if not sIdx in oBack:
+                                oBack[sIdx] = 0
+                            oBack[sIdx] +=1
+                    # Keep track of progress
+                    oStatus.skipped = iSkipped
+                    oStatus.read = iRead
+                    oStatus.status = sWorking
+                    oStatus.save()
 
 
-                            # get a dialect number
-                            if oLine['dialect_toelichting'] != None and oLine['dialect_kloeke'] != None:
-                                iPkDialect = oFix.get_pk(oDialect, "dictionary.dialect", True,
-                                                         stad=oLine['dialect_stad'], 
-                                                         nieuw=oLine['dialect_nieuw'],
-                                                         code=oLine['dialect_kloeke'],
-                                                         toelichting=oLine['dialect_toelichting'])
-                            else:
-                                iPkDialect = oFix.get_pk(oDialect, "dictionary.dialect", True,
-                                                         stad=oLine['dialect_stad'], 
-                                                         nieuw=oLine['dialect_nieuw'])
+                # CLose the input file
+                f.close()
 
-                            # get a trefwoord number
-                            sTwToel = oLine['trefwoord_toelichting']
-                            if sTwToel == None or sTwToel == "":
-                                iPkTrefwoord = oFix.get_pk(oTrefwoord, "dictionary.trefwoord", True,
-                                                           woord=sTrefWoord)
-                            else:
-                                iPkTrefwoord = oFix.get_pk(oTrefwoord, "dictionary.trefwoord", True,
-                                                           woord=sTrefWoord,
-                                                           toelichting=sTwToel)
+                # Close the skip file
+                oSkip.close()
 
-                        # Process the ENTRY
-                        sDialectWoord = oLine['dialectopgave_name']
-                        # Make sure that I use my OWN continuous [pk] for Entry
-                        iPkEntry += 1
-                        # Do *NOT* use the Entry PK that is returned 
-                        iDummy = oFix.get_pk(oEntry, "dictionary.entry", False,
-                                               pk=iPkEntry,
-                                               woord=sDialectWoord,
-                                               toelichting=oLine['dialectopgave_toelichting'],
-                                               lemma=iPkLemma,
-                                               dialect=iPkDialect,
-                                               trefwoord=iPkTrefwoord,
-                                               aflevering=iPkAflevering)
+                # Finish the JSON array that contains the fixtures
+                oFix.close()
 
-                        if bDoMijnen:
-                            if bUseDbase and bUsdDbaseMijnen:
-                                # Walk all the mijnen for this entry
-                                for sMijn in lMijnen:
-                                    # Get the PK for this mijn
-                                    iPkMijn = Mijn.get_item({'naam': sMijn})
-                                    # Process the PK for EntryMijn
-                                    iPkEntryMijn = EntryMijn.get_item({'entry': iPkEntry,
-                                                                       'mijn': iPkMijn})
-
-                            else:
-                                # Walk all the mijnen for this entry
-                                for sMijn in lMijnen:
-                                    # Get the PK for this mijn
-                                    iPkMijn = oFix.get_pk(oMijn, "dictionary.mijn", True,
-                                                          naam=sMijn)
-                                    # Process the PK for EntryMijn
-                                    iPkEntryMijn = oFix.get_pk(oEntryMijn, "dictionary.entrymijn", False,
-                                                               pk=iPkEntryMijn,
-                                                               entry=iPkEntry,
-                                                               mijn=iPkMijn)
-                        iRead += 1
-                    else:
-                        # This line is being skipped
-                        oSkip.append(strLine)
-                        iSkipped += 1
-                        sIdx = 'line-' + str(iValid)
-                        if not sIdx in oBack:
-                            oBack[sIdx] = 0
-                        oBack[sIdx] +=1
-                # Keep track of progress
-                oStatus.skipped = iSkipped
-                oStatus.read = iRead
-                oStatus.status = sWorking
-                oStatus.save()
-
-
-            # CLose the input file
-            f.close()
-
-            # Close the skip file
-            oSkip.close()
-
-            # Finish the JSON array that contains the fixtures
-            oFix.close()
-
-            # Note the results for this info object
-            oInfo.read = iRead
-            oInfo.skipped = iSkipped
-            oInfo.processed = "Processed at {:%d/%b/%Y %H:%M:%S}".format(datetime.now())
-            oInfo.save()
+                # Note the results for this info object
+                oInfo.read = iRead
+                oInfo.skipped = iSkipped
+                oInfo.processed = "Processed at {:%d/%b/%Y %H:%M:%S}".format(datetime.now())
+                oInfo.save()
 
         # return positively
         oBack['result'] = True

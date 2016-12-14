@@ -122,6 +122,9 @@
                   <span>(</span>
                   {% for wrd in word_list %}
                     <span class="trefwoord-woord">{{wrd.grouper}}</span>
+                    {% for entry in wrd.list %}
+                      {% if entry.toelichting != "" %}<span class="trefwoord-word-toelichting"> {{entry.toelichting}}</span>{% endif %}
+                    {% endfor %}
                     <span>{% if not forloop.last %}, {% endif %}</span>
                   {% endfor %}
                   <span>){% if not forloop.last %}, {% endif %}</span>

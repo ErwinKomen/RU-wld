@@ -167,6 +167,7 @@
                     {% spaceless %}
                     <span>(</span>
                     {% for entry in wrd.list %}
+                      {% if entry.toelichting != "" %}<span class="lemma-word-toelichting">{{entry.toelichting}} </span>{% endif %}
                       <span class="lemma-word-dialect">
                         <span class="lemma-word-dialect-code hidden">{{entry.dialect.nieuw}}</span>
                         <span class="lemma-word-dialect-space hidden">&nbsp;</span>
