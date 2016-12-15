@@ -516,6 +516,10 @@ def partToLine(sVersie, arPart, bDoMijnen):
         # Return what we found
         return oBack
     except:
+        # Provide more information
+        errHandle.Status("partToLine error info [{}]".format(sVersie))
+        for idx, val in enumerate(arPart):
+            errHandle.Status("arPart[{}] = [{}]".format(idx, val))
         errHandle.DoError("partToLine", True)
         return None
 
