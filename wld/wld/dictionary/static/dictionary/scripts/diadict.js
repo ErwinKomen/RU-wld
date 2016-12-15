@@ -20,6 +20,8 @@ function clearForm(sName) {
   var f = $("#"+sName+"search").get(0);
   var elements = f.elements;
 
+  var elements = $("#" + sName + "search .form-control");
+
   f.reset();
 
   for (i = 0; i < elements.length; i++) {

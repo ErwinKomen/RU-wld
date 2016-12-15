@@ -112,9 +112,11 @@
                               <label class='input-group-addon' for='id_city'>{{searchform.dialectCity.label}}</label>
                               <input name='dialectCity' class='form-control' {% if searchform.dialectCity.value %}value='{{searchform.dialectCity.value}}'{% endif %}>
                             </div>
+                            <div><label>&nbsp;</label></div>
                             <div class='input-group'>
-                              <label class='input-group-addon' for='id_aflevering'>{{searchform.aflevering.label}}</label>
-                              <select id="id_aflevering" multiple size="3">
+                              <label class='input-group-addon' for='aflevering'>{{searchform.aflevering.label}}</label>
+                              <select class='form-control' name="aflevering">
+                                  <option value="0">-</option>
                                 {% for opt in afleveringen %}
                                   <option value="{{opt.id}}">{{opt.get_summary}}</option>
                                 {% endfor %}
@@ -161,19 +163,30 @@
               {% regroup lem.entry_set.all|dictsort:"get_trefwoord_woord" by trefwoord as trefwoord_list %}
               {% for tref in trefwoord_list %}
                 <span class="lemma-trefwoord"><a href="{% url 'trefwoordsearch' %}?search={{tref.grouper}}">{{tref.grouper}}</a>:</span>
-                {% regroup tref.list|dictsort:"get_trefwoord_woord" by woord as word_list %}
+                {% regroup tref.list|dictsort:"get_trefwoord_woord" by dialectopgave as word_list %}
                 {% for wrd in word_list %}    
                     <span class="lemma-word">{{wrd.grouper}}</span>
                     {% spaceless %}
                     <span>(</span>
                     {% for entry in wrd.list %}
                       {% if entry.toelichting != "" %}<span class="lemma-word-toelichting">{{entry.toelichting}} </span>{% endif %}
+                      {% if entry.dialect.nieuw != "Q000" %}
                       <span class="lemma-word-dialect">
                         <span class="lemma-word-dialect-code hidden">{{entry.dialect.nieuw}}</span>
                         <span class="lemma-word-dialect-space hidden">&nbsp;</span>
                         <span class="lemma-word-dialect-stad">{{entry.dialect.stad}}</span>
                         <span>{% if not forloop.last %}, {% endif %}</span>
                       </span>
+                      {% endif %}
+                      {% if entry.mijnlijst.count > 0 %}
+                        <span class="word-mijn">{% if  entry.dialect.nieuw != "Q000"  %}&nbsp;{% endif %}[</span>
+                        {% for mijn in entry.mijnlijst.all %}
+                          <span class="word-mijn">{{mijn.naam}}</span>
+                          <span class="word-mijn-letop">{% if not forloop.last %}, {% endif %}</span>
+                        {% endfor %}
+                        <span class="word-mijn">]</span>
+                        <span>{% if not forloop.last %}, {% endif %}</span>
+                      {% endif %}
                     {% endfor %}
                     <span>){% if not forloop.last %}, {% endif %}</span>
                     {% endspaceless %}

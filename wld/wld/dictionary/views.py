@@ -9,6 +9,7 @@ from django.http import HttpRequest, HttpResponse
 from django.core.urlresolvers import reverse
 from django.template import RequestContext, loader
 from django.db.models import Q
+from django.db.models.functions import Lower
 from django.http import JsonResponse
 from datetime import datetime
 from xml.dom import minidom
@@ -77,7 +78,7 @@ def order_queryset_by_sort_order(get, qs, sOrder = 'gloss'):
         ordered = order_queryset_by_tuple_list(qs, sOrder, "Handedness")
     else:
         # Use straightforward ordering on field [sOrder]
-        ordered = qs.order_by(sOrder)
+        ordered = qs.order_by(Lower(sOrder))
 
     # return the ordered list
     return ordered
@@ -621,6 +622,13 @@ class LemmaListView(ListView):
             val = adapt_search(get['woord'])
             # query = Q(entry__dialect__code__istartswith=val)
             query = Q(entry__woord__iregex=val)
+            qs = qs.filter(query)
+
+        # Check for aflevering
+        if 'aflevering' in get and get['aflevering'] != '':
+            # What we get should be a number
+            val = get['aflevering']
+            query = Q(entry__aflevering__exact=val)
             qs = qs.filter(query)
 
 

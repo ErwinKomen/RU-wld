@@ -28,6 +28,7 @@ class LemmaAdmin(admin.ModelAdmin):
     fieldsets = ( ('Editable', {'fields': ('gloss', )}),
                 )
     list_display = ['gloss']
+    search_fields = ['gloss']
 
 
 class DescriptionAdmin(admin.ModelAdmin):
@@ -60,9 +61,10 @@ class AfleveringAdmin(admin.ModelAdmin):
     formfield_overrides = {
             models.CharField: {'widget': TextInput(attrs={'size': '50'})}
         }
-    fieldsets = ( ('Editable', {'fields': ('naam', 'deel', 'sectie', 'aflnum', 'inleiding', 'jaar', 'auteurs',
+    fieldsets = ( ('Editable', {'fields': ('naam', 'deel', 'sectie', 'aflnum', 'inleiding', 'toonbaar', 'jaar', 'auteurs',
                                            'afltitel', 'sectietitel', 'plaats', 'toelichting')}),
                 )
+    list_display = ['deel', 'sectie', 'aflnum', 'naam', 'inleiding', 'toonbaar']
 
 
 class InfoAdmin(admin.ModelAdmin):

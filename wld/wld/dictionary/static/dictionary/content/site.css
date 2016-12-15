@@ -98,6 +98,11 @@ table tbody tr:hover {
   color: saddlebrown;
 }
 
+.word-mijn {
+  font-size: smaller;
+  color: darkslategrey;
+}
+
 .lemma-bronnen {
   font-variant-caps: small-caps;
   color: darkolivegreen;

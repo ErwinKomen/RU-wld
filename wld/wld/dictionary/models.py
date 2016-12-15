@@ -861,6 +861,8 @@ class Aflevering(models.Model):
     aflnum = models.IntegerField("Aflevering", db_index=True, blank=False, default=0)
     # A field that indicates this item also has an Inleiding
     inleiding = models.BooleanField("Heeft inleiding", blank=False, default=False)
+    # A field that indicates this item may be showed
+    toonbaar = models.BooleanField("Mag getoond worden", blank=False, default=True)
     # The year of publication of the book
     jaar = models.IntegerField("Jaar van publicatie", blank=False, default=1900)
     # The authors for this book
@@ -990,6 +992,13 @@ class Entry(models.Model):
 
     def get_trefwoord_woord(self):
         return self.trefwoord.woord + '_' + self.woord
+
+    def dialectopgave(self):
+        sWoord = "*"
+        # Are we allowed to show it?
+        if self.aflevering.toonbaar:
+            sWoord = self.woord
+        return sWoord
 
     def get_aflevering(self):
         afl = self.aflevering

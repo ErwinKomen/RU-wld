@@ -124,6 +124,15 @@
                     <span class="trefwoord-woord">{{wrd.grouper}}</span>
                     {% for entry in wrd.list %}
                       {% if entry.toelichting != "" %}<span class="trefwoord-word-toelichting"> {{entry.toelichting}}</span>{% endif %}
+                      {% if entry.mijnlijst.count > 0 %}
+                        <span class="word-mijn">{% if  entry.dialect.nieuw != "Q000"  %}&nbsp;{% endif %}[</span>
+                        {% for mijn in entry.mijnlijst.all %}
+                          <span class="word-mijn">{{mijn.naam}}</span>
+                          <span class="word-mijn-letop">{% if not forloop.last %}, {% endif %}</span>
+                        {% endfor %}
+                        <span class="word-mijn">]</span>
+                        <span>{% if not forloop.last %}, {% endif %}</span>
+                      {% endif %}
                     {% endfor %}
                     <span>{% if not forloop.last %}, {% endif %}</span>
                   {% endfor %}
