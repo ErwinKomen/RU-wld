@@ -15,7 +15,7 @@
     <InterpreterId>{e5a08a7b-6e22-4e6d-8f52-4680758420da}</InterpreterId>
     <InterpreterVersion>3.5</InterpreterVersion>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>-i "d:/data files/vs2010/projects/writable/media/fixture-d2-s-a12.json"</CommandLineArguments>
+    <CommandLineArguments>-i "d:/data files/vs2010/projects/writable/media/wld_entrymijn.json"</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">

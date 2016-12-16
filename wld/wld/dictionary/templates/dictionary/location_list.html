@@ -111,13 +111,13 @@
               <!-- Take all the [entry] elements for this dialect and divide them over their [lemma] -->
               {% regroup dialect.entry_set.all|dictsort:"get_lemma_gloss" by lemma as lemma_list %}
               {% for lem in lemma_list %}
-                <span class="lemma-name"><a href="{% url 'lemmasearch' %}?search={{lem.grouper}}">{{lem.grouper}}</a>:</span>
+                <span class="lemma-name"><a href="{% url 'lemmasearch' %}?search={{lem.grouper|urlencode}}">{{lem.grouper}}</a>:</span>
                 <!-- Take all the [trefwoord] elements available per [lemma] -->
                 {% regroup lem.list|dictsort:"get_lemma_gloss" by trefwoord as tw_list %}
                 {% for tw in tw_list %}
-                  <span class="trefwoord-name"><a href="{% url 'trefwoordsearch' %}?search={{tw.grouper}}">{{tw.grouper}}</a></span>
+                  <span class="trefwoord-name"><a href="{% url 'trefwoordsearch' %}?search={{tw.grouper|urlencode}}">{{tw.grouper}}</a></span>
                   <!-- Take all the [trefwoord] elements, sort them alphabetically on [lemma.gloss-entry.woord] into [word_list] -->
-                  {% regroup tw.list|dictsort:"get_trefwoord_woord" by woord as word_list %}
+                  {% regroup tw.list|dictsort:"get_trefwoord_woord" by dialectopgave as word_list %}
                   {% spaceless %}
                   <span>(</span>
                   {% for wrd in word_list %}

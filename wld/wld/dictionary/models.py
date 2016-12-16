@@ -993,6 +993,9 @@ class Entry(models.Model):
     def get_trefwoord_woord(self):
         return self.trefwoord.woord + '_' + self.woord
 
+    def get_trefwoord_lemma_woord(self):
+        return self.trefwoord.woord + '_' +self.lemma.gloss + "_" + self.woord
+
     def dialectopgave(self):
         sWoord = "*"
         # Are we allowed to show it?

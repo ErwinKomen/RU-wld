@@ -28,7 +28,7 @@ class EntrySearchForm(forms.ModelForm):
 
     search = forms.CharField(label=_("Woord in het dialect"))
     sortOrder = forms.CharField(label=_("Sort Order"), initial="woord")
-    lemma = forms.CharField(label=_("Lemma"))
+    lemma = forms.CharField(label=_("Begrip"))
     dialectCode = forms.CharField(label=_("Kloekecode"))
     dialectCity = forms.CharField(label=_("Stad"))
     aflevering = forms.CharField(label=_("Deel/sectie/aflevering"))
@@ -73,13 +73,14 @@ class TrefwoordSearchForm(forms.ModelForm):
     search = forms.CharField(label=_("Trefwoord"))
     sortOrder = forms.CharField(label=_("Sort Order"), initial="woord")
     dialectwoord = forms.CharField(label=_("Dialectopgave"))
-    lemma = forms.CharField(label=_("Lemma"))
+    lemma = forms.CharField(label=_("Begrip"))
     dialectCode = forms.CharField(label=_("Kloekecode"))
     dialectCity = forms.CharField(label=_("Plaats"))
     bronnen = forms.CharField(label=_("Bronnen"))
     optdialect = forms.CharField(label=_("Dialectweergave"))
     aflevering = forms.CharField(label=_("Deel/sectie/aflevering"))
     mijn = forms.CharField(label=_("Mijn"))
+    strict = forms.CharField(label=_("Strict zoeken (duurt langer)"))
 
     class Meta:
 

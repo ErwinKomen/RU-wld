@@ -127,6 +127,19 @@ def parse_object(oStatus, arData):
     # Return the adapted status
     return oStatus
 
+def repair_entry(arData):
+    # Convert the data into a JSON object
+    oData = json.loads(''.join(arData))
+    # Repair the entry count
+    oFields = oData['fields']
+    if 'entry' in oFields:
+        oFields['entry'] = oFields['entry'] + 1
+        oData['fields'] = oFields
+
+    # Return the adapted array
+    return json.dumps(oData,indent=2)
+    
+
 # ----------------------------------------------------------------------------------
 # Name :    wldfixscan
 # Goal :    Scan JSON fixture file
@@ -134,6 +147,8 @@ def parse_object(oStatus, arData):
 # 15/dec/2016   ERK Created
 # ----------------------------------------------------------------------------------
 def wldfixscan(csv_file):
+    flOutput = csv_file + ".out"       # output file name
+
     try:
         # Open source file to read line-by-line
         f = codecs.open(csv_file, "r", encoding='utf-8-sig')
@@ -143,6 +158,13 @@ def wldfixscan(csv_file):
                    "dictionary.entry": 0,
                    "dictionary.dialect": 0,
                    "dictionary.trefwoord": 0}
+        # Save the string to the output file
+        fl_out = io.open(flOutput, "w", encoding='utf-8')
+        fl_out.write('')
+        fl_out.close()
+        # Open the output file for appending
+        fl_out = io.open(flOutput, "a", encoding='utf-8')
+
         bEnd = False
         bFirst = True
         arJson = []
@@ -150,6 +172,7 @@ def wldfixscan(csv_file):
             # Read one line
             strLine = f.readline()
             if (strLine == ""):
+                # Get out of the loop
                 break
             strLine = str(strLine.strip())
             # Action depends on which line we are getting
@@ -157,23 +180,35 @@ def wldfixscan(csv_file):
                 #This is the start of the whole file
                 arJson.clear()
                 arJson.append("{")
+                # Copy input to output
+                fl_out.write("[\n")
             elif strLine == "},{":
                 # Finish one object, start another
                 arJson.append("}")
                 # Process what is inside [arJson]
                 oStatus = parse_object(oStatus, arJson)
+                # output what is needed
+                fl_out.write(repair_entry(arJson) + ",")
                 # Check if we need to continue
                 if needed(oStatus) == 0: bEnd = True
                 # Continue
                 arJson.clear()
                 arJson.append("{")
+
+                # PATCH: continue until the file ends
+                bEnd = False
             elif strLine == "}]":
                 # Finish one object, start another
                 arJson.append("}")
                 # Process what is inside [arJson]
                 oStatus = parse_object(oStatus, arJson)
+                # output what is needed
+                fl_out.write(repair_entry(arJson) + "]\n")
                 # Check if we need to continue
                 if needed(oStatus) == 0: bEnd = True
+
+                # PATCH: continue until the file ends
+                bEnd = False
             else:
                 # Just add this line
                 arJson.append(strLine)
@@ -181,6 +216,9 @@ def wldfixscan(csv_file):
 
         # CLose the input file
         f.close()
+
+        # Close the output file
+        fl_out.close()
 
         # Output the results
         sMsg = "{}\t{}\t{}\t{}\t{}\t{}\n".format(

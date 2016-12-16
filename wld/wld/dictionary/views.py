@@ -376,8 +376,10 @@ class TrefwoordListView(ListView):
     """ListView of keywords (trefwoorden)"""
 
     model = Trefwoord
-    template_name = 'dictionary/trefwoord_list.html'
+    template_name = 'dictionary/trefwoord_list_plain.html'
     paginate_by = paginateSize
+    entrycount = 0
+    strict = False      # Use strict filtering
 
     def render_to_response(self, context, **response_kwargs):
         """Check if a CSV response is needed or not"""
@@ -428,11 +430,25 @@ class TrefwoordListView(ListView):
         if 'paginate_by' in initial:
             context['paginateSize'] = int(initial['paginate_by'])
         else:
-            context['paginateSize'] = paginateSize
+            context['paginateSize'] = self.paginate_by  # paginateSize
+
+        # Try to retain the choice for Aflevering and Mijn
+        if 'mijn' in initial:
+            context['mijnkeuze'] = int(initial['mijn'])
+        else:
+            context['mijnkeuze'] = 0
+        if 'aflevering' in initial:
+            context['aflkeuze'] = int(initial['aflevering'])
+        else:
+            context['aflkeuze'] = 0
+
+        # Get possible user choice of 'strict'
+        context['strict'] = str(self.strict)
 
 
         # Determine the count 
-        context['entrycount'] = self.get_queryset().count()
+        context['entrycount'] = self.entrycount   #  self.get_queryset().count()
+        # context['twcount'] = self.twcount
 
         # Make sure the paginate-values are available
         context['paginateValues'] = paginateValues
@@ -442,7 +458,7 @@ class TrefwoordListView(ListView):
 
         # Set the afleveringen and mijnen that are available
         context['afleveringen'] = [afl for afl in Aflevering.objects.all()]
-        context['mijnen'] = [mijn for mijn in Mijn.objects.all()]
+        context['mijnen'] = [mijn for mijn in Mijn.objects.all().order_by('naam')]
 
         # Set the title of the application
         context['title'] = "e-WLD trefwoorden"
@@ -461,56 +477,82 @@ class TrefwoordListView(ListView):
         # Get the parameters passed on with the GET request
         get = self.request.GET
 
-        # Queryset: start out with *ALL* the keyword's
-        qs = Trefwoord.objects.all()
+        # Get possible user choice of 'strict'
+        if 'strict' in get:
+            self.strict = (get['strict'] == "True")
+        if self.strict:
+            self.template_name = 'dictionary/trefwoord_list_strict.html'
+        else:
+            self.template_name = 'dictionary/trefwoord_list_plain.html'
+
+        lstQ = []
 
         # Fine-tuning: search string is the LEMMA
         if 'search' in get and get['search'] != '':
             val = adapt_search(get['search'])
-            # Use the 'woord' attribute of Trefwoord
-            query = Q(woord__iregex=val) 
+            # Adapt Entry filter
+            if self.strict:
+                lstQ.append(Q(trefwoord__woord__iregex=val))
+            else:
+                # Use the 'woord' attribute of Trefwoord
+                lstQ.append(Q(woord__iregex=val) )
 
-            # check for possible exact numbers having been given
-            if re.match('^\d+$', val):
-                query = query | Q(sn__exact=val)
-
-            # Apply the filter
-            qs = qs.filter(query)
+                # check for possible exact numbers having been given
+                if re.match('^\d+$', val):
+                    lstQ.append(Q(sn__exact=val))
 
         # Check for 'toelichting'
         if 'toelichting' in get and get['toelichting'] != '':
             val = adapt_search(get['toelichting'])
-            # Try to get to the dialectwoord
-            query = Q(toelichting__iregex=val)
-            qs = qs.filter(query)
+
+            if self.strict:
+                # Adapt Entry filter
+                lstQ.append(Q(trefwoord__toelichting__iregex=val))
+            else:
+                # Try to get to the dialectwoord
+                lstQ.append(Q(toelichting__iregex=val))
 
         # Check for dialectwoord
         if 'dialectwoord' in get and get['dialectwoord'] != '':
             val = adapt_search(get['dialectwoord'])
-            # Try to get to the dialectwoord
-            query = Q(entry__woord__iregex=val)
-            qs = qs.filter(query)
+
+            if self.strict:
+                # Adapt Entry filter
+                lstQ.append(Q(trefwoord__woord__iregex=val))
+            else:
+                # Try to get to the dialectwoord
+                lstQ.append(Q(entry__woord__iregex=val))
 
         # Check for lemma
         if 'lemma' in get and get['lemma'] != '':
             val = adapt_search(get['lemma'])
-            # Try to get to the lemma gloss
-            query = Q(entry__lemma__gloss__iregex=val)
-            qs = qs.filter(query)
+
+            if self.strict:
+                # Adapt Entry filter
+                lstQ.append(Q(lemma_gloss__iregex=val))
+            else:
+                # Try to get to the dialectwoord
+                lstQ.append(Q(entry__lemma__gloss__iregex=val))
 
         # Check for dialect city
         if 'dialectCity' in get and get['dialectCity'] != '':
             val = adapt_search(get['dialectCity'])
-            # query = Q(entry__dialect__stad__istartswith=val)
-            query = Q(entry__dialect__stad__iregex=val)
-            qs = qs.filter(query)
+            if self.strict:
+                # Adapt Entry filter
+                lstQ.append(Q(dialect__stad__iregex=val))
+            else:
+                # Try to get to the dialectwoord
+                lstQ.append(Q(entry__dialect__stad__iregex=val))
 
         # Check for dialect code (Kloeke)
         if 'dialectCode' in get and get['dialectCode'] != '':
             val = adapt_search(get['dialectCode'])
-            # query = Q(entry__dialect__code__istartswith=val)
-            query = Q(entry__dialect__nieuw__iregex=val)
-            qs = qs.filter(query)
+            if self.strict:
+                # Adapt Entry filter
+                lstQ.append(Q(dialect__nieuw__iregex=val))
+            else:
+                # Try to get to the dialectwoord
+                lstQ.append(Q(entry__dialect__nieuw__iregex=val))
 
         # Check for aflevering
         if 'aflevering' in get and get['aflevering'] != '':
@@ -518,8 +560,11 @@ class TrefwoordListView(ListView):
             val = get['aflevering']
             if val.isdigit():
                 iVal = int(val)
-                query = Q(entry__aflevering__id=val)
-                qs = qs.filter(query)
+                if iVal>0:
+                    if self.strict:
+                        lstQ.append(Q(aflevering__id=iVal))
+                    else:
+                        lstQ.append(Q(entry__aflevering__id=iVal))
 
         # Check for mijn
         if 'mijn' in get and get['mijn'] != '':
@@ -527,17 +572,33 @@ class TrefwoordListView(ListView):
             val = get['mijn']
             if val.isdigit():
                 iVal = int(val)
-                query = Q(entry__mijn__id=val)
-                qs = qs.filter(query)
+                if iVal>0:
+                    if self.strict:
+                        lstQ.append(Q(mijnlijst__id=iVal))
+                    else:
+                        lstQ.append(Q(entry__mijnlijst__id=iVal))
 
-        # Make sure we only have distinct values
-        qs = qs.distinct()
+        # Make the QSE available
+        if self.strict:
+            qse = Entry.objects.filter(*lstQ).select_related().order_by(
+              Lower('trefwoord__woord'), 
+              Lower('lemma__gloss'),  
+              Lower('woord'), 
+              Lower('dialect__stad'))
+        else:
+            qse = Trefwoord.objects.filter(*lstQ)
+            qse = qse.distinct()
+            #qse = qse.select_related().order_by(
+            #  Lower('woord'), 
+            #  Lower('entry__lemma__gloss'),
+            #  Lower('entry__woord'),
+            #  Lower('entry__dialect__stad'))
+            qse = qse.select_related().order_by(Lower('woord'))
+            qse = qse.distinct()
 
-        # Sort the queryset by the parameters given
-        qs = order_queryset_by_sort_order(self.request.GET, qs, 'woord')
+        self.entrycount = qse.count()
 
-        # Return the resulting filtered and sorted queryset
-        return qs
+        return qse
 
 
 class LemmaListView(ListView):
@@ -547,6 +608,7 @@ class LemmaListView(ListView):
     # context_object_name = 'lemma'    
     template_name = 'dictionary/lemma_list.html'
     paginate_by = paginateSize
+    entrycount = 0
 
     def render_to_response(self, context, **response_kwargs):
         """Check if a CSV response is needed or not"""
@@ -576,7 +638,7 @@ class LemmaListView(ListView):
         context['searchform'] = search_form
 
         # Determine the count 
-        context['entrycount'] = self.get_queryset().count()
+        context['entrycount'] = self.entrycount #  self.get_queryset().count()
 
         # Make sure the paginate-values are available
         context['paginateValues'] = paginateValues
@@ -586,6 +648,16 @@ class LemmaListView(ListView):
         else:
             context['paginateSize'] = paginateSize
 
+        # Try to retain the choice for Aflevering and Mijn
+        if 'mijn' in initial:
+            context['mijnkeuze'] = int(initial['mijn'])
+        else:
+            context['mijnkeuze'] = 0
+        if 'aflevering' in initial:
+            context['aflkeuze'] = int(initial['aflevering'])
+        else:
+            context['aflkeuze'] = 0
+
         # Set the prefix
         context['app_prefix'] = APP_PREFIX
 
@@ -594,7 +666,7 @@ class LemmaListView(ListView):
 
         # Set the afleveringen that are available
         context['afleveringen'] = [afl for afl in Aflevering.objects.all()]
-        context['mijnen'] = [mijn for mijn in Mijn.objects.all()]
+        context['mijnen'] = [mijn for mijn in Mijn.objects.all().order_by('naam')]
 
         # Return the calculated context
         return context
@@ -653,8 +725,9 @@ class LemmaListView(ListView):
             val = get['aflevering']
             if val.isdigit():
                 iVal = int(val)
-                query = Q(entry__aflevering__id=val)
-                qs = qs.filter(query)
+                if iVal>0:
+                    query = Q(entry__aflevering__id=iVal)
+                    qs = qs.filter(query)
 
         # Check for mijn
         if 'mijn' in get and get['mijn'] != '':
@@ -662,8 +735,9 @@ class LemmaListView(ListView):
             val = get['mijn']
             if val.isdigit():
                 iVal = int(val)
-                query = Q(entry__mijn__id=val)
-                qs = qs.filter(query)
+                if iVal>0:
+                    query = Q(entry__mijnlijst__id=iVal)
+                    qs = qs.filter(query)
 
 
         # Make sure we only have distinct values
@@ -671,6 +745,8 @@ class LemmaListView(ListView):
 
         # Sort the queryset by the parameters given
         qs = order_queryset_by_sort_order(self.request.GET, qs)
+
+        self.entrycount = qs.count()
 
         # Return the resulting filtered and sorted queryset
         return qs
@@ -737,12 +813,22 @@ class LocationListView(ListView):
 
         # Set the afleveringen that are available
         context['afleveringen'] = [afl for afl in Aflevering.objects.all()]
-        context['mijnen'] = [mijn for mijn in Mijn.objects.all()]
+        context['mijnen'] = [mijn for mijn in Mijn.objects.all().order_by('naam')]
 
         if 'paginate_by' in initial:
             context['paginateSize'] = int(initial['paginate_by'])
         else:
             context['paginateSize'] = paginateSize
+
+        # Try to retain the choice for Aflevering and Mijn
+        if 'mijn' in initial:
+            context['mijnkeuze'] = int(initial['mijn'])
+        else:
+            context['mijnkeuze'] = 0
+        if 'aflevering' in initial:
+            context['aflkeuze'] = int(initial['aflevering'])
+        else:
+            context['aflkeuze'] = 0
 
         # Set the title of the application
         context['title'] = "e-WLD plaatsen"
@@ -791,8 +877,9 @@ class LocationListView(ListView):
             val = get['aflevering']
             if val.isdigit():
                 iVal = int(val)
-                query = Q(entry__aflevering__id=val)
-                qs = qs.filter(query)
+                if iVal>0:
+                    query = Q(entry__aflevering__id=iVal)
+                    qs = qs.filter(query)
 
         # Check for mijn
         if 'mijn' in get and get['mijn'] != '':
@@ -800,8 +887,9 @@ class LocationListView(ListView):
             val = get['mijn']
             if val.isdigit():
                 iVal = int(val)
-                query = Q(entry__mijn__id=val)
-                qs = qs.filter(query)
+                if iVal>0:
+                    query = Q(entry__mijnlijst__id=iVal)
+                    qs = qs.filter(query)
 
         # Make sure we only have distinct values
         qs = qs.distinct()

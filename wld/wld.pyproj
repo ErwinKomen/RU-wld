@@ -107,9 +107,10 @@
     <Content Include="wld\dictionary\templates\dictionary\mijn_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\dialect_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\pagination.html" />
-    <Content Include="wld\dictionary\templates\dictionary\trefwoord_list.html" />
+    <Content Include="wld\dictionary\templates\dictionary\trefwoord_list_strict.html" />
     <Content Include="wld\dictionary\templates\dictionary\lemma_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\topnav.html" />
+    <Content Include="wld\dictionary\templates\dictionary\trefwoord_list_plain.html" />
     <Content Include="wld\templates\admin\base.html" />
     <Content Include="wld\templates\admin\base_site.html" />
     <Content Include="wld\templates\admin\dictionary\Info\change_form.html" />
