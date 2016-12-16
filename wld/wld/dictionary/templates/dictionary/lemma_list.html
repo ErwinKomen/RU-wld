@@ -122,6 +122,16 @@
                                 {% endfor %}
                               </select>
                             </div>
+                            <div><label>&nbsp;</label></div>
+                            <div class='input-group'>
+                              <label class='input-group-addon' for='mijn'>{{searchform.mijn.label}}</label>
+                              <select class='form-control' name="mijn">
+                                  <option value="0">-</option>
+                                {% for opt in mijnen %}
+                                  <option value="{{opt.id}}">{{opt.naam}}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
                           </td>
                         </tr>
 

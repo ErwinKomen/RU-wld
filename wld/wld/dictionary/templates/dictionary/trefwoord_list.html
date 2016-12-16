@@ -127,6 +127,26 @@
                               <label class='input-group-addon' for='id_code'>{{searchform.dialectCode.label}}</label>
                               <input name='dialectCode' class='form-control' {% if searchform.dialectCode.value %}value='{{searchform.dialectCode.value}}'{% endif %}>
                             </div>
+                            <div><label>&nbsp;</label></div>
+                            <div class='input-group'>
+                              <label class='input-group-addon' for='aflevering'>{{searchform.aflevering.label}}</label>
+                              <select class='form-control' name="aflevering">
+                                  <option value="0">-</option>
+                                {% for opt in afleveringen %}
+                                  <option value="{{opt.id}}">{{opt.get_summary}}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
+                            <div><label>&nbsp;</label></div>
+                            <div class='input-group'>
+                              <label class='input-group-addon' for='mijn'>{{searchform.mijn.label}}</label>
+                              <select class='form-control' name="mijn">
+                                  <option value="0">-</option>
+                                {% for opt in mijnen %}
+                                  <option value="{{opt.id}}">{{opt.naam}}</option>
+                                {% endfor %}
+                              </select>
+                            </div>
 
                           </td>
                         </tr>

@@ -440,6 +440,10 @@ class TrefwoordListView(ListView):
         # Set the prefix
         context['app_prefix'] = APP_PREFIX
 
+        # Set the afleveringen and mijnen that are available
+        context['afleveringen'] = [afl for afl in Aflevering.objects.all()]
+        context['mijnen'] = [mijn for mijn in Mijn.objects.all()]
+
         # Set the title of the application
         context['title'] = "e-WLD trefwoorden"
 
@@ -505,8 +509,26 @@ class TrefwoordListView(ListView):
         if 'dialectCode' in get and get['dialectCode'] != '':
             val = adapt_search(get['dialectCode'])
             # query = Q(entry__dialect__code__istartswith=val)
-            query = Q(entry__dialect__code__iregex=val)
+            query = Q(entry__dialect__nieuw__iregex=val)
             qs = qs.filter(query)
+
+        # Check for aflevering
+        if 'aflevering' in get and get['aflevering'] != '':
+            # What we get should be a number
+            val = get['aflevering']
+            if val.isdigit():
+                iVal = int(val)
+                query = Q(entry__aflevering__id=val)
+                qs = qs.filter(query)
+
+        # Check for mijn
+        if 'mijn' in get and get['mijn'] != '':
+            # What we get should be a number
+            val = get['mijn']
+            if val.isdigit():
+                iVal = int(val)
+                query = Q(entry__mijn__id=val)
+                qs = qs.filter(query)
 
         # Make sure we only have distinct values
         qs = qs.distinct()
@@ -572,6 +594,7 @@ class LemmaListView(ListView):
 
         # Set the afleveringen that are available
         context['afleveringen'] = [afl for afl in Aflevering.objects.all()]
+        context['mijnen'] = [mijn for mijn in Mijn.objects.all()]
 
         # Return the calculated context
         return context
@@ -614,7 +637,7 @@ class LemmaListView(ListView):
         if 'dialectCode' in get and get['dialectCode'] != '':
             val = adapt_search(get['dialectCode'])
             # query = Q(entry__dialect__code__istartswith=val)
-            query = Q(entry__dialect__code__iregex=val)
+            query = Q(entry__dialect__nieuw__iregex=val)
             qs = qs.filter(query)
 
         # Check for dialect word
@@ -628,8 +651,19 @@ class LemmaListView(ListView):
         if 'aflevering' in get and get['aflevering'] != '':
             # What we get should be a number
             val = get['aflevering']
-            query = Q(entry__aflevering__exact=val)
-            qs = qs.filter(query)
+            if val.isdigit():
+                iVal = int(val)
+                query = Q(entry__aflevering__id=val)
+                qs = qs.filter(query)
+
+        # Check for mijn
+        if 'mijn' in get and get['mijn'] != '':
+            # What we get should be a number
+            val = get['mijn']
+            if val.isdigit():
+                iVal = int(val)
+                query = Q(entry__mijn__id=val)
+                qs = qs.filter(query)
 
 
         # Make sure we only have distinct values
@@ -701,6 +735,10 @@ class LocationListView(ListView):
         # Make sure the paginate-values are available
         context['paginateValues'] = paginateValues
 
+        # Set the afleveringen that are available
+        context['afleveringen'] = [afl for afl in Aflevering.objects.all()]
+        context['mijnen'] = [mijn for mijn in Mijn.objects.all()]
+
         if 'paginate_by' in initial:
             context['paginateSize'] = int(initial['paginate_by'])
         else:
@@ -746,6 +784,24 @@ class LocationListView(ListView):
             # query = Q(nieuw__istartswith=val)
             query = Q(nieuw__iregex=val)
             qs = qs.filter(query)
+
+        # Check for aflevering
+        if 'aflevering' in get and get['aflevering'] != '':
+            # What we get should be a number
+            val = get['aflevering']
+            if val.isdigit():
+                iVal = int(val)
+                query = Q(entry__aflevering__id=val)
+                qs = qs.filter(query)
+
+        # Check for mijn
+        if 'mijn' in get and get['mijn'] != '':
+            # What we get should be a number
+            val = get['mijn']
+            if val.isdigit():
+                iVal = int(val)
+                query = Q(entry__mijn__id=val)
+                qs = qs.filter(query)
 
         # Make sure we only have distinct values
         qs = qs.distinct()
