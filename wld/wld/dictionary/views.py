@@ -780,6 +780,7 @@ class LocationListView(ListView):
     model = Dialect
     paginate_by = 10
     template_name = 'dictionary/location_list.html'
+    entrycount = 0
     qEntry = None
     qs = None
     strict = False      # Use strict filtering
@@ -823,7 +824,7 @@ class LocationListView(ListView):
         context['searchform'] = search_form
 
         # Determine the count 
-        context['entrycount'] = self.get_queryset().count()
+        context['entrycount'] = self.entrycount   #  self.get_queryset().count()
 
         # Set the prefix
         context['app_prefix'] = APP_PREFIX
@@ -853,6 +854,9 @@ class LocationListView(ListView):
         # Set the title of the application
         context['title'] = "e-WLD plaatsen"
 
+        # Get possible user choice of 'strict'
+        context['strict'] = str(self.strict)
+
         # Return the calculated context
         return context
 
@@ -868,28 +872,38 @@ class LocationListView(ListView):
         get = self.request.GET.copy()
         get['sortOrder'] = 'stad'
 
-        # Queryset: start out with *ALL* the lemma's
-        qs = Dialect.objects.all()
+        # Get possible user choice of 'strict'
+        if 'strict' in get:
+            self.strict = (get['strict'] == "True")
+        if self.strict:
+            self.template_name = 'dictionary/location_list_strict.html'
+        else:
+            self.template_name = 'dictionary/location_list.html'
 
-        # Fine-tuning: search string is the LEMMA
+        # Queryset: build a list of requirements
+        lstQ = []
+
+        # Fine-tuning: search string is the STAD
         if 'search' in get and get['search'] != '':
             val = adapt_search(get['search'])
-            # query = Q(stad__istartswith=val) 
-            query = Q(stad__iregex=val) 
+            lstQ.append(Q(stad__iregex=val) )
 
             # check for possible exact numbers having been given
             if re.match('^\d+$', val):
                 query = query | Q(sn__exact=val)
-
-            # Apply the filter
-            qs = qs.filter(query)
+                lstQ.append(Q(sn__exact=val))
 
         # Check for dialect code (Kloeke)
         if 'nieuw' in get and get['nieuw'] != '':
             val = adapt_search(get['nieuw'])
-            # query = Q(nieuw__istartswith=val)
-            query = Q(nieuw__iregex=val)
-            qs = qs.filter(query)
+            lstQ.append(Q(nieuw__iregex=val) )
+
+        if self.strict:
+            # Get the set of Entry elements belonging to the selected STAD-elements
+            dialecten = Dialect.objects.filter(*lstQ)
+            # qse = Entry.objects.filter(dialect__id__in=dialecten)
+            lstQ.clear()
+            lstQ.append(Q(dialect__id__in=dialecten))
 
         # Check for aflevering
         if 'aflevering' in get and get['aflevering'] != '':
@@ -898,8 +912,9 @@ class LocationListView(ListView):
             if val.isdigit():
                 iVal = int(val)
                 if iVal>0:
-                    query = Q(entry__aflevering__id=iVal)
-                    qs = qs.filter(query)
+                    #query = Q(entry__aflevering__id=iVal)
+                    #qs = qs.filter(query)
+                    lstQ.append(Q(entry__aflevering__id=iVal) )
 
         # Check for mijn
         if 'mijn' in get and get['mijn'] != '':
@@ -908,17 +923,19 @@ class LocationListView(ListView):
             if val.isdigit():
                 iVal = int(val)
                 if iVal>0:
-                    query = Q(entry__mijnlijst__id=iVal)
-                    qs = qs.filter(query)
+                    #query = Q(entry__mijnlijst__id=iVal)
+                    #qs = qs.filter(query)
+                    lstQ.append(Q(entry__mijnlijst__id=iVal) )
 
-        # Make sure we only have distinct values
+        # Implement the choices made by the user
+        qs = Dialect.objects.filter(*lstQ)
         qs = qs.distinct()
-
-        # Sort the queryset by the parameters given
-        qs = order_queryset_by_sort_order(get, qs)
-
+        qs = qs.select_related().order_by(Lower('stad'), Lower('entry__lemma__gloss'),Lower('entry__trefwoord__woord'),Lower('entry__woord'))
+        qs = qs.distinct()
         self.qEntry = None
         self.qs = qs
+
+        self.entrycount = qs.count()
 
         # Return the resulting filtered and sorted queryset
         return qs
