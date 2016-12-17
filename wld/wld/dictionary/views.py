@@ -379,38 +379,34 @@ class TrefwoordListView(ListView):
     template_name = 'dictionary/trefwoord_list_plain.html'
     paginate_by = paginateSize
     entrycount = 0
+    qEntry = None
+    qs = None
     strict = False      # Use strict filtering
+
+    def get_qs(self):
+        if self.qEntry == None:
+            if self.qs != None:
+                qs = self.qs
+            else:
+                # Get the PKs of Entry related to Trefwoord
+                qs = self.get_queryset()
+            # Get the Entry queryset related to this
+            qs = Entry.objects.filter(trefwoord__pk__in=qs).select_related()
+        else:
+            qs = self.qEntry
+        return qs
 
     def render_to_response(self, context, **response_kwargs):
         """Check if a CSV response is needed or not"""
         if 'Csv' in self.request.GET.get('submit_type', ''):
             """ Provide CSV response"""
-
-            # Get the PKs of Entry related to Trefwoord
-            qs = self.get_queryset()
-            # Get the Entry queryset related to this
-            qs = Entry.objects.filter(trefwoord__pk__in=qs)
-
-            return export_csv(qs, 'trefwoorden')
-
+            return export_csv(self.get_qs(), 'trefwoorden')
         elif 'Excel' in self.request.GET.get('submit_type', ''):
             """ Provide Excel response"""
-
-            # Get the PKs of Entry related to Trefwoord
-            qs = self.get_queryset()
-            # Get the Entry queryset related to this
-            qs = Entry.objects.filter(trefwoord__pk__in=qs)
-
-            return export_xlsx(qs, 'trefwoorden')
+            return export_xlsx(self.get_qs(), 'trefwoorden')
         elif 'Html' in self.request.GET.get('submit_type', ''):
             """ Provide Html response"""
-
-            # Get the PKs of Entry related to Trefwoord
-            qs = self.get_queryset()
-            # Get the Entry queryset related to this
-            qs = Entry.objects.filter(trefwoord__pk__in=qs)
-
-            return export_html(qs, 'trefwoorden')
+            return export_html(self.get_qs(), 'trefwoorden')
         else:
             return super(TrefwoordListView, self).render_to_response(context, **response_kwargs)
 
@@ -585,6 +581,8 @@ class TrefwoordListView(ListView):
               Lower('lemma__gloss'),  
               Lower('woord'), 
               Lower('dialect__stad'))
+            self.qEntry = qse
+            self.qs = None
         else:
             qse = Trefwoord.objects.filter(*lstQ)
             qse = qse.distinct()
@@ -595,6 +593,8 @@ class TrefwoordListView(ListView):
             #  Lower('entry__dialect__stad'))
             qse = qse.select_related().order_by(Lower('woord'))
             qse = qse.distinct()
+            self.qEntry = None
+            self.qs = qse
 
         self.entrycount = qse.count()
 
@@ -609,18 +609,37 @@ class LemmaListView(ListView):
     template_name = 'dictionary/lemma_list.html'
     paginate_by = paginateSize
     entrycount = 0
+    qEntry = None
+    qs = None
+    strict = False      # Use strict filtering
+
+    def get_qs(self):
+        if self.qEntry == None:
+            if self.qs != None:
+                qs = self.qs
+            else:
+                # Get the PKs of Entry related to Trefwoord
+                qs = self.get_queryset()
+            # Get the Entry queryset related to this
+            qs = Entry.objects.filter(lemma__pk__in=qs).select_related()
+        else:
+            qs = self.qEntry
+        return qs
 
     def render_to_response(self, context, **response_kwargs):
         """Check if a CSV response is needed or not"""
         if 'Csv' in self.request.GET.get('submit_type', ''):
             """ Provide CSV response"""
 
-            # Get the PKs of Entry related to Trefwoord
-            qs = self.get_queryset()
-            # Get the Entry queryset related to this
-            qs = Entry.objects.filter(lemma__pk__in=qs)
+            return export_csv(self.get_qs(), 'begrippen')
+        elif 'Excel' in self.request.GET.get('submit_type', ''):
+            """ Provide Excel response"""
 
-            return export_csv(qs, 'begrippen')
+            return export_xlsx(self.get_qs(), 'begrippen')
+        elif 'Html' in self.request.GET.get('submit_type', ''):
+            """ Provide Html response"""
+
+            return export_html(self.get_qs(), 'begrippen')
 
         else:
             return super(LemmaListView, self).render_to_response(context, **response_kwargs)
@@ -748,6 +767,9 @@ class LemmaListView(ListView):
 
         self.entrycount = qs.count()
 
+        self.qEntry = None
+        self.qs = qse
+
         # Return the resulting filtered and sorted queryset
         return qs
 
@@ -758,37 +780,35 @@ class LocationListView(ListView):
     model = Dialect
     paginate_by = 10
     template_name = 'dictionary/location_list.html'
+    qEntry = None
+    qs = None
+    strict = False      # Use strict filtering
+
+    def get_qs(self):
+        if self.qEntry == None:
+            if self.qs != None:
+                qs = self.qs
+            else:
+                # Get the PKs of Entry related to Trefwoord
+                qs = self.get_queryset()
+            # Get the Entry queryset related to this
+            qs = Entry.objects.filter(dialect__pk__in=qs).select_related()
+        else:
+            qs = self.qEntry
+        return qs
 
     def render_to_response(self, context, **response_kwargs):
         """Check if a CSV response is needed or not"""
         if 'Csv' in self.request.GET.get('submit_type', ''):
             """ Provide CSV response"""
-
-            # Get the PKs of Entry related to Trefwoord
-            qs = self.get_queryset()
-            # Get the Entry queryset related to this
-            qs = Entry.objects.filter(dialect__pk__in=qs)
-
-            return export_csv(qs, 'plaatsen')
+            return export_csv(self.get_qs(), 'plaatsen')
 
         elif 'Excel' in self.request.GET.get('submit_type', ''):
             """ Provide Excel response"""
-
-            # Get the PKs of Entry related to Trefwoord
-            qs = self.get_queryset()
-            # Get the Entry queryset related to this
-            qs = Entry.objects.filter(dialect__pk__in=qs)
-
-            return export_xlsx(qs, 'plaatsen')
+            return export_xlsx(self.get_qs(), 'plaatsen')
         elif 'Html' in self.request.GET.get('submit_type', ''):
             """ Provide Html response"""
-
-            # Get the PKs of Entry related to Trefwoord
-            qs = self.get_queryset()
-            # Get the Entry queryset related to this
-            qs = Entry.objects.filter(dialect__pk__in=qs)
-
-            return export_html(qs, 'plaatsen')
+            return export_html(self.get_qs(), 'plaatsen')
         else:
             return super(LocationListView, self).render_to_response(context, **response_kwargs)
 
@@ -896,6 +916,9 @@ class LocationListView(ListView):
 
         # Sort the queryset by the parameters given
         qs = order_queryset_by_sort_order(get, qs)
+
+        self.qEntry = None
+        self.qs = qse
 
         # Return the resulting filtered and sorted queryset
         return qs
