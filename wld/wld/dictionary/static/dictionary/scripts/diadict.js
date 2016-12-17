@@ -333,7 +333,7 @@ function progress_stop() {
 function set_search(sId) {
   var lSearchId = ['lemmasearch', 'locationsearch', 'trefwoordsearch'];
   for (i = 0; i < lSearchId.length; i++) {
-    $("#" + lSearchId[i]).addClass("hidden");
+    $("#top" + lSearchId[i]).addClass("hidden");
   }
-  $("#" + sId).removeClass("hidden");
+  $("#top" + sId).removeClass("hidden");
 }

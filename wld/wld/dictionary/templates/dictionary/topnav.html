@@ -38,7 +38,7 @@
                     </li>
                     {% endif %}
                 </ul>
-                <form name="toplemmasearch" id="toplemmasearch" class="navbar-form navbar-left hidden"
+                <form name="toplemmasearch" id="toplemmasearch" class="navbar-form navbar-left"
                       action="{% url 'lemmasearch' %}">
                   <div class="form-group">
                     <input id="search" name="search" type="text" class="form-control" placeholder="Begrip">
@@ -50,7 +50,7 @@
                     <input id="search" name="search" type="text" class="form-control" placeholder="Plaats">
                   </div>
                 </form>
-                <form name="toptrefwoordsearch" id="toptrefwoordsearch" class="navbar-form navbar-left"
+                <form name="toptrefwoordsearch" id="toptrefwoordsearch" class="navbar-form navbar-left hidden"
                       action="{% url 'trefwoordsearch' %}">
                   <div class="form-group">
                     <input id="search" name="search" type="text" class="form-control" placeholder="Trefwoord">

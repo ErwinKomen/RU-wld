@@ -768,7 +768,7 @@ class LemmaListView(ListView):
         self.entrycount = qs.count()
 
         self.qEntry = None
-        self.qs = qse
+        self.qs = qs
 
         # Return the resulting filtered and sorted queryset
         return qs
@@ -918,7 +918,7 @@ class LocationListView(ListView):
         qs = order_queryset_by_sort_order(get, qs)
 
         self.qEntry = None
-        self.qs = qse
+        self.qs = qs
 
         # Return the resulting filtered and sorted queryset
         return qs
