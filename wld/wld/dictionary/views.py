@@ -614,11 +614,13 @@ class LemmaListView(ListView):
     strict = False      # Use strict filtering
 
     def get_qs(self):
+        """Get the Entry elements that are selected"""
         if self.qEntry == None:
+            # Get the [Lemma] pk's that are relevant
             if self.qs != None:
                 qs = self.qs
             else:
-                # Get the PKs of Entry related to Trefwoord
+                # Get the Lemma PKs
                 qs = self.get_queryset()
             # Get the Entry queryset related to this
             qs = Entry.objects.filter(lemma__pk__in=qs).select_related()
@@ -777,23 +779,28 @@ class LemmaListView(ListView):
 class LocationListView(ListView):
     """Listview of locations"""
 
-    model = Dialect
-    paginate_by = 10
+    model = Dialect     # The LocationListView uses [Dialect]
+    paginate_by = 10    # Default pagination number
     template_name = 'dictionary/location_list.html'
-    entrycount = 0
-    qEntry = None
-    qs = None
+    entrycount = 0      # Number of items in queryset (whether Entry or Dialect!!)
+    qEntry = None       # Current queryset as restricted to ENTRY
+    qs = None           # Current queryset (for speeding up)
     strict = False      # Use strict filtering
 
     def get_qs(self):
+        """Get the Entry elements that are selected"""
+
         if self.qEntry == None:
+            # First get the currently selected elements
             if self.qs != None:
                 qs = self.qs
             else:
-                # Get the PKs of Entry related to Trefwoord
+                # Calculate the  PKs
                 qs = self.get_queryset()
-            # Get the Entry queryset related to this
-            qs = Entry.objects.filter(dialect__pk__in=qs).select_related()
+            # Get the Entry elements that refer to the set of dialects
+            if not self.strict:
+                # Convert the [Dialect] elements in qs to [Entry] elements
+                qs = Entry.objects.filter(dialect__pk__in=qs).select_related()
         else:
             qs = self.qEntry
         return qs
