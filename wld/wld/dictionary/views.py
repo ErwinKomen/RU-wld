@@ -785,7 +785,7 @@ class LocationListView(ListView):
     entrycount = 0      # Number of items in queryset (whether Entry or Dialect!!)
     qEntry = None       # Current queryset as restricted to ENTRY
     qs = None           # Current queryset (for speeding up)
-    strict = False      # Use strict filtering
+    strict = True      # Use strict filtering
 
     def get_qs(self):
         """Get the Entry elements that are selected"""
@@ -882,10 +882,12 @@ class LocationListView(ListView):
         # Get possible user choice of 'strict'
         if 'strict' in get:
             self.strict = (get['strict'] == "True")
-        if self.strict:
-            self.template_name = 'dictionary/location_list_strict.html'
-        else:
-            self.template_name = 'dictionary/location_list.html'
+
+        # For right now: just use one template
+        #if self.strict:
+        #    self.template_name = 'dictionary/location_list_strict.html'
+        #else:
+        #    self.template_name = 'dictionary/location_list.html'
 
         # Queryset: build a list of requirements
         lstQ = []
@@ -906,7 +908,7 @@ class LocationListView(ListView):
             lstQ.append(Q(nieuw__iregex=val) )
 
         if self.strict:
-            # Get the set of Entry elements belonging to the selected STAD-elements
+            # Get the set of Dialect elements belonging to the selected STAD-elements
             dialecten = Dialect.objects.filter(*lstQ)
             # qse = Entry.objects.filter(dialect__id__in=dialecten)
             lstQ.clear()
@@ -935,12 +937,28 @@ class LocationListView(ListView):
                     lstQ.append(Q(entry__mijnlijst__id=iVal) )
 
         # Implement the choices made by the user
-        qs = Dialect.objects.filter(*lstQ)
-        qs = qs.distinct()
-        qs = qs.select_related().order_by(Lower('stad'), Lower('entry__lemma__gloss'),Lower('entry__trefwoord__woord'),Lower('entry__woord'))
-        qs = qs.distinct()
-        self.qEntry = None
-        self.qs = qs
+        if self.strict:
+            # Get all the Entry elements fulfilling the conditions
+            qs = Entry.objects.filter(*lstQ).distinct().select_related().order_by(
+              Lower('dialect__stad'), 
+              Lower('lemma__gloss'), 
+              Lower('trefwoord__woord'), 
+              Lower('woord'))
+            # Adjust the settings for this view
+            self.qEntry = qs
+            self.qs = dialecten
+        else:
+            qs = Dialect.objects.filter(*lstQ)
+            qs = qs.distinct()
+            qs = qs.select_related().order_by(
+              Lower('stad'), 
+              Lower('entry__lemma__gloss'),
+              Lower('entry__trefwoord__woord'),
+              Lower('entry__woord'))
+            # Adjust the settings for this view
+            self.qEntry = None
+            self.qs = qs
+        # qs = qs.distinct()
 
         self.entrycount = qs.count()
 
