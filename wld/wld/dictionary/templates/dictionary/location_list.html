@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
     {% load staticfiles %}
+    {% load wld_extras %}
     <link rel="stylesheet" type="text/css" href="{% static 'dictionary/content/bootstrap.min.css' %}" />
     <link rel="stylesheet" type="text/css" href="{% static 'dictionary/content/site.css' %}" />
     <script src="{% static 'dictionary/scripts/modernizr-2.6.2.js' %}"></script>
@@ -99,58 +100,56 @@
       <table class="table table-hover">
         <thead><tr><th class="hidden">id</th><th>Plaats</th><th>Begrip: trefwoord (dialectopgave)</th><th>Boek(en)</th></tr></thead>
         <tbody>
-        {% if strict %}
-          {% for entry in object_list %}
-            <!-- Group level #1: Dialect -->
-            {% ifchanged entry.dialect %}
-              {% if not forloop.first %}</tr>{% endif %}
+        {% if strict == 'True' %}
+          {% for item in qlist %}
+            {% if item.dialect_stad.first %}
               <tr class="dict-entry">
-                <td class="hidden"> {{ entry.dialect.id }}</td>
-                <td><span class="dialect-stad">{{entry.dialect.stad}}</span></td>
+                <td class="hidden"> {{ item.entry.dialect.id }}</td>
+                <td><span class="dialect-stad">{{item.entry.dialect.stad}}</span></td>
                 <td>
-            {% else %}
-              {% if forloop.last %}</td></tr>{% endif %}
-            {% endifchanged %}
-            {% if not forloop.last %}
-                  <!-- Start: group level #2: Lemma -->
-                  {% ifchanged entry.lemma %}
-                    <span class="lemma-name"><a href="{% url 'lemmasearch' %}?search={{entry.lemma.gloss|urlencode}}">{{entry.lemma.gloss}}</a>:</span>
-                  {% endifchanged %}
-                  {% spaceless %}
-                    <!-- Start: group level #3: Trefwoord -->
-                    {% ifchanged entry.trefwoord %}
-                      <span class="trefwoord-name"><a href="{% url 'trefwoordsearch' %}?search={{entry.trefwoord.woord|urlencode}}">{{entry.trefwoord.woord}}</a></span>
-                      <span>(</span>
-                    {% endifchanged %}
-                      <!-- Start: group level #4: dialectopgave -->
-                      <span class="trefwoord-woord">{{entry.woord}}</span>                      
-                      {% if entry.toelichting != "" %}<span class="trefwoord-word-toelichting"> {{entry.toelichting}}</span>{% endif %}
-                      {% if entry.mijnlijst.count > 0 %}
-                        <span class="word-mijn">{% if  entry.dialect.nieuw != "Q000"  %}&nbsp;{% endif %}[</span>
-                        {% for mijn in entry.mijnlijst.all %}
-                          <span class="word-mijn">{{mijn.naam}}</span>
-                          <span class="word-mijn-letop">{% if not forloop.last %}, {% endif %}</span>
-                        {% endfor %}
-                        <span class="word-mijn">]</span>
-                      {% endif %}
-                      <!-- End: group level #4: dialectopgave -->
-                    <!-- End: group level #3: Trefwoord -->
-                    {% ifchanged entry.trefwoord %}
-                      <span>)</span>
-                    {% endifchanged %}
-                  {% endspaceless %}
-            <!-- Group level #1: Dialect -->
-            {% ifchanged entry.dialect %}
-              <td>
-                {% regroup dialect.entry_set.all|dictsort:"get_aflevering" by aflevering as afl_list  %}
+            {% endif %}
+              {% if item.lemma_gloss.first %}
+                <!-- Start lemma -->
+                <span class="lemma-name"><a href="{% url 'lemmasearch' %}?search={{item.entry.lemma.gloss|urlencode}}">{{item.entry.lemma.gloss}}</a>:</span>
+              {% endif %}
+              {% spaceless %}
+              {% if item.trefwoord_woord.first or item.lemma_gloss.first %}
+                <!-- Start trefwoord -->
+                <span class="trefwoord-name"><a href="{% url 'trefwoordsearch' %}?search={{item.entry.trefwoord.woord|urlencode}}">{{item.entry.trefwoord.woord}}</a></span>
+                <span>&nbsp;(</span>
+              {% endif %}
+              <!-- Output dialectopgave -->
+              <span class="trefwoord-woord">{{item.entry.dialectopgave}}</span>
+              <!-- Add word-specific toelichting -->
+              {% if item.entry.toelichting != "" %}<span class="trefwoord-word-toelichting"> {{item.entry.toelichting}}</span>{% endif %}
+              <!-- Possibly add a list of mines -->
+              {% if item.entry.mijnlijst.count > 0 %}
+                <span class="word-mijn">{% if  item.entry.dialect.nieuw != "Q000"  %}&nbsp;{% endif %}[</span>
+                {% for mijn in item.entry.mijnlijst.all %}
+                  <span class="word-mijn">{{mijn.naam}}</span>
+                  <span class="word-mijn-letop">{% if not forloop.last %}, {% endif %}</span>
+                {% endfor %}
+                <span class="word-mijn">]</span>
+              {% endif %}             
+              {% if item.trefwoord_woord.last or item.lemma_gloss.last %}<!-- Finish trefwoord --><span>)</span>{% else %}<!-- Non-final dialectopgave {{forloop.counter0}}--><span>,&nbsp;</span>{% endif %}
+              {% endspaceless %}
+              <!-- -->
+            {% if item.dialect_stad.last %}
+                <!-- Finish stad -->
+                </td>
+                <!-- Treat the afleveringen for each city -->
+                <td>
                 {% spaceless %}
-                {% for afl in afl_list %}
-                  <span class="lemma-aflevering"><a href="/{{app_prefix}}static/dictionary/content/pdf/{{afl.grouper.get_pdf}}">{{afl.grouper.get_summary}}</a></span>
-                  <span>{% if not forloop.last %}, {% endif %}</span>
+                {% for item_afl in item.alist %}
+                  {% if item_afl.afl.first %}
+                    <span class="lemma-aflevering"><a href="/{{app_prefix}}static/dictionary/content/pdf/{{item_afl.entry.aflevering.get_pdf}}">{{item_afl.entry.aflevering.get_summary}}</a></span>
+                  {% endif %}
+                  {% if item_afl.afl.last and not item_afl.stad.last %}<span>, </span>{% endif %}
                 {% endfor %}
                 {% endspaceless %}
-              </td>
-            {% endifchanged %}
+                </td>
+              <!-- Finish this row -->
+              </tr>
             {% endif %}
           {% endfor %}
         {% else %}

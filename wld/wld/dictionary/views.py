@@ -13,6 +13,7 @@ from django.db.models.functions import Lower
 from django.http import JsonResponse
 from datetime import datetime
 from xml.dom import minidom
+from operator import itemgetter
 import xml.etree.ElementTree as ET
 import os
 import operator
@@ -82,6 +83,55 @@ def order_queryset_by_sort_order(get, qs, sOrder = 'gloss'):
 
     # return the ordered list
     return ordered
+
+def get_item_list(lVar, lFun, qs):
+    """Turn the queryset [qs] into a list of Items that have first and last information"""
+
+    # Initialize the variables whose changes are important
+    oVariable = {}
+    for i, key in enumerate(lVar):
+        oVariable[key] = "" # {'name': key, 'fun': lFun[i]}
+    lItem = []
+    iLast = len(qs)-1
+    # Iterate over the entries looking for first, last etc
+    for i, entry in enumerate(qs):
+        bIsLast = (i==iLast)
+        oItem = {'entry': entry}
+        for k in lVar:
+            oItem[k] = {'first':False, 'last':False}
+        bIsDict = isinstance(entry, dict)
+        # Check for changes in all the variables
+        for j, k in enumerate(lVar):
+            fun = lFun[j]
+            if callable(fun):
+                # sValue = entry.fun()
+                sValue = fun(entry)
+            else:
+                for idx, val in enumerate(fun):
+                    if idx==0:
+                        if bIsDict:
+                            sValue = entry[val]
+                        else:
+                            sValue = getattr(entry, val)
+                    else:
+                        if bIsDict:
+                            sValue = sValue[val]
+                        else:
+                            sValue = getattr(sValue, val)
+            # Check for changes in the value of the variable 
+            if sValue != oVariable[k]:
+                # Check if the previous one's [last] must be changed
+                if oVariable[k] != "": lItem[i-1][k]['last'] = True
+                # Adapt the current one's [first] property
+                oItem[k]['first']= True
+                # Adapt the variable
+                oVariable[k] = sValue                    
+            # Check if this is the last
+            if bIsLast: oItem[k]['last'] = True
+        # Add this object to the list of items
+        lItem.append(oItem)
+    # Return the list we have made
+    return lItem
 
 def home(request):
     """Renders the home page."""
@@ -864,8 +914,133 @@ class LocationListView(ListView):
         # Get possible user choice of 'strict'
         context['strict'] = str(self.strict)
 
+        # Transform the paginated queryset into a dict sorted by Dialect/Aflevering
+        lDialect = self.get_qafl(context)
+
+        # Get a list with 'first' and 'last' values for each item in the current paginated queryset
+        lEntry = self.get_qlist(context)
+        # Add the sorted-dialect information to lEntry
+        for idx, item in enumerate(lEntry):
+            # Start or Finish dialect information
+            if item['dialect_stad']['first']:
+                iDialectStart = idx
+                qsa = []
+            # All: add this entry
+            qsa.append(lDialect[idx])
+            if item['dialect_stad']['last']:
+                # COpy the list of Entry elements sorted by Stad/Aflevering here
+                lEntry[idx]['alist'] = qsa
+            else:
+                lEntry[idx]['alist'] = None
+
+        context['qlist'] = lEntry
+
         # Return the calculated context
         return context
+      
+    def get_qlist(self, context):
+        """Calculate HTML output for the query-set in the context"""
+
+        # REtrieve the correct queryset, as determined by paginate_by
+        qs = context['object_list']
+        # Start the output
+        html = []
+        # Initialize the variables whose changes are important
+        lVars = ["dialect_stad", "lemma_gloss", "trefwoord_woord", "dialectopgave"]
+        lFuns = [["dialect", "stad"], ["lemma", "gloss"], ["trefwoord", "woord"], Entry.dialectopgave]
+        # Get a list of items containing 'first' and 'last' information
+        lItem = get_item_list(lVars, lFuns, qs)
+        # REturn this list
+        return lItem
+
+    def get_qafl(self, context):
+        """Sort the paginated QS by Dialect/Aflevering and turn into a dict"""
+
+        # REtrieve the correct queryset, as determined by paginate_by
+        qs = context['object_list']
+        qsd = []
+        # Walk through the query set
+        for entry in qs:
+            qsd.append(entry)
+        # Now sort the resulting set
+        qsd = sorted(qsd, key=lambda el: el.dialect.stad + "_" + el.get_aflevering())
+        # qsd = sorted(qsd, key=itemgetter('stad', 'afl'))
+        # Prepare for dialect processing
+        lVarsD = ["stad", "afl"]
+        lFunsD = [["dialect", "stad"], Entry.get_aflevering]
+        # Create a list of Dialect items
+        lDialect = get_item_list(lVarsD, lFunsD, qsd)
+        # Return the result
+        return lDialect            
+
+    def get_out_html(self, context):
+        """Calculate HTML output for the query-set in the context"""
+
+        # REtrieve the correct queryset, as determined by paginate_by
+        qs = context['object_list']
+        # Start the output
+        html = []
+        # Initialize the variables whose changes are important
+        lVars = ["dialect_stad", "lemma_gloss", "trefwoord_woord", "dialectopgave"]
+        lFuns = [["dialect", "stad"], ["lemma", "gloss"], ["trefwoord", "woord"], Entry.dialectopgave]
+        # Prepare for dialect processing
+        lVarsD = ["stad", "afl"]
+        lFunsD = [["stad"], Entry.get_aflevering]
+        # Get a list of items containing 'first' and 'last' information
+        lItem = get_item_list(lVars, lFuns, qs)
+        # Iterate over the items
+        for item in lItem:
+            entry = item['entry']
+            # First level checking: dialect
+            if item['dialect_stad']['first']:
+                # Start of a new Dialect
+                qsd = []
+                # Start output for this dialect
+                html.append("<tr><td>" + entry.dialect.stad + "</td>")
+                html.append("<td>")
+            # Normal treatment of any entry: add to the list of entries for this dialect
+            oThis = {'stad':   entry.dialect.stad, 
+                     'afl':    entry.get_aflevering(),
+                     'aflpdf': entry.aflevering.get_pdf(),
+                     'aflsum': entry.aflevering.get_summary()}
+            qsd.append(oThis)
+
+            # Level #1: lemma
+            if item['lemma_gloss']['first']:
+                # Show the lemma
+                x=1
+            # Output AFLEVERING information if this is the FIRST entry of the stad
+            if item['dialect_stad']['first']:
+                # Make sure the variable is adapted
+                oVariable['dialect_stad'] = entry.dialect.stad
+                # Re-order afleveringen for this dialect
+                qsd = sorted(qsd, key=itemgetter('stad', 'afl'))
+                # Create a list of Dialect items
+                lDialect = self.get_item_list(lVarsD, lFunsD, qsd)
+                # Output the information for this aflevering
+                afl_current = None
+                html.append("<td>")
+                for afl_item in lDialect:
+                    afl_entry = afl_item['entry']
+                    # Is this the first one?
+                    if afl_item['afl']['first']:
+                        # Give details
+                        sOut = '<span class="lemma-aflevering"><a href="/{}static/dictionary/content/pdf/{}">{}</a></span>'.format(
+                            context['app_prefix'], afl_entry.aflevering.get_pdf(), afl_entry.aflevering.get_summary() )
+                        html.append(sOut)
+                    # Is this not the last one?
+                    if not afl_item['afl']['last']:
+                        # Append a comma
+                        html.append("<span>, </span>")
+                # Finish the TD on the aflevering
+                html.append("</td>")
+
+                # Finish output for this dialect
+                html.append("</tr>")
+
+ 
+        # REturn the HTML we have built
+        return "\n".join(html);
 
     def get_paginate_by(self, queryset):
         """
@@ -882,12 +1057,6 @@ class LocationListView(ListView):
         # Get possible user choice of 'strict'
         if 'strict' in get:
             self.strict = (get['strict'] == "True")
-
-        # For right now: just use one template
-        #if self.strict:
-        #    self.template_name = 'dictionary/location_list_strict.html'
-        #else:
-        #    self.template_name = 'dictionary/location_list.html'
 
         # Queryset: build a list of requirements
         lstQ = []
@@ -948,13 +1117,14 @@ class LocationListView(ListView):
             self.qEntry = qs
             self.qs = dialecten
         else:
-            qs = Dialect.objects.filter(*lstQ)
-            qs = qs.distinct()
-            qs = qs.select_related().order_by(
-              Lower('stad'), 
-              Lower('entry__lemma__gloss'),
-              Lower('entry__trefwoord__woord'),
-              Lower('entry__woord'))
+            qs = Dialect.objects.filter(*lstQ).distinct().select_related()
+            # The following doesn't work--the number of items grows
+            #qs = qs.order_by(
+            #  Lower('stad'), 
+            #  Lower('entry__lemma__gloss'),
+            #  Lower('entry__trefwoord__woord'),
+            #  Lower('entry__woord'))
+            qs = qs.order_by(Lower('stad'))
             # Adjust the settings for this view
             self.qEntry = None
             self.qs = qs
