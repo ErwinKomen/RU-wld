@@ -28,6 +28,7 @@ from wld.settings import APP_PREFIX, WSGI_FILE
 
 # Global variables
 paginateSize = 10
+paginateEntries = 100
 paginateValues = (1000, 500, 250, 100, 50, 40, 30, 20, 10, )
 outputColumns = ['begrip', 'trefwoord', 'dialectopgave', 'Kloekecode', 'aflevering']
 
@@ -95,7 +96,7 @@ def get_item_list(lVar, lFun, qs):
     iLast = len(qs)-1
     # Iterate over the entries looking for first, last etc
     for i, entry in enumerate(qs):
-        bIsLast = (i==iLast)
+        bIsLastEntry = (i==iLast)
         oItem = {'entry': entry}
         for k in lVar:
             oItem[k] = {'first':False, 'last':False}
@@ -104,7 +105,6 @@ def get_item_list(lVar, lFun, qs):
         for j, k in enumerate(lVar):
             fun = lFun[j]
             if callable(fun):
-                # sValue = entry.fun()
                 sValue = fun(entry)
             else:
                 for idx, val in enumerate(fun):
@@ -125,9 +125,9 @@ def get_item_list(lVar, lFun, qs):
                 # Adapt the current one's [first] property
                 oItem[k]['first']= True
                 # Adapt the variable
-                oVariable[k] = sValue                    
+                oVariable[k] = sValue            
             # Check if this is the last
-            if bIsLast: oItem[k]['last'] = True
+            if bIsLastEntry: oItem[k]['last'] = True
         # Add this object to the list of items
         lItem.append(oItem)
     # Return the list we have made
@@ -426,12 +426,12 @@ class TrefwoordListView(ListView):
     """ListView of keywords (trefwoorden)"""
 
     model = Trefwoord
-    template_name = 'dictionary/trefwoord_list_plain.html'
-    paginate_by = paginateSize
+    template_name = 'dictionary/trefwoord_list.html'
+    paginate_by = paginateEntries # paginateSize
     entrycount = 0
     qEntry = None
     qs = None
-    strict = False      # Use strict filtering
+    strict = True      # Use strict filtering
 
     def get_qs(self):
         if self.qEntry == None:
@@ -490,8 +490,7 @@ class TrefwoordListView(ListView):
 
         # Get possible user choice of 'strict'
         context['strict'] = str(self.strict)
-
-
+        
         # Determine the count 
         context['entrycount'] = self.entrycount   #  self.get_queryset().count()
         # context['twcount'] = self.twcount
@@ -509,9 +508,65 @@ class TrefwoordListView(ListView):
         # Set the title of the application
         context['title'] = "e-WLD trefwoorden"
 
+        # If we are in 'strict' mode, we need to deliver the [qlist]
+        if self.strict:
+            # Transform the paginated queryset into a dict sorted by Dialect/Aflevering
+            lAflev = self.get_qafl(context)
+
+            # Get a list with 'first' and 'last' values for each item in the current paginated queryset
+            lEntry = self.get_qlist(context)
+            # Add the sorted-dialect information to lEntry
+            for idx, item in enumerate(lEntry):
+                # Start or Finish dialect information
+                if item['trefwoord_woord']['first']:
+                    qsa = []
+                # All: add this entry
+                qsa.append(lAflev[idx])
+                if item['trefwoord_woord']['last']:
+                    # COpy the list of Entry elements sorted by Trefwoord/Aflevering here
+                    lEntry[idx]['alist'] = qsa
+                else:
+                    lEntry[idx]['alist'] = None
+
+            context['qlist'] = lEntry
+
         # Return the calculated context
         return context
+      
+    def get_qlist(self, context):
+        """Calculate HTML output for the query-set in the context"""
 
+        # REtrieve the correct queryset, as determined by paginate_by
+        qs = context['object_list']
+        # Start the output
+        html = []
+        # Initialize the variables whose changes are important
+        lVars = ["trefwoord_woord", "lemma_gloss", "dialectopgave", "dialect_stad"]
+        lFuns = [["trefwoord", "woord"], ["lemma", "gloss"], Entry.dialectopgave, ["dialect", "stad"]]
+        # Get a list of items containing 'first' and 'last' information
+        lItem = get_item_list(lVars, lFuns, qs)
+        # REturn this list
+        return lItem
+
+    def get_qafl(self, context):
+        """Sort the paginated QS by Trefwoord/Aflevering into a list"""
+
+        # REtrieve the correct queryset, as determined by paginate_by
+        qs = context['object_list']
+        qsd = []
+        # Walk through the query set
+        for entry in qs:
+            qsd.append(entry)
+        # Now sort the resulting set
+        qsd = sorted(qsd, key=lambda el: el.trefwoord.woord + " " + el.get_aflevering())
+        # Prepare for processing
+        lVarsD = ["trefw", "afl"]
+        lFunsD = [["trefwoord", "woord"], Entry.get_aflevering]
+        # Create a list of Dialect items
+        lDialect = get_item_list(lVarsD, lFunsD, qsd)
+        # Return the result
+        return lDialect            
+      
     def get_paginate_by(self, queryset):
         """
         Paginate by specified value in querystring, or use default class property value.
@@ -526,79 +581,59 @@ class TrefwoordListView(ListView):
         # Get possible user choice of 'strict'
         if 'strict' in get:
             self.strict = (get['strict'] == "True")
-        if self.strict:
-            self.template_name = 'dictionary/trefwoord_list_strict.html'
-        else:
-            self.template_name = 'dictionary/trefwoord_list_plain.html'
 
         lstQ = []
 
         # Fine-tuning: search string is the LEMMA
         if 'search' in get and get['search'] != '':
             val = adapt_search(get['search'])
-            # Adapt Entry filter
-            if self.strict:
-                lstQ.append(Q(trefwoord__woord__iregex=val))
-            else:
-                # Use the 'woord' attribute of Trefwoord
-                lstQ.append(Q(woord__iregex=val) )
+            # Use the 'woord' attribute of Trefwoord
+            lstQ.append(Q(woord__iregex=val) )
 
-                # check for possible exact numbers having been given
-                if re.match('^\d+$', val):
-                    lstQ.append(Q(sn__exact=val))
+            # check for possible exact numbers having been given
+            if re.match('^\d+$', val):
+                lstQ.append(Q(sn__exact=val))
 
         # Check for 'toelichting'
         if 'toelichting' in get and get['toelichting'] != '':
             val = adapt_search(get['toelichting'])
 
-            if self.strict:
-                # Adapt Entry filter
-                lstQ.append(Q(trefwoord__toelichting__iregex=val))
-            else:
-                # Try to get to the dialectwoord
-                lstQ.append(Q(toelichting__iregex=val))
+            #if self.strict:
+            #    # Adapt Entry filter
+            #    lstQ.append(Q(trefwoord__toelichting__iregex=val))
+            #else:
+            # Try to get to the dialectwoord
+            lstQ.append(Q(toelichting__iregex=val))
+
+        if self.strict:
+            # Get the set of Trefwoord elements belonging to the selected Trefwoord/toelichting-elements
+            trefw = Trefwoord.objects.filter(*lstQ)
+            lstQ.clear()
+            lstQ.append(Q(trefwoord__id__in=trefw))
 
         # Check for dialectwoord
         if 'dialectwoord' in get and get['dialectwoord'] != '':
             val = adapt_search(get['dialectwoord'])
-
-            if self.strict:
-                # Adapt Entry filter
-                lstQ.append(Q(trefwoord__woord__iregex=val))
-            else:
-                # Try to get to the dialectwoord
-                lstQ.append(Q(entry__woord__iregex=val))
+            # Adapt Entry filter
+            lstQ.append(Q(woord__iregex=val))
 
         # Check for lemma
         if 'lemma' in get and get['lemma'] != '':
             val = adapt_search(get['lemma'])
-
-            if self.strict:
-                # Adapt Entry filter
-                lstQ.append(Q(lemma_gloss__iregex=val))
-            else:
-                # Try to get to the dialectwoord
-                lstQ.append(Q(entry__lemma__gloss__iregex=val))
+            # Adapt Entry filter
+            lstQ.append(Q(lemma__gloss__iregex=val))
 
         # Check for dialect city
         if 'dialectCity' in get and get['dialectCity'] != '':
             val = adapt_search(get['dialectCity'])
-            if self.strict:
-                # Adapt Entry filter
-                lstQ.append(Q(dialect__stad__iregex=val))
-            else:
-                # Try to get to the dialectwoord
-                lstQ.append(Q(entry__dialect__stad__iregex=val))
+            # Adapt Entry filter
+            lstQ.append(Q(dialect__stad__iregex=val))
 
         # Check for dialect code (Kloeke)
         if 'dialectCode' in get and get['dialectCode'] != '':
             val = adapt_search(get['dialectCode'])
-            if self.strict:
-                # Adapt Entry filter
-                lstQ.append(Q(dialect__nieuw__iregex=val))
-            else:
-                # Try to get to the dialectwoord
-                lstQ.append(Q(entry__dialect__nieuw__iregex=val))
+            # Adapt Entry filter
+            lstQ.append(Q(dialect__nieuw__iregex=val))
 
         # Check for aflevering
         if 'aflevering' in get and get['aflevering'] != '':
@@ -607,10 +642,7 @@ class TrefwoordListView(ListView):
             if val.isdigit():
                 iVal = int(val)
                 if iVal>0:
-                    if self.strict:
-                        lstQ.append(Q(aflevering__id=iVal))
-                    else:
-                        lstQ.append(Q(entry__aflevering__id=iVal))
+                    lstQ.append(Q(aflevering__id=iVal))
 
         # Check for mijn
         if 'mijn' in get and get['mijn'] != '':
@@ -619,30 +651,20 @@ class TrefwoordListView(ListView):
             if val.isdigit():
                 iVal = int(val)
                 if iVal>0:
-                    if self.strict:
-                        lstQ.append(Q(mijnlijst__id=iVal))
-                    else:
-                        lstQ.append(Q(entry__mijnlijst__id=iVal))
+                    lstQ.append(Q(mijnlijst__id=iVal))
 
         # Make the QSE available
         if self.strict:
+            # Order: "trefwoord_woord", "lemma_gloss", "dialectopgave", "dialect_stad"
             qse = Entry.objects.filter(*lstQ).select_related().order_by(
               Lower('trefwoord__woord'), 
               Lower('lemma__gloss'),  
               Lower('woord'), 
               Lower('dialect__stad'))
             self.qEntry = qse
-            self.qs = None
+            self.qs = trefw
         else:
-            qse = Trefwoord.objects.filter(*lstQ)
-            qse = qse.distinct()
-            #qse = qse.select_related().order_by(
-            #  Lower('woord'), 
-            #  Lower('entry__lemma__gloss'),
-            #  Lower('entry__woord'),
-            #  Lower('entry__dialect__stad'))
-            qse = qse.select_related().order_by(Lower('woord'))
-            qse = qse.distinct()
+            qse = Trefwoord.objects.filter(*lstQ).distinct().select_related().order_by(Lower('woord'))
             self.qEntry = None
             self.qs = qse
 
@@ -830,7 +852,8 @@ class LocationListView(ListView):
     """Listview of locations"""
 
     model = Dialect     # The LocationListView uses [Dialect]
-    paginate_by = 10    # Default pagination number
+    paginate_by = paginateEntries # paginateSize
+    # paginate_by = 10    # Default pagination number
     template_name = 'dictionary/location_list.html'
     entrycount = 0      # Number of items in queryset (whether Entry or Dialect!!)
     qEntry = None       # Current queryset as restricted to ENTRY
@@ -963,7 +986,7 @@ class LocationListView(ListView):
         for entry in qs:
             qsd.append(entry)
         # Now sort the resulting set
-        qsd = sorted(qsd, key=lambda el: el.dialect.stad + "_" + el.get_aflevering())
+        qsd = sorted(qsd, key=lambda el: el.dialect.stad + " " + el.get_aflevering())
         # qsd = sorted(qsd, key=itemgetter('stad', 'afl'))
         # Prepare for dialect processing
         lVarsD = ["stad", "afl"]
@@ -972,75 +995,6 @@ class LocationListView(ListView):
         lDialect = get_item_list(lVarsD, lFunsD, qsd)
         # Return the result
         return lDialect            
-
-    def get_out_html(self, context):
-        """Calculate HTML output for the query-set in the context"""
-
-        # REtrieve the correct queryset, as determined by paginate_by
-        qs = context['object_list']
-        # Start the output
-        html = []
-        # Initialize the variables whose changes are important
-        lVars = ["dialect_stad", "lemma_gloss", "trefwoord_woord", "dialectopgave"]
-        lFuns = [["dialect", "stad"], ["lemma", "gloss"], ["trefwoord", "woord"], Entry.dialectopgave]
-        # Prepare for dialect processing
-        lVarsD = ["stad", "afl"]
-        lFunsD = [["stad"], Entry.get_aflevering]
-        # Get a list of items containing 'first' and 'last' information
-        lItem = get_item_list(lVars, lFuns, qs)
-        # Iterate over the items
-        for item in lItem:
-            entry = item['entry']
-            # First level checking: dialect
-            if item['dialect_stad']['first']:
-                # Start of a new Dialect
-                qsd = []
-                # Start output for this dialect
-                html.append("<tr><td>" + entry.dialect.stad + "</td>")
-                html.append("<td>")
-            # Normal treatment of any entry: add to the list of entries for this dialect
-            oThis = {'stad':   entry.dialect.stad, 
-                     'afl':    entry.get_aflevering(),
-                     'aflpdf': entry.aflevering.get_pdf(),
-                     'aflsum': entry.aflevering.get_summary()}
-            qsd.append(oThis)
-
-            # Level #1: lemma
-            if item['lemma_gloss']['first']:
-                # Show the lemma
-                x=1
-            # Output AFLEVERING information if this is the FIRST entry of the stad
-            if item['dialect_stad']['first']:
-                # Make sure the variable is adapted
-                oVariable['dialect_stad'] = entry.dialect.stad
-                # Re-order afleveringen for this dialect
-                qsd = sorted(qsd, key=itemgetter('stad', 'afl'))
-                # Create a list of Dialect items
-                lDialect = self.get_item_list(lVarsD, lFunsD, qsd)
-                # Output the information for this aflevering
-                afl_current = None
-                html.append("<td>")
-                for afl_item in lDialect:
-                    afl_entry = afl_item['entry']
-                    # Is this the first one?
-                    if afl_item['afl']['first']:
-                        # Give details
-                        sOut = '<span class="lemma-aflevering"><a href="/{}static/dictionary/content/pdf/{}">{}</a></span>'.format(
-                            context['app_prefix'], afl_entry.aflevering.get_pdf(), afl_entry.aflevering.get_summary() )
-                        html.append(sOut)
-                    # Is this not the last one?
-                    if not afl_item['afl']['last']:
-                        # Append a comma
-                        html.append("<span>, </span>")
-                # Finish the TD on the aflevering
-                html.append("</td>")
-
-                # Finish output for this dialect
-                html.append("</tr>")
-
- 
-        # REturn the HTML we have built
-        return "\n".join(html);
 
     def get_paginate_by(self, queryset):
         """
