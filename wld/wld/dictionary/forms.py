@@ -59,6 +59,7 @@ class LemmaSearchForm(forms.ModelForm):
     optdialect = forms.CharField(label=_("Dialectweergave"))
     aflevering = forms.CharField(label=_("Deel/sectie/aflevering"))
     mijn = forms.CharField(label=_("Mijn"))
+    strict = forms.CharField(label=_("Strict filteren"))
 
     class Meta:
 
@@ -80,7 +81,7 @@ class TrefwoordSearchForm(forms.ModelForm):
     optdialect = forms.CharField(label=_("Dialectweergave"))
     aflevering = forms.CharField(label=_("Deel/sectie/aflevering"))
     mijn = forms.CharField(label=_("Mijn"))
-    strict = forms.CharField(label=_("Strict zoeken (duurt langer)"))
+    strict = forms.CharField(label=_("Strict filteren"))
 
     class Meta:
 

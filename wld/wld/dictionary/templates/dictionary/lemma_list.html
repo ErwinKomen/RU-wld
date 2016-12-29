@@ -106,6 +106,14 @@
                                         for='id_woord'>{{searchform.woord.label}}</label>
                                 <input name='woord' class='form-control' {% if searchform.woord.value %}value='{{searchform.woord.value}}'{% endif %}>
                             </div>
+                            <div><label>&nbsp;</label></div>
+                            <div class="input-group">
+                              <label class='input-group-addon' for='strict'>{{searchform.strict.label}}</label>
+                              <select class="form-control" name="strict">
+                                  <option value="False" {% if strict == 'False' %} selected {% endif %}>Nee</option>
+                                  <option value="True" {% if strict == 'True' %} selected {% endif %}>Ja</option>
+                              </select>
+                            </div>
                           </td>
                           <td>
                             <div class='input-group'>
@@ -162,71 +170,140 @@
       <table class="table table-hover">
         <thead><tr><th class="hidden">id</th><th>Begrip</th><th>Trefwoord: dialectopgave (plaats)</th><th>Omschrijving</th></tr></thead>
         <tbody>
-        {% for lem in object_list %}
-          <tr class="dict-entry">
-            <td class="hidden"> {{ lem.id }} </td>
-            <td>
-              <span class="lemma-list-name">{{lem.gloss}}</span>
-            </td>
-            <td>
-              <!-- See: https://docs.djangoproject.com/en/dev/ref/templates/builtins/?from=olddocs#regroup -->
-              {% regroup lem.entry_set.all|dictsort:"get_trefwoord_woord" by trefwoord as trefwoord_list %}
-              {% for tref in trefwoord_list %}
-                <span class="lemma-trefwoord"><a href="{% url 'trefwoordsearch' %}?search={{tref.grouper|urlencode}}">{{tref.grouper}}</a>:</span>
-                {% regroup tref.list|dictsort:"get_trefwoord_woord" by dialectopgave as word_list %}
-                {% for wrd in word_list %}    
-                    <span class="lemma-word">{{wrd.grouper}}</span>
-                    {% spaceless %}
-                    <span>(</span>
-                    {% for entry in wrd.list %}
-                      {% if entry.toelichting != "" %}<span class="lemma-word-toelichting">{{entry.toelichting}} </span>{% endif %}
-                      {% if entry.dialect.nieuw != "Q000" %}
-                      <span class="lemma-word-dialect">
-                        <span class="lemma-word-dialect-code hidden">{{entry.dialect.nieuw}}</span>
-                        <span class="lemma-word-dialect-space hidden">&nbsp;</span>
-                        <span class="lemma-word-dialect-stad">{{entry.dialect.stad}}</span>
-                        <span>{% if not forloop.last %}, {% endif %}</span>
-                      </span>
-                      {% endif %}
-                      {% if entry.mijnlijst.count > 0 %}
-                        <span class="word-mijn">{% if  entry.dialect.nieuw != "Q000"  %}&nbsp;{% endif %}[</span>
-                        {% for mijn in entry.mijnlijst.all %}
-                          <span class="word-mijn">{{mijn.naam}}</span>
-                          <span class="word-mijn-letop">{% if not forloop.last %}, {% endif %}</span>
-                        {% endfor %}
-                        <span class="word-mijn">]</span>
-                        <span>{% if not forloop.last %}, {% endif %}</span>
-                      {% endif %}
-                    {% endfor %}
-                    <span>){% if not forloop.last %}, {% endif %}</span>
-                    {% endspaceless %}
+        {% if strict == 'True' %}
+          {% for item in qlist %}
+            {% if item.lemma_gloss.first %}
+              <tr class="dict-entry">
+                <td class="hidden"> {{ item.entry.lemma.id }} </td>
+                <td><span class="lemma-list-name">{{item.entry.lemma.gloss}}</span></td>
+                <td>
+            {% endif %}
+            {% if item.trefwoord_woord.first %}
+              <span class="lemma-trefwoord"><a href="{% url 'trefwoordsearch' %}?search={{item.entry.trefwoord.woord|urlencode}}">{{item.entry.trefwoord.woord}}</a>:</span>
+            {% endif %}
+            {% spaceless %}
+              {% if item.dialectopgave.first  %}
+                <span class="lemma-word">{{item.entry.dialectopgave}}</span>
+                <span> (</span>
+              {% endif %}
+              {% if entry.toelichting != "" %}<span class="lemma-word-toelichting">{{item.entry.toelichting}} </span>{% endif %}
+              {% if entry.dialect.nieuw != "Q000" %}
+              <span class="lemma-word-dialect">
+                <span class="lemma-word-dialect-code hidden">{{item.entry.dialect.nieuw}}</span>
+                <span class="lemma-word-dialect-space hidden">&nbsp;</span>
+                <span class="lemma-word-dialect-stad">{{item.entry.dialect.stad}}</span>
+                <span>{% if not item.dialectopgave.last %}, {% endif %}</span>
+              </span>
+              {% endif %}
+              {% if item.entry.mijnlijst.count > 0 %}
+                <span class="word-mijn">{% if  item.entry.dialect.nieuw != "Q000"  %}&nbsp;{% endif %}[</span>
+                {% for mijn in item.entry.mijnlijst.all %}
+                  <span class="word-mijn">{{mijn.naam}}</span>
+                  <span class="word-mijn-letop">{% if not forloop.last %}, {% endif %}</span>
                 {% endfor %}
-              {% endfor %}
-            </td>
-            <td>
-              {% regroup lem.lmdescr.all|dictsort:"get_descr_sort" by toelichting as omschr_list %}
-              {% for omschr in omschr_list %}
-                <span class="toelichting">{{omschr.grouper}}</span>
+                <span class="word-mijn">]</span>
+              {% endif %}
+              {% if item.dialectopgave.last %}
+                <span>)</span>
+              {% endif %}
+              {% if item.dialectopgave.last and not item.lemma_gloss.last %}<span>, </span>{% endif %}
+            {% endspaceless %}
+            {% if item.lemma_gloss.last %}
+                </td>
+                <td>
+                  <!-- Treat the list of lemma-descriptions (toelichtingen) and sources (bronnen) for this lemma -->
+                  {% spaceless %}
+
+                  {% for item_descr in item.dlist %}
+                    {% if item_descr.descr.first %}<span class="toelichting">{{item_descr.entry.toelichting}}</span>{% endif %}
+                    {% if item_descr.entry.bronnenlijst %}<span class="lemma-bronnen"> [{{item_descr.entry.bronnenlijst}}]</span>{% endif %}
+                    {% if not forloop.last and item_descr.entry.toelichting %}
+                      {% if not item_descr.descr.last and item_descr.entry.bronnenlijst  %}<span>, </span>{% endif %}
+                      {% if item_descr.descr.last %}<span> || </span>{% endif %}
+                    {% endif %}
+                  {% endfor %}
+
+                  {% endspaceless %}
+                  <!-- Treat the afleveringen for this lemma -->
+                  {% spaceless %}
+                  {% for item_afl in item.alist %}
+                    {% if item_afl.afl.first %}
+                      <span class="lemma-aflevering"><a href="/{{app_prefix}}static/dictionary/content/pdf/{{item_afl.entry.aflevering.get_pdf}}">{{item_afl.entry.aflevering.get_summary}}</a></span>
+                    {% endif %}
+                    {% if item_afl.afl.last and not forloop.last %}<span>, </span>{% endif %}
+                  {% endfor %}
+                  {% endspaceless %}
+                </td>
+              </tr>
+            {% endif %}
+          {% endfor %}
+        {% else %}
+          {% for lem in object_list %}
+            <tr class="dict-entry">
+              <td class="hidden"> {{ lem.id }} </td>
+              <td>
+                <span class="lemma-list-name">{{lem.gloss}}</span>
+              </td>
+              <td>
+                <!-- See: https://docs.djangoproject.com/en/dev/ref/templates/builtins/?from=olddocs#regroup -->
+                {% regroup lem.entry_set.all|dictsort:"get_trefwoord_woord" by trefwoord as trefwoord_list %}
+                {% for tref in trefwoord_list %}
+                  <span class="lemma-trefwoord"><a href="{% url 'trefwoordsearch' %}?search={{tref.grouper|urlencode}}">{{tref.grouper}}</a>:</span>
+                  {% regroup tref.list|dictsort:"get_trefwoord_woord" by dialectopgave as word_list %}
+                  {% for wrd in word_list %}    
+                      <span class="lemma-word">{{wrd.grouper}}</span>
+                      {% spaceless %}
+                      <span>(</span>
+                      {% for entry in wrd.list %}
+                        {% if entry.toelichting != "" %}<span class="lemma-word-toelichting">{{entry.toelichting}} </span>{% endif %}
+                        {% if entry.dialect.nieuw != "Q000" %}
+                        <span class="lemma-word-dialect">
+                          <span class="lemma-word-dialect-code hidden">{{entry.dialect.nieuw}}</span>
+                          <span class="lemma-word-dialect-space hidden">&nbsp;</span>
+                          <span class="lemma-word-dialect-stad">{{entry.dialect.stad}}</span>
+                          <span>{% if not forloop.last %}, {% endif %}</span>
+                        </span>
+                        {% endif %}
+                        {% if entry.mijnlijst.count > 0 %}
+                          <span class="word-mijn">{% if  entry.dialect.nieuw != "Q000"  %}&nbsp;{% endif %}[</span>
+                          {% for mijn in entry.mijnlijst.all %}
+                            <span class="word-mijn">{{mijn.naam}}</span>
+                            <span class="word-mijn-letop">{% if not forloop.last %}, {% endif %}</span>
+                          {% endfor %}
+                          <span class="word-mijn">]</span>
+                          <span>{% if not forloop.last %}, {% endif %}</span>
+                        {% endif %}
+                      {% endfor %}
+                      <span>){% if not forloop.last %}, {% endif %}</span>
+                      {% endspaceless %}
+                  {% endfor %}
+                {% endfor %}
+              </td>
+              <td>
+                {% regroup lem.lmdescr.all|dictsort:"get_descr_sort" by toelichting as omschr_list %}
+                {% for omschr in omschr_list %}
+                  <span class="toelichting">{{omschr.grouper}}</span>
+                  {% spaceless %}
+                  {% for bron in omschr.list %}
+                    <span class="lemma-bronnen">
+                      {% if bron.bronnenlijst %}[{{bron.bronnenlijst}}]{% endif %}
+                    </span>
+                    <span>{% if not forloop.last %}, {% endif %}</span>
+                  {% endfor %}
+                  {% endspaceless %}
+                  {% if not forloop.last %} || {% endif %}
+                {% endfor %}
+                {% regroup lem.entry_set.all|dictsort:"get_aflevering" by aflevering as afl_list  %}
                 {% spaceless %}
-                {% for bron in omschr.list %}
-                  <span class="lemma-bronnen">
-                    {% if bron.bronnenlijst %}[{{bron.bronnenlijst}}]{% endif %}
-                  </span>
+                {% for afl in afl_list %}
+                  <span class="lemma-aflevering"><a href="/{{app_prefix}}static/dictionary/content/pdf/{{afl.grouper.get_pdf}}">{{afl.grouper.get_summary}}</a></span>
                   <span>{% if not forloop.last %}, {% endif %}</span>
                 {% endfor %}
                 {% endspaceless %}
-                {% if not forloop.last %} || {% endif %}
-              {% endfor %}
-              {% regroup lem.entry_set.all|dictsort:"get_aflevering" by aflevering as afl_list  %}
-              {% spaceless %}
-              {% for afl in afl_list %}
-                <span class="lemma-aflevering"><a href="/{{app_prefix}}static/dictionary/content/pdf/{{afl.grouper.get_pdf}}">{{afl.grouper.get_summary}}</a></span>
-                <span>{% if not forloop.last %}, {% endif %}</span>
-              {% endfor %}
-              {% endspaceless %}
-            </td>
-          </tr>
-        {% endfor %}
+              </td>
+            </tr>
+          {% endfor %}
+        {% endif %}
         </tbody>
       </table>
     {% else %}

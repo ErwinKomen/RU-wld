@@ -101,6 +101,7 @@ def get_item_list(lVar, lFun, qs):
         for k in lVar:
             oItem[k] = {'first':False, 'last':False}
         bIsDict = isinstance(entry, dict)
+        bVarIsLast = False
         # Check for changes in all the variables
         for j, k in enumerate(lVar):
             fun = lFun[j]
@@ -119,13 +120,16 @@ def get_item_list(lVar, lFun, qs):
                         else:
                             sValue = getattr(sValue, val)
             # Check for changes in the value of the variable 
-            if sValue != oVariable[k]:
+            # if sValue != oVariable[k]:
+            if sValue != oVariable[k] or bVarIsLast or (i>0 and lItem[i-1][k]['last']):
                 # Check if the previous one's [last] must be changed
                 if oVariable[k] != "": lItem[i-1][k]['last'] = True
                 # Adapt the current one's [first] property
                 oItem[k]['first']= True
                 # Adapt the variable
-                oVariable[k] = sValue            
+                oVariable[k] = sValue      
+                # Indicate that the next ones should be regarded as 'last'
+                bVarIsLast = True      
             # Check if this is the last
             if bIsLastEntry: oItem[k]['last'] = True
         # Add this object to the list of items
@@ -475,6 +479,7 @@ class TrefwoordListView(ListView):
 
         if 'paginate_by' in initial:
             context['paginateSize'] = int(initial['paginate_by'])
+            self.paginate_by = int(initial['paginate_by'])
         else:
             context['paginateSize'] = self.paginate_by  # paginateSize
 
@@ -489,6 +494,8 @@ class TrefwoordListView(ListView):
             context['aflkeuze'] = 0
 
         # Get possible user choice of 'strict'
+        if 'strict' in initial:
+            self.strict = (initial['strict'] == "True")
         context['strict'] = str(self.strict)
         
         # Determine the count 
@@ -534,7 +541,7 @@ class TrefwoordListView(ListView):
         return context
       
     def get_qlist(self, context):
-        """Calculate HTML output for the query-set in the context"""
+        """Get a list of Entry elements + first/last information"""
 
         # REtrieve the correct queryset, as determined by paginate_by
         qs = context['object_list']
@@ -562,10 +569,10 @@ class TrefwoordListView(ListView):
         # Prepare for processing
         lVarsD = ["trefw", "afl"]
         lFunsD = [["trefwoord", "woord"], Entry.get_aflevering]
-        # Create a list of Dialect items
-        lDialect = get_item_list(lVarsD, lFunsD, qsd)
+        # Create a list of the items
+        lAfl = get_item_list(lVarsD, lFunsD, qsd)
         # Return the result
-        return lDialect            
+        return lAfl            
       
     def get_paginate_by(self, queryset):
         """
@@ -679,11 +686,11 @@ class LemmaListView(ListView):
     model = Lemma
     # context_object_name = 'lemma'    
     template_name = 'dictionary/lemma_list.html'
-    paginate_by = paginateSize
+    paginate_by = paginateEntries # paginateSize
     entrycount = 0
     qEntry = None
     qs = None
-    strict = False      # Use strict filtering
+    strict = True      # Use strict filtering
 
     def get_qs(self):
         """Get the Entry elements that are selected"""
@@ -730,6 +737,11 @@ class LemmaListView(ListView):
 
         context['searchform'] = search_form
 
+        # Get possible user choice of 'strict'
+        if 'strict' in initial:
+            self.strict = (initial['strict'] == "True")
+        context['strict'] = str(self.strict)
+        
         # Determine the count 
         context['entrycount'] = self.entrycount #  self.get_queryset().count()
 
@@ -738,8 +750,9 @@ class LemmaListView(ListView):
 
         if 'paginate_by' in initial:
             context['paginateSize'] = int(initial['paginate_by'])
+            self.paginate_by = int(initial['paginate_by'])
         else:
-            context['paginateSize'] = paginateSize
+            context['paginateSize'] = self.paginate_by
 
         # Try to retain the choice for Aflevering and Mijn
         if 'mijn' in initial:
@@ -761,9 +774,81 @@ class LemmaListView(ListView):
         context['afleveringen'] = [afl for afl in Aflevering.objects.all()]
         context['mijnen'] = [mijn for mijn in Mijn.objects.all().order_by('naam')]
 
+        # If we are in 'strict' mode, we need to deliver the [qlist]
+        if self.strict:
+            # Transform the paginated queryset into a dict sorted by Dialect/Aflevering
+            lAflev = self.get_qafl(context)
+
+            # Get a list with 'first' and 'last' values for each item in the current paginated queryset
+            lEntry = self.get_qlist(context)
+            # Add the sorted-dialect information to lEntry
+            for idx, item in enumerate(lEntry):
+                # Start or Finish dialect information
+                if item['lemma_gloss']['first']:
+                    qsa = []
+                # All: add this entry
+                qsa.append(lAflev[idx])
+                if item['lemma_gloss']['last']:
+                    # COpy the list of Entry elements sorted by Lemma/Aflevering here
+                    lEntry[idx]['alist'] = qsa
+                    lEntry[idx]['dlist'] = self.get_qdescr(item['entry'])
+                else:
+                    lEntry[idx]['alist'] = None
+                    lEntry[idx]['dlist'] = None
+
+            context['qlist'] = lEntry
+
         # Return the calculated context
         return context
 
+    def get_qlist(self, context):
+        """Get a list of Entry elements + first/last information"""
+
+        # REtrieve the correct queryset, as determined by paginate_by
+        qs = context['object_list']
+        # Start the output
+        html = []
+        # Initialize the variables whose changes are important
+        lVars = ["lemma_gloss", "trefwoord_woord", "dialectopgave", "dialect_stad"]
+        lFuns = [["lemma", "gloss"], ["trefwoord", "woord"], Entry.dialectopgave, ["dialect", "stad"]]
+        # Get a list of items containing 'first' and 'last' information
+        lItem = get_item_list(lVars, lFuns, qs)
+        # REturn this list
+        return lItem
+
+    def get_qafl(self, context):
+        """Sort the paginated QS by Lemma/Aflevering into a list"""
+
+        # REtrieve the correct queryset, as determined by paginate_by
+        qs = context['object_list']
+        qsd = []
+        # Walk through the query set
+        for entry in qs: qsd.append(entry)
+        # Now sort the resulting set
+        qsd = sorted(qsd, key=lambda el: el.lemma.gloss + " " + el.get_aflevering())
+        # Prepare for processing
+        lVarsD = ["lem", "afl"]
+        lFunsD = [["lemma", "gloss"], Entry.get_aflevering]
+        # Create a list of the items
+        lAfl = get_item_list(lVarsD, lFunsD, qsd)
+        # Return the result
+        return lAfl            
+
+    def get_qdescr(self, entry):
+        """Sort the paginated QS by Lemma/lmdescr.toelichting into a list"""
+
+        # Get the sorted set of [lmdescr] objects for this lemma
+        qsd = []
+        # Walk through the query set
+        for d in entry.lemma.lmdescr.order_by(Lower('toelichting'), Lower('bronnenlijst')): qsd.append(d)
+        # Prepare for processing
+        lVarsD = ["descr", "bronnen"]
+        lFunsD = [["toelichting"], ["bronnenlijst"]]
+        # Create a list of the items
+        lDescr = get_item_list(lVarsD, lFunsD, qsd)
+        # Return the result
+        return lDescr            
+      
     def get_paginate_by(self, queryset):
         """
         Paginate by specified value in querystring, or use default class property value.
@@ -775,42 +860,55 @@ class LemmaListView(ListView):
         # Get the parameters passed on with the GET request
         get = self.request.GET
 
-        # Queryset: start out with *ALL* the lemma's
-        qs = Lemma.objects.all()
+        # Get possible user choice of 'strict'
+        if 'strict' in get:
+            self.strict = (get['strict'] == "True")
+
+        lstQ = []
+
+        ## Queryset: start out with *ALL* the lemma's
+        #qs = Lemma.objects.all()
 
         # Fine-tuning: search string is the LEMMA
         if 'search' in get and get['search'] != '':
             val = adapt_search(get['search'])
-            # query = Q(gloss__istartswith=val) 
-            query = Q(gloss__iregex=val) 
+            # query = Q(gloss__iregex=val) 
+            lstQ.append(Q(gloss__iregex=val) )
 
             # check for possible exact numbers having been given
             if re.match('^\d+$', val):
-                query = query | Q(sn__exact=val)
-
-            # Apply the filter
-            qs = qs.filter(query)
+                # query = query | Q(sn__exact=val)
+                lstQ.append(Q(sn__exact=val))
+            ## Apply the filter
+            #qs = qs.filter(query)
  
+        if self.strict:
+            # Get the set of Lemma elements that have been defined by "search"
+            lemmas = Lemma.objects.filter(*lstQ)
+            # Prepare the Entry filter
+            lstQ.clear()
+            lstQ.append(Q(lemma__id__in=lemmas))
+
         # Check for dialect city
         if 'dialectCity' in get and get['dialectCity'] != '':
             val = adapt_search(get['dialectCity'])
-            # query = Q(entry__dialect__stad__istartswith=val)
-            query = Q(entry__dialect__stad__iregex=val)
-            qs = qs.filter(query)
+            #query = Q(entry__dialect__stad__iregex=val)
+            #qs = qs.filter(query)
+            lstQ.append(Q(dialect__stad__iregex=val))
 
         # Check for dialect code (Kloeke)
         if 'dialectCode' in get and get['dialectCode'] != '':
             val = adapt_search(get['dialectCode'])
-            # query = Q(entry__dialect__code__istartswith=val)
-            query = Q(entry__dialect__nieuw__iregex=val)
-            qs = qs.filter(query)
+            #query = Q(entry__dialect__nieuw__iregex=val)
+            #qs = qs.filter(query)
+            lstQ.append(Q(dialect__nieuw__iregex=val))
 
         # Check for dialect word
         if 'woord' in get and get['woord'] != '':
             val = adapt_search(get['woord'])
-            # query = Q(entry__dialect__code__istartswith=val)
-            query = Q(entry__woord__iregex=val)
-            qs = qs.filter(query)
+            #query = Q(entry__woord__iregex=val)
+            #qs = qs.filter(query)
+            lstQ.append(Q(woord__iregex=val))
 
         # Check for aflevering
         if 'aflevering' in get and get['aflevering'] != '':
@@ -819,8 +917,9 @@ class LemmaListView(ListView):
             if val.isdigit():
                 iVal = int(val)
                 if iVal>0:
-                    query = Q(entry__aflevering__id=iVal)
-                    qs = qs.filter(query)
+                    #query = Q(entry__aflevering__id=iVal)
+                    #qs = qs.filter(query)
+                    lstQ.append(Q(aflevering__id=iVal))
 
         # Check for mijn
         if 'mijn' in get and get['mijn'] != '':
@@ -829,23 +928,39 @@ class LemmaListView(ListView):
             if val.isdigit():
                 iVal = int(val)
                 if iVal>0:
-                    query = Q(entry__mijnlijst__id=iVal)
-                    qs = qs.filter(query)
+                    #query = Q(entry__mijnlijst__id=iVal)
+                    #qs = qs.filter(query)
+                    lstQ.append(Q(mijnlijst__id=iVal))
 
+        # Make the QSE available
+        if self.strict:
+            # Order: "lemma_gloss", "trefwoord_woord", "dialectopgave", "dialect_stad"
+            qse = Entry.objects.filter(*lstQ).select_related().order_by(
+              Lower('lemma__gloss'),  
+              Lower('trefwoord__woord'), 
+              Lower('woord'), 
+              Lower('dialect__stad'))
+            self.qEntry = qse
+            self.qs = lemmas
+        else:
+            qse = Lemma.objects.filter(*lstQ).distinct().select_related().order_by(Lower('gloss'))
+            self.qEntry = None
+            self.qs = qse
 
-        # Make sure we only have distinct values
-        qs = qs.distinct()
+        self.entrycount = qse.count()
+        ## Make sure we only have distinct values
+        #qs = qs.distinct()
 
-        # Sort the queryset by the parameters given
-        qs = order_queryset_by_sort_order(self.request.GET, qs)
+        ## Sort the queryset by the parameters given
+        #qs = order_queryset_by_sort_order(self.request.GET, qs)
 
-        self.entrycount = qs.count()
+        #self.entrycount = qs.count()
 
-        self.qEntry = None
-        self.qs = qs
+        #self.qEntry = None
+        #self.qs = qs
 
         # Return the resulting filtered and sorted queryset
-        return qs
+        return qse
 
 
 class LocationListView(ListView):
@@ -918,8 +1033,9 @@ class LocationListView(ListView):
 
         if 'paginate_by' in initial:
             context['paginateSize'] = int(initial['paginate_by'])
+            self.paginate_by = int(initial['paginate_by'])
         else:
-            context['paginateSize'] = paginateSize
+            context['paginateSize'] = self.paginate_by
 
         # Try to retain the choice for Aflevering and Mijn
         if 'mijn' in initial:
@@ -935,6 +1051,8 @@ class LocationListView(ListView):
         context['title'] = "e-WLD plaatsen"
 
         # Get possible user choice of 'strict'
+        if 'strict' in initial:
+            self.strict = (initial['strict'] == "True")
         context['strict'] = str(self.strict)
 
         # Transform the paginated queryset into a dict sorted by Dialect/Aflevering

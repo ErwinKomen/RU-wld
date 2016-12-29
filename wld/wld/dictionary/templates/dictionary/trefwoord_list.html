@@ -194,12 +194,12 @@
                 <td><span class="trefwoord-name">{{item.entry.trefwoord.woord}}</span></td>
                 <td>
             {% endif %}
-            {% if item.lemma_gloss.first or item.trefwoord_woord.first %}
+            {% if item.lemma_gloss.first  %}
               <!-- Start lemma -->
               <span class="lemma-name"><a href="{% url 'lemmasearch' %}?search={{item.entry.lemma.gloss|urlencode}}">{{item.entry.lemma.gloss}}</a>:</span>
             {% endif %}
             {% spaceless %}
-              {% if item.dialectopgave.first or item.trefwoord_woord.first %}
+              {% if item.dialectopgave.first  %}
                 <span class="lemma-word">{{item.entry.dialectopgave}}</span>
                 <span> (</span>
               {% endif %}
@@ -209,7 +209,7 @@
                 <span class="lemma-word-dialect-code hidden">{{item.entry.dialect.nieuw}}</span>
                 <span class="lemma-word-dialect-space hidden">&nbsp;</span>
                 <span class="lemma-word-dialect-stad">{{item.entry.dialect.stad}}</span>
-                {% if not item.dialectopgave.last and not item.trefwoord_woord.last %}<span>, </span>{% endif %}
+                {% if not item.dialectopgave.last %}<span>, </span>{% endif %}
               </span>
               {% endif %}
               {% if item.entry.mijnlijst.count > 0 %}
@@ -220,10 +220,10 @@
                 {% endfor %}
                 <span class="word-mijn">]</span>
               {% endif %}
-              {% if item.dialectopgave.last or item.trefwoord_woord.last %}
+              {% if item.dialectopgave.last %}
                 <span>)</span>
               {% endif %}
-              {% if item.dialectopgave.last and not item.trefwoord_woord.last %}<span class="b">, </span>{% endif %}
+              {% if item.dialectopgave.last and not item.trefwoord_woord.last %}<span>, </span>{% endif %}
             {% endspaceless %}
             {% if item.trefwoord_woord.last %}
                 <!-- Treat the afleveringen for this trefwoord -->
