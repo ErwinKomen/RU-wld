@@ -969,6 +969,9 @@ class Entry(models.Model):
         ordering = ['lemma', 'woord']
         permissions = ( ('search_gloss', 'Can search/view/edit full entry details'),
                        )
+        index_together = [
+            ["dialect", "lemma", "trefwoord", "woord"],
+          ]
 
     def __str__(self):
         return self.woord + '_' + self.dialect.code

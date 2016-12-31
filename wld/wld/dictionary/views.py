@@ -590,12 +590,15 @@ class TrefwoordListView(ListView):
             self.strict = (get['strict'] == "True")
 
         lstQ = []
+        bHasSearch = False
+        bHasFilter = False
 
         # Fine-tuning: search string is the LEMMA
         if 'search' in get and get['search'] != '':
             val = adapt_search(get['search'])
             # Use the 'woord' attribute of Trefwoord
             lstQ.append(Q(woord__iregex=val) )
+            bHasSearch = True
 
             # check for possible exact numbers having been given
             if re.match('^\d+$', val):
@@ -604,13 +607,9 @@ class TrefwoordListView(ListView):
         # Check for 'toelichting'
         if 'toelichting' in get and get['toelichting'] != '':
             val = adapt_search(get['toelichting'])
-
-            #if self.strict:
-            #    # Adapt Entry filter
-            #    lstQ.append(Q(trefwoord__toelichting__iregex=val))
-            #else:
-            # Try to get to the dialectwoord
+            # Try to get to the 'toelichting'
             lstQ.append(Q(toelichting__iregex=val))
+            bHasSearch = True
 
         if self.strict:
             # Get the set of Trefwoord elements belonging to the selected Trefwoord/toelichting-elements
@@ -623,24 +622,28 @@ class TrefwoordListView(ListView):
             val = adapt_search(get['dialectwoord'])
             # Adapt Entry filter
             lstQ.append(Q(woord__iregex=val))
+            bHasFilter = True
 
         # Check for lemma
         if 'lemma' in get and get['lemma'] != '':
             val = adapt_search(get['lemma'])
             # Adapt Entry filter
             lstQ.append(Q(lemma__gloss__iregex=val))
+            bHasFilter = True
 
         # Check for dialect city
         if 'dialectCity' in get and get['dialectCity'] != '':
             val = adapt_search(get['dialectCity'])
             # Adapt Entry filter
             lstQ.append(Q(dialect__stad__iregex=val))
+            bHasFilter = True
 
         # Check for dialect code (Kloeke)
         if 'dialectCode' in get and get['dialectCode'] != '':
             val = adapt_search(get['dialectCode'])
             # Adapt Entry filter
             lstQ.append(Q(dialect__nieuw__iregex=val))
+            bHasFilter = True
 
         # Check for aflevering
         if 'aflevering' in get and get['aflevering'] != '':
@@ -650,6 +653,7 @@ class TrefwoordListView(ListView):
                 iVal = int(val)
                 if iVal>0:
                     lstQ.append(Q(aflevering__id=iVal))
+                    bHasFilter = True
 
         # Check for mijn
         if 'mijn' in get and get['mijn'] != '':
@@ -659,9 +663,10 @@ class TrefwoordListView(ListView):
                 iVal = int(val)
                 if iVal>0:
                     lstQ.append(Q(mijnlijst__id=iVal))
+                    bHasFilter = True
 
         # Make the QSE available
-        if self.strict:
+        if self.strict and (bHasSearch or bHasFilter):
             # Order: "trefwoord_woord", "lemma_gloss", "dialectopgave", "dialect_stad"
             qse = Entry.objects.filter(*lstQ).select_related().order_by(
               Lower('trefwoord__woord'), 
@@ -671,6 +676,11 @@ class TrefwoordListView(ListView):
             self.qEntry = qse
             self.qs = trefw
         else:
+            if self.strict:
+                # Make sure to reset strict
+                self.strict = False
+                lstQ = []
+                self.paginate_by  = paginateSize
             qse = Trefwoord.objects.filter(*lstQ).distinct().select_related().order_by(Lower('woord'))
             self.qEntry = None
             self.qs = qse
@@ -865,22 +875,18 @@ class LemmaListView(ListView):
             self.strict = (get['strict'] == "True")
 
         lstQ = []
-
-        ## Queryset: start out with *ALL* the lemma's
-        #qs = Lemma.objects.all()
+        bHasSearch = False
+        bHasFilter = False
 
         # Fine-tuning: search string is the LEMMA
         if 'search' in get and get['search'] != '':
             val = adapt_search(get['search'])
-            # query = Q(gloss__iregex=val) 
             lstQ.append(Q(gloss__iregex=val) )
+            bHasSearch = True
 
             # check for possible exact numbers having been given
             if re.match('^\d+$', val):
-                # query = query | Q(sn__exact=val)
                 lstQ.append(Q(sn__exact=val))
-            ## Apply the filter
-            #qs = qs.filter(query)
  
         if self.strict:
             # Get the set of Lemma elements that have been defined by "search"
@@ -892,23 +898,20 @@ class LemmaListView(ListView):
         # Check for dialect city
         if 'dialectCity' in get and get['dialectCity'] != '':
             val = adapt_search(get['dialectCity'])
-            #query = Q(entry__dialect__stad__iregex=val)
-            #qs = qs.filter(query)
             lstQ.append(Q(dialect__stad__iregex=val))
+            bHasFilter = True
 
         # Check for dialect code (Kloeke)
         if 'dialectCode' in get and get['dialectCode'] != '':
             val = adapt_search(get['dialectCode'])
-            #query = Q(entry__dialect__nieuw__iregex=val)
-            #qs = qs.filter(query)
             lstQ.append(Q(dialect__nieuw__iregex=val))
+            bHasFilter = True
 
         # Check for dialect word
         if 'woord' in get and get['woord'] != '':
             val = adapt_search(get['woord'])
-            #query = Q(entry__woord__iregex=val)
-            #qs = qs.filter(query)
             lstQ.append(Q(woord__iregex=val))
+            bHasFilter = True
 
         # Check for aflevering
         if 'aflevering' in get and get['aflevering'] != '':
@@ -917,9 +920,8 @@ class LemmaListView(ListView):
             if val.isdigit():
                 iVal = int(val)
                 if iVal>0:
-                    #query = Q(entry__aflevering__id=iVal)
-                    #qs = qs.filter(query)
                     lstQ.append(Q(aflevering__id=iVal))
+                    bHasFilter = True
 
         # Check for mijn
         if 'mijn' in get and get['mijn'] != '':
@@ -928,12 +930,11 @@ class LemmaListView(ListView):
             if val.isdigit():
                 iVal = int(val)
                 if iVal>0:
-                    #query = Q(entry__mijnlijst__id=iVal)
-                    #qs = qs.filter(query)
                     lstQ.append(Q(mijnlijst__id=iVal))
+                    bHasFilter = True
 
         # Make the QSE available
-        if self.strict:
+        if self.strict and (bHasSearch or bHasFilter):
             # Order: "lemma_gloss", "trefwoord_woord", "dialectopgave", "dialect_stad"
             qse = Entry.objects.filter(*lstQ).select_related().order_by(
               Lower('lemma__gloss'),  
@@ -943,21 +944,16 @@ class LemmaListView(ListView):
             self.qEntry = qse
             self.qs = lemmas
         else:
+            if self.strict:
+                # Make sure to reset strict
+                self.strict = False
+                lstQ = []
+                self.paginate_by  = paginateSize
             qse = Lemma.objects.filter(*lstQ).distinct().select_related().order_by(Lower('gloss'))
             self.qEntry = None
             self.qs = qse
 
         self.entrycount = qse.count()
-        ## Make sure we only have distinct values
-        #qs = qs.distinct()
-
-        ## Sort the queryset by the parameters given
-        #qs = order_queryset_by_sort_order(self.request.GET, qs)
-
-        #self.entrycount = qs.count()
-
-        #self.qEntry = None
-        #self.qs = qs
 
         # Return the resulting filtered and sorted queryset
         return qse
@@ -972,6 +968,7 @@ class LocationListView(ListView):
     template_name = 'dictionary/location_list.html'
     entrycount = 0      # Number of items in queryset (whether Entry or Dialect!!)
     qEntry = None       # Current queryset as restricted to ENTRY
+    qAll = None         # Ordered queryset of ALL
     qs = None           # Current queryset (for speeding up)
     strict = True      # Use strict filtering
 
@@ -1055,26 +1052,27 @@ class LocationListView(ListView):
             self.strict = (initial['strict'] == "True")
         context['strict'] = str(self.strict)
 
-        # Transform the paginated queryset into a dict sorted by Dialect/Aflevering
-        lDialect = self.get_qafl(context)
+        if self.strict:
+            # Transform the paginated queryset into a dict sorted by Dialect/Aflevering
+            lDialect = self.get_qafl(context)
 
-        # Get a list with 'first' and 'last' values for each item in the current paginated queryset
-        lEntry = self.get_qlist(context)
-        # Add the sorted-dialect information to lEntry
-        for idx, item in enumerate(lEntry):
-            # Start or Finish dialect information
-            if item['dialect_stad']['first']:
-                iDialectStart = idx
-                qsa = []
-            # All: add this entry
-            qsa.append(lDialect[idx])
-            if item['dialect_stad']['last']:
-                # COpy the list of Entry elements sorted by Stad/Aflevering here
-                lEntry[idx]['alist'] = qsa
-            else:
-                lEntry[idx]['alist'] = None
+            # Get a list with 'first' and 'last' values for each item in the current paginated queryset
+            lEntry = self.get_qlist(context)
+            # Add the sorted-dialect information to lEntry
+            for idx, item in enumerate(lEntry):
+                # Start or Finish dialect information
+                if item['dialect_stad']['first']:
+                    iDialectStart = idx
+                    qsa = []
+                # All: add this entry
+                qsa.append(lDialect[idx])
+                if item['dialect_stad']['last']:
+                    # COpy the list of Entry elements sorted by Stad/Aflevering here
+                    lEntry[idx]['alist'] = qsa
+                else:
+                    lEntry[idx]['alist'] = None
 
-        context['qlist'] = lEntry
+            context['qlist'] = lEntry
 
         # Return the calculated context
         return context
@@ -1132,11 +1130,14 @@ class LocationListView(ListView):
 
         # Queryset: build a list of requirements
         lstQ = []
+        bHasSearch = False
+        bHasFilter = False
 
         # Fine-tuning: search string is the STAD
         if 'search' in get and get['search'] != '':
             val = adapt_search(get['search'])
             lstQ.append(Q(stad__iregex=val) )
+            bHasSearch = True
 
             # check for possible exact numbers having been given
             if re.match('^\d+$', val):
@@ -1147,6 +1148,7 @@ class LocationListView(ListView):
         if 'nieuw' in get and get['nieuw'] != '':
             val = adapt_search(get['nieuw'])
             lstQ.append(Q(nieuw__iregex=val) )
+            bHasSearch = True
 
         if self.strict:
             # Get the set of Dialect elements belonging to the selected STAD-elements
@@ -1165,6 +1167,7 @@ class LocationListView(ListView):
                     #query = Q(entry__aflevering__id=iVal)
                     #qs = qs.filter(query)
                     lstQ.append(Q(entry__aflevering__id=iVal) )
+                    bHasFilter = True
 
         # Check for mijn
         if 'mijn' in get and get['mijn'] != '':
@@ -1176,19 +1179,38 @@ class LocationListView(ListView):
                     #query = Q(entry__mijnlijst__id=iVal)
                     #qs = qs.filter(query)
                     lstQ.append(Q(entry__mijnlijst__id=iVal) )
+                    bHasFilter = True
 
         # Implement the choices made by the user
-        if self.strict:
-            # Get all the Entry elements fulfilling the conditions
-            qs = Entry.objects.filter(*lstQ).distinct().select_related().order_by(
-              Lower('dialect__stad'), 
-              Lower('lemma__gloss'), 
-              Lower('trefwoord__woord'), 
-              Lower('woord'))
+        if self.strict and ( bHasSearch or bHasFilter):
+            # Any special stuff?
+            if bHasSearch or bHasFilter:
+                # Get all the Entry elements fulfilling the conditions
+                qs = Entry.objects.filter(*lstQ).distinct().select_related().order_by(
+                  Lower('dialect__stad'), 
+                  Lower('lemma__gloss'), 
+                  Lower('trefwoord__woord'), 
+                  Lower('woord'))
+            else:
+                # Get all the Entry elements fulfilling the conditions
+                if self.qAll == None:
+                    qs = Entry.objects.all().select_related().order_by(
+                      Lower('dialect__stad'), 
+                      Lower('lemma__gloss'), 
+                      Lower('trefwoord__woord'), 
+                      Lower('woord'))
+                    self.qAll = qs
+                else:
+                    qs = self.qAll
             # Adjust the settings for this view
             self.qEntry = qs
             self.qs = dialecten
         else:
+            if self.strict:
+                # Make sure to reset strict
+                self.strict = False
+                lstQ = []
+                self.paginate_by  = paginateSize
             qs = Dialect.objects.filter(*lstQ).distinct().select_related()
             # The following doesn't work--the number of items grows
             #qs = qs.order_by(
