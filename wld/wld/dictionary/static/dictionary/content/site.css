@@ -148,6 +148,11 @@ table tbody tr:hover {
 
 }
 
+.bronvermelding {
+  font-size: x-small;
+  color: darkgreen;
+}
+
 
 .pagination {
   margin: 5px 0;
