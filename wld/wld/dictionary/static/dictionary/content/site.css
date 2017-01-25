@@ -148,8 +148,24 @@ table tbody tr:hover {
 
 }
 
+.bronvermelding-intro {
+  font-size: xx-small;
+}
+
 .bronvermelding {
-  font-size: x-small;
+  font-size: xx-small;
+  color: darkgreen;
+  /* display: none; */
+}
+.bronvermelding-intro:hover + .bronvermelding {
+  font-size: xx-small;
+  color: darkgreen;
+  display: block;
+  width: auto;
+  height: auto;
+}
+.bronvermelding-details {
+  font-size: xx-small;
   color: darkgreen;
 }
 
