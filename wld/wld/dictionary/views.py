@@ -678,7 +678,7 @@ class TrefwoordListView(ListView):
         else:
             if self.strict:
                 # Make sure to reset strict
-                self.strict = False
+                # self.strict = False
                 lstQ = []
                 self.paginate_by  = paginateSize
             qse = Trefwoord.objects.filter(*lstQ).distinct().select_related().order_by(Lower('woord'))
@@ -898,19 +898,28 @@ class LemmaListView(ListView):
         # Check for dialect city
         if 'dialectCity' in get and get['dialectCity'] != '':
             val = adapt_search(get['dialectCity'])
-            lstQ.append(Q(dialect__stad__iregex=val))
+            if self.strict:
+                lstQ.append(Q(dialect__stad__iregex=val))
+            else:
+                lstQ.append(Q(entry__dialect__stad__iregex=val))
             bHasFilter = True
 
         # Check for dialect code (Kloeke)
         if 'dialectCode' in get and get['dialectCode'] != '':
             val = adapt_search(get['dialectCode'])
-            lstQ.append(Q(dialect__nieuw__iregex=val))
+            if self.strict:
+                lstQ.append(Q(dialect__nieuw__iregex=val))
+            else:
+                lstQ.append(Q(entry__dialect__nieuw__iregex=val))
             bHasFilter = True
 
-        # Check for dialect word
+        # Check for dialect word, which is a direct member of Entry
         if 'woord' in get and get['woord'] != '':
             val = adapt_search(get['woord'])
-            lstQ.append(Q(woord__iregex=val))
+            if self.strict:
+                lstQ.append(Q(woord__iregex=val))
+            else:
+                lstQ.append(Q(entry__woord__iregex=val))
             bHasFilter = True
 
         # Check for aflevering
@@ -920,7 +929,10 @@ class LemmaListView(ListView):
             if val.isdigit():
                 iVal = int(val)
                 if iVal>0:
-                    lstQ.append(Q(aflevering__id=iVal))
+                    if self.strict:
+                        lstQ.append(Q(aflevering__id=iVal))
+                    else:
+                        lstQ.append(Q(entry__aflevering__id=iVal))
                     bHasFilter = True
 
         # Check for mijn
@@ -930,7 +942,10 @@ class LemmaListView(ListView):
             if val.isdigit():
                 iVal = int(val)
                 if iVal>0:
-                    lstQ.append(Q(mijnlijst__id=iVal))
+                    if self.strict:
+                        lstQ.append(Q(mijnlijst__id=iVal))
+                    else:
+                        lstQ.append(Q(entry__mijnlijst__id=iVal))
                     bHasFilter = True
 
         # Make the QSE available
@@ -946,7 +961,7 @@ class LemmaListView(ListView):
         else:
             if self.strict:
                 # Make sure to reset strict
-                self.strict = False
+                # self.strict = False
                 lstQ = []
                 self.paginate_by  = paginateSize
             qse = Lemma.objects.filter(*lstQ).distinct().select_related().order_by(Lower('gloss'))
@@ -1208,7 +1223,7 @@ class LocationListView(ListView):
         else:
             if self.strict:
                 # Make sure to reset strict
-                self.strict = False
+                # self.strict = False
                 lstQ = []
                 self.paginate_by  = paginateSize
             qs = Dialect.objects.filter(*lstQ).distinct().select_related()
