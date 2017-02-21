@@ -746,7 +746,7 @@ class LemmaListView(ListView):
         """Check if a CSV response is needed or not"""
         if 'Csv' in self.request.GET.get('submit_type', ''):
             """ Provide CSV response"""
-
+            
             return export_csv(self.get_qs(), 'begrippen')
         elif 'Excel' in self.request.GET.get('submit_type', ''):
             """ Provide Excel response"""
