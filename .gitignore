@@ -246,3 +246,6 @@ ModelManifest.xml
 
 #Python, django
 *.pyc
+/wld/imported_csv.txt
+/psdif.txt
+/pdf-oview.json

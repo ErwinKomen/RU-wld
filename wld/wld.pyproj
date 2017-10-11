@@ -94,6 +94,7 @@
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.ttf" />
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.woff" />
     <Content Include="wld\dictionary\static\dictionary\scripts\diadict.js" />
+    <Content Include="wld\dictionary\static\dictionary\scripts\gtrack.js" />
     <Content Include="wld\dictionary\templates\dictionary\about-OUD.html" />
     <Content Include="wld\dictionary\templates\dictionary\lemma_list_short.html" />
     <Content Include="wld\dictionary\templates\dictionary\repair.html" />
