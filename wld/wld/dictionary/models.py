@@ -11,6 +11,7 @@ from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime
 from wld.settings import APP_PREFIX, MEDIA_ROOT
+import time
 import os
 import sys
 import io
@@ -77,6 +78,9 @@ class FieldChoice(models.Model):
 
     class Meta:
         ordering = ['field','machine_value']
+
+def get_now_time():
+    return time.clock()
 
 def build_choice_list(field):
     """Create a list of choice-tuples"""

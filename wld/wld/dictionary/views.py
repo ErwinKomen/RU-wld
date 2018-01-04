@@ -723,9 +723,10 @@ class LemmaListView(ListView):
     template_name = 'dictionary/lemma_list.html'
     paginate_by = paginateEntries # paginateSize
     entrycount = 0
+    bDoTime = True          # Measure time
     qEntry = None
     qs = None
-    strict = True      # Use strict filtering
+    strict = True           # Use strict filtering
 
     def get_qs(self):
         """Get the Entry elements that are selected"""
@@ -891,6 +892,9 @@ class LemmaListView(ListView):
         return self.request.GET.get('paginate_by', self.paginate_by)
         
     def get_queryset(self):
+        # Measure how long it takes
+        if self.bDoTime:
+            iStart = get_now_time()
 
         # Get the parameters passed on with the GET request
         get = self.request.GET
@@ -1001,6 +1005,10 @@ class LemmaListView(ListView):
             self.qs = qse
 
         self.entrycount = qse.count()
+
+        # Time measurement
+        if self.bDoTime:
+            print("LemmaListView get_queryset: {:.1f}".format( get_now_time() - iStart))
 
         # Return the resulting filtered and sorted queryset
         return qse
