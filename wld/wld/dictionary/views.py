@@ -325,6 +325,54 @@ def do_repair_progress(request):
     # Return this response
     return JsonResponse(data)
 
+def import_csv_test(request):
+    """Test import to see how the dialect entries will look like"""
+
+    # Provide the template name and the initial context
+    template_name = 'dictionary/import_test.html'
+    context = dict(title="e-WLD test",
+                   message="(none)",
+                   year=datetime.now().year)
+    entry_list = []
+    csv_file = 'd:/data files/tg/dialecten/test/test-WLD-III-1-1.txt'
+    if (not os.path.isfile(csv_file)): 
+        context['message'] = "Kan CSV bestand niet vinden op: " + csv_file
+    else:
+        # Read the information
+        f = codecs.open(csv_file, "r", encoding='utf-8-sig')
+        bEnd = False
+        while (not bEnd):
+            # Read one line
+            strLine = f.readline()
+            if (strLine == ""):
+                bEnd = True
+                break
+            strLine = str(strLine)
+            strLine = strLine.strip(" \n\r")
+            # Only process substantial lines
+            if (strLine != ""):
+                # Split the line into parts
+                arPart = strLine.split('\t')
+                # Unescape item [4]
+                arPart[5] = html.unescape(arPart[5])
+                # Remove quotation marks everywhere and adapt NULL where needed
+                for k, val in enumerate(arPart):
+                    if arPart[k] != None:
+                        arPart[k] = val.strip('"')
+                        arPart[k] = arPart[k].strip()
+                        if arPart[k].startswith("'") and arPart[k].endswith("'"):
+                            arPart[k] = arPart[k].strip("'")
+                        if arPart[k] == "NULL":
+                            arPart[k] = ""
+                # Add to the list of entries
+                entry_list.append(arPart)
+
+
+    # Add to the context
+    context['entry_list'] = entry_list
+
+    # Return a page that shows the dialect entries
+    return render(request, template_name, context)
 
 def import_csv_start(request):
     # x = request.POST

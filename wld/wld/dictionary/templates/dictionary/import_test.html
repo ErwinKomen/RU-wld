@@ -1,0 +1,30 @@
+﻿{% extends "dictionary/layout.html" %}
+{% load staticfiles %}
+
+
+{% block content %}
+
+<div class="row">
+
+  <h3>Controle van de CSV import</h3>
+
+  <p>Message: {{message}}</p>
+
+  <div class="col-md-10">
+    {% if entry_list|length > 0 %}
+    <table>
+      <!-- Read line by line -->
+      {% for line in entry_list %}
+      <tr>
+        <td>{{forloop.counter}}</td>
+        {% for cell in line %}
+        <td>{{cell}}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+  </div>
+ </div>
+
+{% endblock %}
