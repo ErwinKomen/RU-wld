@@ -896,16 +896,79 @@ class LemmaListView(ListView):
             return export_html(self.get_qs(), 'begrippen')
 
         else:
-            return super(LemmaListView, self).render_to_response(context, **response_kwargs)
+            iStart = get_now_time()
+            # sResp = render_to_string(self.template_name, context)
+            oRendered = super(LemmaListView, self).render_to_response(context, **response_kwargs)
+            # Show what the render-time was
+            print("LemmaListView render time: {:.1f}".format(get_now_time() - iStart))
+            return oRendered
+
+    def post(self, request, *args, **kwargs):
+        # Prepare return object
+        oData = {'status': 'error', 'msg': ''}
+        oErr = ErrHandle()
+        try:
+            self.object_list = self.get_queryset()
+            allow_empty = self.get_allow_empty()
+
+            if not allow_empty:
+                # When pagination is enabled and object_list is a queryset,
+                # it's better to do a cheap query than to load the unpaginated
+                # queryset in memory.
+                if self.get_paginate_by(self.object_list) is not None and hasattr(self.object_list, 'exists'):
+                    is_empty = not self.object_list.exists()
+                else:
+                    is_empty = len(self.object_list) == 0
+                if is_empty:
+                    raise Http404(_("Empty list and '%(class_name)s.allow_empty' is False.") % {
+                        'class_name': self.__class__.__name__,
+                    })
+            # Start collecting context time
+            if self.bDoTime: iStart = get_now_time()
+
+            context = self.get_context_data()
+            if self.bDoTime:
+                print("LemmaListView context [a]: {:.1f}".format( get_now_time() - iStart))
+                iStart = get_now_time()
+
+            sText = render_to_string(self.template_ajax, context, request)
+            if self.bDoTime:
+                print("LemmaListView context [b]: {:.1f}".format( get_now_time() - iStart))
+
+            oData['html'] = sText
+            oData['status'] = "ok"
+        except:
+            oData['msg'] = oErr.get_error_message()
+        return JsonResponse(oData)
 
     def get_context_data(self, **kwargs):
         # Call the base implementation first to get a context
         context = super(LemmaListView, self).get_context_data(**kwargs)
 
         # Get parameters for the search
-        initial = self.request.GET
+        # initial = self.request.GET
+        initial = self.get
         if initial is None:
             initial = {'optdialect': 'stad'}
+
+        # Possibly set the page object
+        if 'page' in initial:
+            oPage = context['page_obj']
+            oPage.number = int(initial['page'])
+            context['page_obj'] = oPage
+
+        # Action depends on the approach
+        if self.bWbdApproach:
+            # Start collecting context time
+            if self.bDoTime: iStart = get_now_time()
+            # Need to adapt the object_list to get the entries to be used
+            context['object_list'] = list(self.get_entryset(context['page_obj']))
+            if self.bDoTime:
+                print("LemmaListView get_context_data: {:.1f}".format( get_now_time() - iStart))
+
+        # Start collecting context time
+        if self.bDoTime: iStart = get_now_time()
+
         search_form = LemmaSearchForm(initial)
 
         context['searchform'] = search_form
@@ -927,15 +990,30 @@ class LemmaListView(ListView):
         else:
             context['paginateSize'] = self.paginate_by
 
-        # Try to retain the choice for Aflevering and Mijn
-        if 'mijn' in initial:
-            context['mijnkeuze'] = int(initial['mijn'])
-        else:
-            context['mijnkeuze'] = 0
+        if self.bUseMijnen:
+            # Try to retain the choice for Mijn
+            if 'mijn' in initial:
+                mijn_id = int(initial['mijn'])
+                context['mijnkeuze'] = mijn_id
+                mijn_inst = Mijn.objects.filter(id=mijn_id).first()
+                if mijn_inst == None:
+                    context['mijnnaam'] = ''
+                else:
+                    context['mijnnaam'] = mijn_inst.naam
+            else:
+                context['mijnkeuze'] = 0
+                context['mijnnaam'] = ''
+        # Process and retain the choice for Aflevering
         if 'aflevering' in initial:
             context['aflkeuze'] = int(initial['aflevering'])
+            afl = Aflevering.objects.filter(id=context['aflkeuze']).first()
+            if afl == None:
+                context['afl'] = ''
+            else:
+                context['afl'] = afl.get_summary()
         else:
             context['aflkeuze'] = 0
+            context['afl'] = ''
 
         # Set the prefix
         context['app_prefix'] = APP_PREFIX
@@ -947,29 +1025,61 @@ class LemmaListView(ListView):
         context['afleveringen'] = [afl for afl in Aflevering.objects.all()]
         context['mijnen'] = [mijn for mijn in Mijn.objects.all().order_by('naam')]
 
+        # Pass on the word-order boolean
+        context['order_word_toel'] = self.bOrderWrdToel
+
+        if self.bDoTime:
+            print("LemmaListView context part 1: {:.1f}".format( get_now_time() - iStart))
+            # Reset the time
+            iStart = get_now_time()
+
         # If we are in 'strict' mode, we need to deliver the [qlist]
         if self.strict:
+
             # Transform the paginated queryset into a dict sorted by Dialect/Aflevering
             lAflev = self.get_qafl(context)
+            if self.bDoTime:
+                print("LemmaListView context get_qafl(): {:.1f}".format( get_now_time() - iStart))
+                # Reset the time
+                iStart = get_now_time()
 
+            lastDescr = None
             # Get a list with 'first' and 'last' values for each item in the current paginated queryset
             lEntry = self.get_qlist(context)
+            if self.bDoTime:
+                print("LemmaListView context get_qlist(): {:.1f}".format( get_now_time() - iStart))
+                # Reset the time
+                iStart = get_now_time()
+
             # Add the sorted-dialect information to lEntry
             for idx, item in enumerate(lEntry):
                 # Start or Finish dialect information
                 if item['lemma_gloss']['first']:
                     qsa = []
+                    # start a list of all lemma-descriptions taken from the entries belonging to one particular lemma
+                    lemma_descr_list = []
                 # All: add this entry
                 qsa.append(lAflev[idx])
+                # If not already present: add description
+                iDescrId = item['entry'].descr.id
+                if iDescrId not in lemma_descr_list:
+                    lemma_descr_list.append(iDescrId)
                 if item['lemma_gloss']['last']:
                     # COpy the list of Entry elements sorted by Lemma/Aflevering here
                     lEntry[idx]['alist'] = qsa
-                    lEntry[idx]['dlist'] = self.get_qdescr(item['entry'])
+                    # OLD: lEntry[idx]['dlist'] = self.get_qdescr(item['entry'])
+                    lEntry[idx]['dlist'] = self.get_qdescrlist(lemma_descr_list)
                 else:
                     lEntry[idx]['alist'] = None
                     lEntry[idx]['dlist'] = None
 
             context['qlist'] = lEntry
+        # Finish measuring context time
+        if self.bDoTime:
+            print("LemmaListView context: {:.1f}".format( get_now_time() - iStart))
+
+        # Set the method
+        context['method'] = "get"       # Alternative: "ajax"
 
         # Return the calculated context
         return context
@@ -982,8 +1092,12 @@ class LemmaListView(ListView):
         # Start the output
         html = []
         # Initialize the variables whose changes are important
-        lVars = ["lemma_gloss", "trefwoord_woord", "dialectopgave", "dialect_stad"]
-        lFuns = [["lemma", "gloss"], ["trefwoord", "woord"], Entry.dialectopgave, ["dialect", "stad"]]
+        if self.bOrderWrdToel:
+            lVars = ["lemma_gloss", "trefwoord_woord", "dialectopgave", "toelichting", "dialect_stad"]
+            lFuns = [["lemma", "gloss"], ["trefwoord", "woord"], Entry.dialectopgave, Entry.get_toelichting, ["dialect", "stad"]]
+        else:
+            lVars = ["lemma_gloss", "trefwoord_woord", "toelichting", "dialectopgave", "dialect_stad"]
+            lFuns = [["lemma", "gloss"], ["trefwoord", "woord"], Entry.get_toelichting, Entry.dialectopgave, ["dialect", "stad"]]
         # Get a list of items containing 'first' and 'last' information
         lItem = get_item_list(lVars, lFuns, qs)
         # REturn this list
@@ -992,13 +1106,28 @@ class LemmaListView(ListView):
     def get_qafl(self, context):
         """Sort the paginated QS by Lemma/Aflevering into a list"""
 
+        bMethodQset = False
+
         # REtrieve the correct queryset, as determined by paginate_by
         qs = context['object_list']
-        qsd = []
-        # Walk through the query set
-        for entry in qs: qsd.append(entry)
-        # Now sort the resulting set
-        qsd = sorted(qsd, key=lambda el: el.lemma.gloss + " " + el.get_aflevering())
+
+        if bMethodQset:
+            # Create a list of entry ids
+            id_list = [item.id for item in qs]
+
+            # Create the correctly sorted queryset
+            qsd = Entry.objects.filter(Q(id__in=id_list)).select_related().order_by(
+                'lemma__gloss', 
+                'aflevering__deel__nummer', 
+                'aflevering__sectie', 
+                'aflevering__aflnum')
+        else:
+            # qsd = copy.copy(qs)
+            # Force evaluation
+            qsd = list(qs)
+            # Now sort the resulting set
+            qsd = sorted(qsd, key=lambda el: (el.lemma.gloss, el.get_aflevering()) )
+
         # Prepare for processing
         lVarsD = ["lem", "afl"]
         lFunsD = [["lemma", "gloss"], Entry.get_aflevering]
@@ -1008,12 +1137,26 @@ class LemmaListView(ListView):
         return lAfl            
 
     def get_qdescr(self, entry):
-        """Sort the paginated QS by Lemma/lmdescr.toelichting into a list"""
+        """OLD: Sort the paginated QS by Lemma/lmdescr.toelichting into a list"""
 
         # Get the sorted set of [lmdescr] objects for this lemma
-        qsd = []
-        # Walk through the query set
-        for d in entry.lemma.lmdescr.order_by(Lower('toelichting'), Lower('bronnenlijst')): qsd.append(d)
+        #qsd = []
+        ## Walk through the query set
+        #for d in entry.lemma.lmdescr.order_by(Lower('toelichting'), Lower('bronnenlijst')): qsd.append(d)
+        qsd = [d for d in entry.lemma.lmdescr.order_by(Lower('toelichting'), 'bronnenlijst')]
+        # Prepare for processing
+        lVarsD = ["descr", "bronnen"]
+        lFunsD = [["toelichting"], ["bronnenlijst"]]
+        # Create a list of the items
+        lDescr = get_item_list(lVarsD, lFunsD, qsd)
+        # Return the result
+        return lDescr            
+      
+    def get_qdescrlist(self, descr_id_list):
+        """Sort the paginated QS by Lemma/lmdescr.toelichting into a list"""
+
+        # Make a query that gets the indicated id's
+        qsd = Description.objects.filter(Q(id__in=descr_id_list)).order_by(Lower('toelichting'), Lower('bronnenlijst'))
         # Prepare for processing
         lVarsD = ["descr", "bronnen"]
         lFunsD = [["toelichting"], ["bronnenlijst"]]
@@ -1028,38 +1171,25 @@ class LemmaListView(ListView):
         """
         return self.request.GET.get('paginate_by', self.paginate_by)
         
-    def get_queryset(self):
-        # Measure how long it takes
-        if self.bDoTime:
-            iStart = get_now_time()
-
-        # Get the parameters passed on with the GET request
-        get = self.request.GET
-
-        # Get possible user choice of 'strict'
-        if 'strict' in get:
-            self.strict = (get['strict'] == "True")
-
+    def get_entryset(self, page_obj):
         lstQ = []
         bHasSearch = False
         bHasFilter = False
 
-        # Fine-tuning: search string is the LEMMA
-        if 'search' in get and get['search'] != '':
-            val = adapt_search(get['search'])
-            lstQ.append(Q(gloss__iregex=val) )
-            bHasSearch = True
+        # Initialize timer
+        if self.bDoTime: iStart = get_now_time()
 
-            # check for possible exact numbers having been given
-            if re.match('^\d+$', val):
-                lstQ.append(Q(sn__exact=val))
- 
-        if self.strict:
-            # Get the set of Lemma elements that have been defined by "search"
-            lemmas = Lemma.objects.filter(*lstQ)
-            # Prepare the Entry filter
-            lstQ.clear()
-            lstQ.append(Q(lemma__id__in=lemmas))
+        # Retrieve the set of trefwoorden from the page_obj
+        lemma_list = [item.id for item in page_obj.object_list]
+        if self.bDoTime: print("LemmaListView get_entryset part 1: {:.1f}".format(get_now_time() - iStart))
+
+        if self.bDoTime: iStart = get_now_time()
+        # Initialize the filtering
+        lstQ.append(Q(lemma__id__in=lemma_list))
+        # lstQ.append(Q(lemma__id__in=page_obj))
+
+        # Get the parameters passed on with the GET request
+        get = self.get
 
         # Check for dialect city
         if 'dialectCity' in get and get['dialectCity'] != '':
@@ -1114,38 +1244,131 @@ class LemmaListView(ListView):
                         lstQ.append(Q(entry__mijnlijst__id=iVal))
                     bHasFilter = True
 
-        # Make the QSE available
-        if self.strict:  # and (bHasSearch or bHasFilter):
-            # Order: "lemma_gloss", "trefwoord_woord", "dialectopgave", "dialect_stad"
-            if (bHasSearch or bHasFilter):
-                qse = Entry.objects.filter(*lstQ).select_related().order_by(
-                  Lower('lemma__gloss'),  
-                  Lower('trefwoord__woord'), 
-                  Lower('woord'), 
-                  Lower('dialect__stad'))
-            else:
-                qse = Entry.objects.all().select_related().order_by(
-                  Lower('lemma__gloss'),  
-                  Lower('trefwoord__woord'), 
-                  Lower('woord'), 
-                  Lower('dialect__stad'))
-            self.qEntry = qse
-            self.qs = lemmas
+        # Make sure we filter on aflevering.toonbaar
+        if self.strict:
+            lstQ.append(Q(aflevering__toonbaar=True))
         else:
-            #if self.strict:
-            #    # Make sure to reset strict
-            #    # self.strict = False
-            #    lstQ = []
-            #    self.paginate_by  = paginateSize
-            qse = Lemma.objects.filter(*lstQ).distinct().select_related().order_by(Lower('gloss'))
-            self.qEntry = None
-            self.qs = qse
+            lstQ.append(Q(entry__aflevering__toonbaar=True))
 
-        self.entrycount = qse.count()
+        if self.bDoTime: print("LemmaListView get_entryset part 2: {:.1f}".format(get_now_time() - iStart))
+
+        # Make the QSE available
+        # Order: "lemma_gloss", "trefwoord_woord", "dialectopgave", "dialect_stad"
+        if self.bDoTime: iStart = get_now_time()
+        if self.bOrderWrdToel:
+            qse = Entry.objects.filter(*lstQ).distinct().select_related().order_by(
+                Lower('lemma__gloss'),  
+                Lower('trefwoord__woord'), 
+                Lower('woord'), 
+                Lower('toelichting'), 
+                Lower('dialect__stad'))
+        else:
+            qse = Entry.objects.filter(*lstQ).distinct().select_related().order_by(
+                Lower('lemma__gloss'),  
+                Lower('trefwoord__woord'), 
+                Lower('toelichting'), 
+                Lower('woord'), 
+                Lower('dialect__stad'))
+        if self.bDoTime: print("LemmaListView get_entryset part 3: {:.1f}".format(get_now_time() - iStart))
+        # x = str(Entry.objects.filter(*lstQ).distinct().select_related().query)
+        self.qEntry = qse
+        return qse
+
+    def get_queryset(self):
+        # Measure how long it takes
+        if self.bDoTime:
+            iStart = get_now_time()
+
+        # Get the parameters passed on with the GET or the POST request
+        get = self.request.GET if self.request.method == "GET" else self.request.POST
+        self.get = get
+
+        # Get possible user choice of 'strict'
+        if 'strict' in get:
+            self.strict = (get['strict'] == "True")
+
+        lstQ = []
+        bHasSearch = False
+        bHasFilter = False
+
+        # Fine-tuning: search string is the LEMMA
+        if 'search' in get and get['search'] != '':
+            val = get['search']
+            if '*' in val or '[' in val or '?' in val:
+                val = adapt_search(val)
+                lstQ.append(Q(gloss__iregex=val) )
+            else:
+                # Strive for equality, but disregard case
+                lstQ.append(Q(gloss__iexact=val))
+            bHasSearch = True
+
+            # check for possible exact numbers having been given
+            if re.match('^\d+$', val):
+                lstQ.append(Q(sn__exact=val))
+ 
+        # Check for dialect city
+        if 'dialectCity' in get and get['dialectCity'] != '':
+            val = get['dialectCity']
+            if '*' in val or '[' in val or '?' in val:
+                # val = adapt_search(get['dialectCity'])
+                val = adapt_search(val)
+                lstQ.append(Q(entry__dialect__stad__iregex=val))
+            else:
+                # Strive for equality, but disregard case
+                lstQ.append(Q(entry__dialect__stad__iregex=val))
+            bHasFilter = True
+
+        # Check for dialect code (Kloeke)
+        if 'dialectCode' in get and get['dialectCode'] != '':
+            val = adapt_search(get['dialectCode'])
+            lstQ.append(Q(entry__dialect__nieuw__iregex=val))
+            bHasFilter = True
+
+        # Check for dialect word, which is a direct member of Entry
+        if 'woord' in get and get['woord'] != '':
+            val = adapt_search(get['woord'])
+            lstQ.append(Q(entry__woord__iregex=val))
+            bHasFilter = True
+
+        # Check for aflevering
+        if 'aflevering' in get and get['aflevering'] != '':
+            # What we get should be a number
+            val = get['aflevering']
+            if val.isdigit():
+                iVal = int(val)
+                if iVal>0:
+                    lstQ.append(Q(entry__aflevering__id=iVal))
+                    bHasFilter = True
+
+        # Check for mijn
+        if self.bUseMijnen and  'mijn' in get and get['mijn'] != '':
+            # What we get should be a number
+            val = get['mijn']
+            if val.isdigit():
+                iVal = int(val)
+                if iVal>0:
+                    lstQ.append(Q(entry__mijnlijst__id=iVal))
+                    bHasFilter = True
+
+        # Method #8 -- use the lemma.toonbaar property
+        lemma_hide = Lemma.objects.filter(toonbaar=0)
+
+        qse = Lemma.objects.exclude(id__in=lemma_hide).filter(*lstQ).select_related().order_by('gloss').distinct()
 
         # Time measurement
         if self.bDoTime:
-            print("LemmaListView get_queryset: {:.1f}".format( get_now_time() - iStart))
+            print("LemmaListView get_queryset point 'a': {:.1f}".format( get_now_time() - iStart))
+            print("LemmaListView query: {}".format(qse.query))
+
+        # Note the number of ITEMS we have
+        #   (The nature of these items depends on the approach taken)
+        # self.entrycount = qse.count()
+        # Note: while taking more time here, it saves time later
+        self.entrycount = len(qse)
+
+        # Time measurement
+        if self.bDoTime:
+            print("LemmaListView get_queryset point 'b': {:.1f}".format( get_now_time() - iStart))
 
         # Return the resulting filtered and sorted queryset
         return qse
