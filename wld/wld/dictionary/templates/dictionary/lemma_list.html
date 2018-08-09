@@ -58,7 +58,15 @@
             <div class="row"><table><tr><td>&nbsp;</td></tr></table></div>
             <div class="panel panel-default">
 
-              <div class="panel-heading" data-toggle="collapse" data-target="#query-area">Filteren...</div>
+            <div class="panel-heading" data-toggle="collapse" data-target="#query-area">
+              <span>Filteren...</span>
+              <span class="filter-summary">
+                <span class="filter-item">{% if searchform.dialectCode.value %}dialect={{searchform.dialectCode.value}}{% endif %}</span>
+                <span class="filter-item">{% if searchform.woord.value %}woord={{searchform.woord.value}}{% endif %}</span>
+                <span class="filter-item">{% if searchform.dialectCity.value %}plaats={{searchform.dialectCity.value}}{% endif %}</span>
+                <span class="filter-item">{% if afl %}aflevering={{afl}}{% endif %}</span>
+              </span>
+            </div>
 
               <!-- class="collapse" -->
               <div id="query-area" class="collapse {% if not request.GET.search %} inert {% endif %}">

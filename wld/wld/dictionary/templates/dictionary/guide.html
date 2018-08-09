@@ -1,0 +1,131 @@
+﻿{% extends "dictionary/layout.html" %}
+{% load staticfiles %}
+
+
+{% block content %}
+
+<div class="row">
+
+  <h3>Handleiding</h3>
+
+  <div class="col-md-6">
+    <h4>Zoeken</h4>
+    <p>Vanuit het hoofdmenu kan in het vakje 'Begrip' snel naar een begrip gezocht worden.
+    Daarbij kan gebruik gemaakt worden van de symbolen * (nul of meer willekeurige tekens) of ? (één willekeurig teken).
+    Door uit de menu-optie 'Zoeken' te kiezen voor 'Begrippen', 'Plaatsen' of 'Trefwoorden' ontstaan er de volgende drie zoekmogelijkheden:
+      <ol>
+        <li><b>Begrippen</b> - zoek naar één of meer begrippen en geef per begrip alle dialectwoorden, ingedeeld naar trefwoord.</li>
+        <li><b>Plaatsen</b> - zoek naar alle dialectwoorden die aangetroffen zijn in de plaats (of plaatsen) die zijn geselecteerd. 
+        Per plaats worden de dialectwoorden ingedeeld naar begrip en trefwoord. <b>N.B.</b> Voor het vinden van alle woorden die
+        verkregen zijn in één bepaalde plaats is het sneller om eerst de plaats te vinden via <code><a href="{% url 'dialects' %}">Overzichten &gt; Dialecten</a></code>
+        en daarna de plaats aan te klikken.</li>
+        <li><b>Trefwoorden</b> - zoek naar één of meer trefwoorden en geef de gevonden dialectwoorden onderverdeeld per begrip.</li>
+      </ol>
+    </p>
+    <h4>Dialectweergave</h4>
+    <p>De dialecten waarin de dialectopgaven voorkomen kunnen op verschillende manieren worden weergegeven.
+    Standaard wordt alleen de plaatsnaam (<code>Plaats</code>) weergegeven. 
+    In plaats daarvan kan de <code>Kloekecode</code> worden weergegeven door deze optie bovenin bij <b>Dialectweergave</b> te selecteren.
+    Het is ook mogelijk om zowel de plaatsnaam als de Kloekecode weer tegeven (<code>Plaats en Kloeke</code>).
+    </p>
+    <p>Wanneer een dialectopgave identiek is voor meerdere dialecten, dan wordt de eerste plaats standaard gevolgd door een komma en drie punten:</p>
+    <div>
+      <span class="lemma-trefwoord"><a href="/trefwoord/search/?search=beter%20met%20iemand%20zijn">beter met iemand zijn</a>:</span>
+      <span class="lemma-word">en ’t soŏ bĕetər meĕm zen</span>
+      <span>(</span>
+      <span class="lemma-word-dialect">
+        <span class="lemma-word-dialect-code hidden">L205p</span>
+        <span class="lemma-word-dialect-space hidden">&nbsp;</span>
+        <span class="lemma-word-dialect-stad">Aarle</span>
+        <span>, </span>
+        <span class="lemma-word-dialect-dots">...</span>
+      </span>
+      <span>)</span>
+    </div>
+    <p></p>
+    <p>Om <em>alle</em> plaatsen te zien waar deze dialectopgave gesproken wordt kan bovenin het scherm de optie <code>Dialectlijst</code> worden aangevinkt.
+    Dan verschijnen alle opties:</p>
+    <div>
+      <span class="lemma-trefwoord"><a href="/trefwoord/search/?search=beter%20met%20iemand%20zijn">beter met iemand zijn</a>:</span>
+      <span class="lemma-word">en ’t soŏ bĕetər meĕm zen</span>
+      <span>(</span>
+      <span class="lemma-word-dialect">
+        <span class="lemma-word-dialect-code hidden">L205p</span>
+        <span class="lemma-word-dialect-space hidden">&nbsp;</span>
+        <span class="lemma-word-dialect-stad">Aarle</span>
+        <span>, </span>
+        <span class="lemma-word-dialect-dots hidden">...</span>
+      </span>
+      <span class="lemma-word-dialect-additional">
+        <span class="lemma-word-dialect-code hidden">L206p</span>
+        <span class="lemma-word-dialect-space hidden">&nbsp;</span>
+        <span class="lemma-word-dialect-stad">Rixtel</span>
+        <span></span>
+      </span>
+      <span>)</span>
+    </div>
+
+    <h4>Overzichten</h4>
+    <p>De <code>Overzichten</code> van <b>Begrippen</b>, <b>Plaatsen</b> en <b>Trefwoorden</b> geven de gehele inhoud van het woordenboek weer (verdeeld over pagina's).
+    Ook is het mogelijk om vanaf hier de lijst met <b>Oorspronkelijke uitgaven</b> te zien en in de PDF bestanden ervan te kijken.
+    </p>
+  </div>
+  <div class="col-md-6" >
+    <h4>Filteren</h4>
+    <p>Bij iedere zoektocht is het mogelijk om de weer te geven dialectopgaven te filteren.
+    Welke filters precies beschikbaar zijn hangt af van welke zoektocht er gedaan wordt:
+    <table>
+      <thead><tr><th>Filter</th><th align="center">Begrip</th><th align="center">Plaats</th><th align="center">Trefwoord</th></tr></thead>
+      <tbody>
+        <tr><td>Begrip</td><td></td><td></td><td align="center">x</td></tr>
+        <tr><td>Plaats</td><td align="center">x</td><td></td><td align="center">x</td></tr>
+        <tr><td>Dialectopgave</td><td align="center">x</td><td></td><td align="center">x</td></tr>
+        <tr><td>Kloekecode</td><td align="center">x</td><td align="center">x</td><td align="center">x</td></tr>
+        <tr><td>Toelichting</td><td></td><td></td><td align="center">x</td></tr>
+        <tr><td>Deel/sectie/aflevering</td><td></td><td></td><td align="center">x</td></tr>
+      </tbody>
+    </table></p>
+    <p>Bij het filteren op deel/sectie/aflevering kan precies één combinatie geselecteerd worden; het is dus niet mogelijk om meerdere afleveringen te selecteren.
+    Wanneer er een filter gebruikt is, dan verschijnt er bij het zoeken naar Begrippen of Trefwoorden een samenvatting van de filterparameters op de balk "Filteren...":
+    </p>
+    <div class="panel-heading panel-default">
+      <div class="panel-heading" data-toggle="collapse">
+        <span>Filteren...</span>
+        <span class="filter-summary">
+          <span class="filter-item">woord=c*</span>
+          <span class="filter-item">plaats=b*</span>
+          <span class="filter-item">aflevering=II-4</span>
+        </span>
+      </div>
+    </div>
+    <p>Het bovenstaande filter geeft aan dat de dialectopgave moet beginnen met de letter 'c', 
+    dat de plaatsnaam moet beginnen met de letter 'b', 
+    en dat de dialectopgaven beperkt moeten zijn tot diegenen die voorkomen in deel II, aflevering 4.</p>
+    <h4>Kleuren en coderingen</h4>
+    <p>Er worden in het e-WLD een aantal verschillende kleurcoderingen gebruikt. De meeste daarvan spreken voor zichzelf.
+    Hieronder een voorbeeld van kleurcoderingen waar enige uitleg bij gegeven kan worden:</p>
+    <div class="row">
+    <div class="col-md-10 col-md-offset-1">
+      {% spaceless %}
+      <span class="lemma-trefwoord"><a href="/trefwoord/search/?search=waaier">waaier</a>:</span>
+      <span class="lemma-word-toelichting"></span>&nbsp;
+      <span class="lemma-word">wèèjǝr</span><span> (</span><span class="lemma-word-dialect"><span class="lemma-word-dialect-code hidden">L256p</span><span class="lemma-word-dialect-space hidden">&nbsp;</span><span class="lemma-word-dialect-stad">Aalst</span><span>, </span><span class="lemma-word-dialect-dots">...</span></span>
+      <span class="lemma-word-dialect-additional hidden"><span class="lemma-word-dialect-code hidden">L225p</span><span class="lemma-word-dialect-space hidden">&nbsp;</span><span class="lemma-word-dialect-stad">Zeelst</span><span></span></span><span>)</span><span>, </span>
+      <span class="lemma-word">wèèr</span><span> (</span><span class="lemma-word-dialect"><span class="lemma-word-dialect-code hidden">L207p</span><span class="lemma-word-dialect-space hidden">&nbsp;</span><span class="lemma-word-dialect-stad">Gemert</span><span></span></span><span>)</span><span>, </span>
+      <span class="lemma-word-toelichting">(of: wèèjǝr?)</span>&nbsp;
+      <span class="lemma-word">wáájǝr</span><span> (</span><span class="lemma-word-dialect"><span class="lemma-word-dialect-code hidden">K172p</span><span class="lemma-word-dialect-space hidden">&nbsp;</span><span class="lemma-word-dialect-stad">Boxtel</span>
+      &nbsp;<span class="word-kloeketoelichting">[Van Bakel]</span>&nbsp;
+      <span></span></span><span>)</span><span>, </span>
+      <span class="lemma-word-toelichting">waaier, dienende om het pas gesterkte kettinggaren mee droog te waaien (bladzijde 28), v.d. Ven - Vos</span>&nbsp;
+      <span class="lemma-word">wèèjǝr</span><span> (</span><span class="lemma-word-dialect"><span class="lemma-word-dialect-code hidden">L207p</span><span class="lemma-word-dialect-space hidden">&nbsp;</span><span class="lemma-word-dialect-stad">Gemert</span><span></span></span><span>)</span>
+      {% endspaceless %}
+    </div>
+      </div>
+    <p></p>
+    <p>Een opmerking of toelichting die geldig is voor één of meerdere daaropvolgende dialectopgaven wordt afgebeeld met een lichtgele achtergrond.
+    Een opmerking of toelichting die uitsluitend betrekking heeft op één plaats staat tussen blokhaken en heeft een lichtblauwe achtergrond.
+    </p>
+  </div>
+</div>
+
+{% endblock %}

@@ -460,7 +460,7 @@ def partToLine(sVersie, arPart, bDoMijnen):
                 if oBack['dialect_stad'].lower() == "onbekend":
                     oBack['dialect_stad'] = "Zie mijnen"
                 # Get the list of mines
-                sMijnen = oBack['dialect_toelichting'].replace('(', '').replace(')', '').strip()
+                sMijnen = oBack['dialectopgave_kloeketoelichting'].replace('(', '').replace(')', '').strip()
                 # Sanity check
                 if sMijnen == "":
                     lMijnen = []
@@ -542,6 +542,9 @@ class Description(models.Model):
     bronnenlijst = models.TextField("Bronnenlijst bij het lemma", db_index=True, blank=True)
     boek = models.TextField("Boekaanduiding", db_index=True, null=True,blank=True)
 
+    class Meta:
+        index_together = ['toelichting', 'bronnenlijst', 'boek']
+
     def __str__(self):
         return self.bronnenlijst
 
@@ -561,28 +564,38 @@ class Description(models.Model):
         return iPk
 
     def get_item(self):
-        # Get the parameters
-        bronnenlijst = self['bronnenlijst']
-        boek = self['boek']
-        toelichting = ""
-        if 'toelichting' in self:
-            toelichting = self['toelichting']
-        # Try find an existing item
-        qItem = Description.objects.filter(bronnenlijst__iexact=bronnenlijst, 
-                                           boek__iexact=boek,
-                                           toelichting__iexact=toelichting).first()
-        # see if we get one value back
-        if qItem == None:
-            # add a new Description object
-            descr = Description(bronnenlijst=bronnenlijst, boek=boek, toelichting=toelichting)
-            descr.save()
-            iPk = descr.pk
-        else:
-            # Get the pk of the first hit
-            iPk = qItem.pk
+        """Return the identifier of the object described in self"""
 
-        # Return the result
-        return iPk
+        oErr = ErrHandle()
+        try:
+            # Get the parameters
+            bronnenlijst = self['bronnenlijst']
+            boek = self['boek']
+            toelichting = ""
+            if 'toelichting' in self:
+                toelichting = self['toelichting']
+            # Try find an existing item
+            lstQ = []
+            lstQ.append(Q(bronnenlijst__iexact=bronnenlijst))
+            lstQ.append(Q(boek__iexact=boek))
+            lstQ.append(Q(toelichting__iexact=toelichting))
+            qItem = Description.objects.filter(*lstQ).first()
+            # see if we get one value back
+            if qItem == None:
+                # add a new Description object
+                descr = Description(bronnenlijst=bronnenlijst, boek=boek, toelichting=toelichting)
+                descr.save()
+                iPk = descr.pk
+                qItem = descr
+            else:
+                # Get the pk of the first hit
+                iPk = qItem.pk
+
+            # Return the result
+            return iPk, qItem
+        except:
+            oErr.DoError("Description/get_item error:")
+            return -1, None
 
     def get_instance(options, instance, oTime = None):
         """Return the instance described by the options"""
@@ -630,7 +643,7 @@ class Description(models.Model):
         except:
             oErr.DoError("Description/get_instance error:")
             return None
-
+        
 
 class Lemma(models.Model):
     """Lemma"""
@@ -662,30 +675,24 @@ class Lemma(models.Model):
         return iPk
 
     def get_item(self):
-        # Get the parameters
-        gloss = self['gloss']
-        # Try find an existing item
-        # qItem = Lemma.objects.filter(gloss__iexact=gloss).first()
-        ## see if we get one value back
-        #if qItem == None:
-        #    # add a new Dialect object
-        #    lemma = Lemma(gloss=gloss)
-        #    lemma.save()
-        #    iPk = lemma.pk
-        #else:
-        #    # Get the pk of the first hit
-        #    iPk = qItem.pk
+        oErr = ErrHandle()
         try:
-            qItem = Lemma.objects.get(gloss__iexact=gloss)
-            # Get the pk of the first hit
-            iPk = qItem.pk
-        except ObjectDoesNotExist:
-            lemma = Lemma(gloss=gloss)
-            lemma.save()
+            # Get the parameters
+            gloss = self['gloss']
+            try:
+                # OLD: lemma = Lemma.objects.get(gloss__iexact=gloss)
+                lemma = Lemma.objects.get(gloss=gloss)
+            except ObjectDoesNotExist:
+                lemma = Lemma(gloss=gloss)
+                lemma.save()
+            # Get the pk of the lemma
             iPk = lemma.pk
 
-        # Return the result
-        return iPk
+            # Return the result
+            return iPk
+        except:
+            oErr.DoError("Lemma/get_item error:")
+            return -1
 
     def get_instance(options, oTime = None):
         """Return the instance described by the options"""
@@ -1165,6 +1172,35 @@ class Mijn(models.Model):
 
         return iPk
 
+    def get_item(self, oTime = None):
+        oErr = ErrHandle()
+        try:
+            # Get the parameters
+            naam = self['naam']
+            # Try find an existing item
+            lstQ = []
+            lstQ.append(Q(naam__iexact=naam))
+
+            if oTime != None: iStart = get_now_time()
+            qItem = Mijn.objects.filter(*lstQ).first()
+            if oTime != None: oTime['search_M'] += get_now_time() - iStart
+
+            # see if we get one value back
+            if qItem == None:
+                # add a new Dialect object
+                if oTime != None: iStart = get_now_time()
+                qItem = Mijn(naam=naam)
+                qItem.save()
+                if oTime != None: oTime['save'] += get_now_time() - iStart
+            # Get the pk of the first hit
+            iPk = qItem.pk
+
+            # Return the result
+            return iPk
+        except:
+            oErr.DoError("Mijn/get_item error:")
+            return -1
+
 
 class Entry(models.Model):
     """Dictionary entry"""
@@ -1216,6 +1252,9 @@ class Entry(models.Model):
             sWoord = self.woord
         return sWoord
 
+    def get_toelichting(self):
+        return self.toelichting
+
     def get_aflevering(self):
         afl = self.aflevering
         sAfl = "d" + str(afl.deel.nummer) + "-"
@@ -1234,6 +1273,7 @@ class Entry(models.Model):
         arRow.append(self.woord)
         arRow.append(self.dialect.nieuw)
         arRow.append(self.aflevering.naam)
+        arRow.append(self.descr.bronnenlijst)
         return arRow
 
     def get_tsv(self):
@@ -1243,6 +1283,7 @@ class Entry(models.Model):
         """Check if this [entry] exists and return a PK"""
         qs = Entry.objects.filter(woord__iexact=self['woord'], 
                                   toelichting__iexact=self['toelichting'],
+                                  kloeketoelichting__iexact=self['kloeketoelichting'],
                                   lemma__pk=self['lemma'],
                                   dialect__pk = self['dialect'],
                                   trefwoord__pk = self['trefwoord'],
@@ -1259,6 +1300,7 @@ class Entry(models.Model):
 
     def get_item(self):
         mijnPk = None
+        kloeketoelichting=""
 
         # Get the parameters out of [self]
         woord = self['woord']
@@ -1267,17 +1309,23 @@ class Entry(models.Model):
         dialectPk = self['dialect']
         trefwoordPk = self['trefwoord']
         afleveringPk = self['aflevering']
+        if 'kloeketoelichting' in self:
+            kloeketoelichting = self['kloeketoelichting']
         if 'mijn' in self:
             mijnPk = self['mijn']
 
         # Try find an existing item
-        qs = Entry.objects.filter(woord__iexact=woord, 
-                                  toelichting__iexact=toelichting,
-                                  lemma__pk=lemmaPk,
-                                  dialect__pk = dialectPk,
-                                  trefwoord__pk = trefwoordPk,
-                                  aflevering__pk = afleveringPk,
-                                  mijn__pk = mijnPk)
+        lstQ = []
+        lstQ.append(Q(woord__iexact=woord))
+        lstQ.append(Q(toelichting__iexact=toelichting))
+        lstQ.append(Q(lemma__pk=lemmaPk))
+        lstQ.append(Q(dialect__pk = dialectPk))
+        lstQ.append(Q(trefwoord__pk = trefwoordPk))
+        lstQ.append(Q(aflevering__pk = afleveringPk))
+        lstQ.append(Q(mijn__pk = mijnPk))
+        lstQ.append(Q(kloeketoelichting = kloeketoelichting))
+
+        qs = Entry.objects.filter(*lstQ)
         # see if we get one unique value back
         iLen = len(qs)
         if iLen == 0:
@@ -1291,11 +1339,13 @@ class Entry(models.Model):
                 # add a new Dialect object
                 entry = Entry(woord=woord, toelichting = toelichting, lemma=lemma,
                               dialect = dialect, trefwoord = trefwoord,
+                              kloeketoelichting = kloeketoelichting,
                               aflevering = aflevering, mijn = mijn)
             else:
                 # add a new Dialect object
                 entry = Entry(woord=woord, toelichting = toelichting, lemma=lemma,
                               dialect = dialect, trefwoord = trefwoord,
+                              kloeketoelichting = kloeketoelichting,
                               aflevering = aflevering)
             entry.save()
             iPk = entry.pk
@@ -1313,7 +1363,7 @@ class EntryMijn(models.Model):
     entry=models.ForeignKey(Entry, db_index=True, on_delete=models.CASCADE)
     mijn=models.ForeignKey(Mijn, db_index=True, on_delete=models.CASCADE)
 
-    def get_item(self):
+    def get_item(self, bSet):
         # Get the parameters
         entry = self['entry']
         mijn = self['mijn']
@@ -1323,7 +1373,11 @@ class EntryMijn(models.Model):
         # see if we get one value back
         if qItem == None:
             # add a new Description object
-            entrymijn = EntryMijn(entry=Entry.objects.get(id=entry), mijn=Mijn.objects.get(id=mijn))
+            if bSet:
+                # Just add this link; do not start looking for Entry or Mijn
+                entrymijn = EntryMijn(entry_id=entry, mijn_id=mijn)
+            else:
+                entrymijn = EntryMijn(entry=Entry.objects.get(id=entry), mijn=Mijn.objects.get(id=mijn))
             entrymijn.save()
             iPk = entrymijn.pk
         else:
@@ -1626,7 +1680,8 @@ def csv_to_fixture_old(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase
     oBack = {}      # What we return
     sVersie = ""    # The version we are using--this depends on the column names
     sDict = "wbd"   # The dictionary we are working for: wld, wbd, 
-    bUsdDbaseMijnen = False
+    # bUsdDbaseMijnen = False
+    bUsdDbaseMijnen = True
     oErr = ErrHandle()
 
     try:
@@ -1960,20 +2015,21 @@ def csv_to_fixture_old(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase
         errHandle.DoError("csv_to_fixture", True)
         return oBack
 
-# ----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------
 # Name :    csv_to_fixture
 # Goal :    Convert CSV file into a fixtures file
 # History:
 #  1/dec/2016   ERK Created
 #  8/aug/2018   ERK Copied adaptation from the e-WBD version
-# ----------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------
 def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=False, bUseOld=False):
     """Process a CSV with entry definitions"""
 
     oBack = {}      # What we return
     sVersie = ""    # The version we are using--this depends on the column names
     sDict = "wld"   # The dictionary we are working for: wld, wbd, 
-    bUsdDbaseMijnen = False
+    # bUsdDbaseMijnen = False
+    bUsdDbaseMijnen = True
     oErr = ErrHandle()
 
     try:
@@ -2011,7 +2067,7 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
                 return oBack
 
             # Get the [Info] object
-            if iSectie == None:
+            if iSectie == None or iSectie == "":
                 oInfo = Info.objects.filter(deel=iDeel, aflnum=iAflevering).first()
             else:
                 oInfo = Info.objects.filter(deel=iDeel, sectie=iSectie, aflnum=iAflevering).first()
@@ -2157,6 +2213,7 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
                 bFirst = True
                 bFirstOut = False
 
+                sVersie = ""
                 sLastLemma = ""     # For speeding up processing
                 sLastLemmaDescr = ""
                 sLastTw = ""
@@ -2177,12 +2234,12 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
                 oTime['db'] = 0     # Time spent in reading and saving database items
                 oTime['entry'] = 0  # Processing entries
                 oTime['save'] = 0   # Time spent in saving
-                oTime['search_L'] = 0 # Time spent in searching (lemma)
-                oTime['search_T'] = 0 # Time spent in searching (trefwoord)
-                oTime['search_Ds'] = 0 # Time spent in searching (description)
-                oTime['search_Dt'] = 0 # Time spent in searching (dialect)
-                oTime['search_LD'] = 0 # Time spent in searching (lemmadescription)
-
+                oTime['search_L'] = 0   # Time spent in searching (lemma)
+                oTime['search_T'] = 0   # Time spent in searching (trefwoord)
+                oTime['search_Ds'] = 0  # Time spent in searching (description)
+                oTime['search_Dt'] = 0  # Time spent in searching (dialect)
+                oTime['search_LD'] = 0  # Time spent in searching (lemmadescription)
+                oTime['search_M'] = 0   # Time spent in searching (mijn)
 
                 # Iterate through the lines of the CSV file
                 while (not bEnd):
@@ -2348,10 +2405,10 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
                                     # Walk all the mijnen for this entry
                                     for sMijn in lMijnen:
                                         # Get the PK for this mijn
-                                        iPkMijn = Mijn.get_item({'naam': sMijn})
+                                        iPkMijn = Mijn.get_item({'naam': sMijn}, oTime)
                                         # Process the PK for EntryMijn
                                         iPkEntryMijn = EntryMijn.get_item({'entry': iPkEntry,
-                                                                           'mijn': iPkMijn})
+                                                                           'mijn': iPkMijn}, True)
 
                                 else:
                                     # Walk all the mijnen for this entry
@@ -2376,9 +2433,9 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
                     # Keep track of progress
                     oStatus.skipped = iSkipped
                     oStatus.read = iRead
-                    oStatus.status = "{} (read={:.1f}, db={:.1f}, entry={:.1f}, search L={:.1f}, T={:.1f}, Ds={:.1f}, LD={:.1f}, Dt={:.1f}, save={:.1f})".format(
+                    oStatus.status = "{} (read={:.1f}, db={:.1f}, entry={:.1f}, search (L={:.1f}, T={:.1f}, Ds={:.1f}, LD={:.1f}, Dt={:.1f}, M={:.1f}), save={:.1f})".format(
                         sWorking, oTime['read'], oTime['db'], oTime['entry'],
-                        oTime['search_L'], oTime['search_T'], oTime['search_Ds'], oTime['search_LD'], oTime['search_Dt'], oTime['save'])
+                        oTime['search_L'], oTime['search_T'], oTime['search_Ds'], oTime['search_LD'], oTime['search_Dt'], oTime['search_M'], oTime['save'])
                     oStatus.save()
 
 

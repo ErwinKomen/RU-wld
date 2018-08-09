@@ -8,6 +8,8 @@ from django.shortcuts import get_object_or_404, render
 from django.http import HttpRequest, HttpResponse
 from django.core.urlresolvers import reverse
 from django.template import RequestContext, loader
+from django.template.loader import render_to_string
+from django.db import connection
 from django.db.models import Q
 from django.db.models.functions import Lower
 from django.http import JsonResponse
@@ -21,6 +23,7 @@ import re
 import fnmatch
 import csv
 import codecs
+import copy
 from wld.dictionary.models import *
 from wld.dictionary.forms import *
 #from wld.dictionary.adminviews import order_queryset_by_sort_order
@@ -28,9 +31,11 @@ from wld.settings import APP_PREFIX, WSGI_FILE
 
 # Global variables
 paginateSize = 10
+paginateLocations = 2
 paginateEntries = 100
-paginateValues = (1000, 500, 250, 100, 50, 40, 30, 20, 10, )
-outputColumns = ['begrip', 'trefwoord', 'dialectopgave', 'Kloekecode', 'aflevering']
+# paginateValues = (1000, 500, 250, 100, 50, 40, 30, 20, 10, )
+paginateValues = (100, 50, 20, 10, 5, 2, 1, )
+outputColumns = ['begrip', 'trefwoord', 'dialectopgave', 'Kloekecode', 'aflevering', 'bronnenlijst']
 
 # General help functions
 def order_queryset_by_sort_order(get, qs, sOrder = 'gloss'):
@@ -88,52 +93,58 @@ def order_queryset_by_sort_order(get, qs, sOrder = 'gloss'):
 def get_item_list(lVar, lFun, qs):
     """Turn the queryset [qs] into a list of Items that have first and last information"""
 
-    # Initialize the variables whose changes are important
-    oVariable = {}
-    for i, key in enumerate(lVar):
-        oVariable[key] = "" # {'name': key, 'fun': lFun[i]}
     lItem = []
-    iLast = len(qs)-1
-    # Iterate over the entries looking for first, last etc
-    for i, entry in enumerate(qs):
-        bIsLastEntry = (i==iLast)
-        oItem = {'entry': entry}
-        for k in lVar:
-            oItem[k] = {'first':False, 'last':False}
-        bIsDict = isinstance(entry, dict)
-        bVarIsLast = False
-        # Check for changes in all the variables
-        for j, k in enumerate(lVar):
-            fun = lFun[j]
-            if callable(fun):
-                sValue = fun(entry)
-            else:
-                for idx, val in enumerate(fun):
-                    if idx==0:
-                        if bIsDict:
-                            sValue = entry[val]
+    oErr = ErrHandle()
+    try:
+        # Initialize the variables whose changes are important
+        oVariable = {}
+        for i, key in enumerate(lVar):
+            oVariable[key] = "" # {'name': key, 'fun': lFun[i]}
+        iLast = len(qs)-1
+        # Iterate over the entries looking for first, last etc
+        for i, entry in enumerate(qs):
+            bIsLastEntry = (i==iLast)
+            oItem = {'entry': entry}
+            for k in lVar:
+                oItem[k] = {'first':False, 'last':False}
+            bIsDict = isinstance(entry, dict)
+            bVarIsLast = False
+            # Check for changes in all the variables
+            for j, k in enumerate(lVar):
+                fun = lFun[j]
+                if callable(fun):
+                    sValue = fun(entry)
+                else:
+                    for idx, val in enumerate(fun):
+                        if idx==0:
+                            if bIsDict:
+                                sValue = entry[val]
+                            else:
+                                sValue = getattr(entry, val)
                         else:
-                            sValue = getattr(entry, val)
-                    else:
-                        if bIsDict:
-                            sValue = sValue[val]
-                        else:
-                            sValue = getattr(sValue, val)
-            # Check for changes in the value of the variable 
-            # if sValue != oVariable[k]:
-            if sValue != oVariable[k] or bVarIsLast or (i>0 and lItem[i-1][k]['last']):
-                # Check if the previous one's [last] must be changed
-                if oVariable[k] != "": lItem[i-1][k]['last'] = True
-                # Adapt the current one's [first] property
-                oItem[k]['first']= True
-                # Adapt the variable
-                oVariable[k] = sValue      
-                # Indicate that the next ones should be regarded as 'last'
-                bVarIsLast = True      
-            # Check if this is the last
-            if bIsLastEntry: oItem[k]['last'] = True
-        # Add this object to the list of items
-        lItem.append(oItem)
+                            if bIsDict:
+                                sValue = sValue[val]
+                            else:
+                                sValue = getattr(sValue, val)
+                # Check for changes in the value of the variable 
+                # if sValue != oVariable[k]:
+                if sValue != oVariable[k] or bVarIsLast or (i>0 and lItem[i-1][k]['last']):
+                    # Check if the previous one's [last] must be changed
+                    if oVariable[k] != "": lItem[i-1][k]['last'] = True
+                    # Adapt the current one's [first] property
+                    oItem[k]['first']= True
+                    # Adapt the variable
+                    oVariable[k] = sValue      
+                    # Indicate that the next ones should be regarded as 'last'
+                    bVarIsLast = True      
+                # Check if this is the last
+                if bIsLastEntry: oItem[k]['last'] = True
+            # Add this object to the list of items
+            lItem.append(oItem)
+    except:
+        oErr.DoError("get_item_list error")
+        lItem = []
+
     # Return the list we have made
     return lItem
 
@@ -165,28 +176,23 @@ def contact(request):
 def about(request):
     """Renders the about page."""
     assert isinstance(request, HttpRequest)
-    return render(
-        request,
-        'dictionary/about.html',
-        {
-            'title':'e-WLD informatie',
+    return render(request, 'dictionary/about.html',
+        {   'title':'e-WLD informatie',
             'message':'Radboud Universiteit Nijmegen - Dialectenwoordenboek.',
             'year':datetime.now().year,
         }
     )
 
-def afleveringen(request):
-    """Renders the AFLEVERINGEN page."""
+def guide(request):
+    """Renders the 'guide' page."""
     assert isinstance(request, HttpRequest)
-    return render(
-        request,
-        'dictionary/afleveringen.html',
-        {
-            'title':'e-WLD afleveringen',
+    return render( request, 'dictionary/guide.html',
+        {   'title':'e-WLD handleiding',
             'message':'Radboud Universiteit Nijmegen - Dialectenwoordenboek.',
             'year':datetime.now().year,
         }
     )
+
 
 def do_repair(request):
     """Renders the REPAIR page."""
@@ -325,54 +331,6 @@ def do_repair_progress(request):
     # Return this response
     return JsonResponse(data)
 
-def import_csv_test(request):
-    """Test import to see how the dialect entries will look like"""
-
-    # Provide the template name and the initial context
-    template_name = 'dictionary/import_test.html'
-    context = dict(title="e-WLD test",
-                   message="(none)",
-                   year=datetime.now().year)
-    entry_list = []
-    csv_file = 'd:/data files/tg/dialecten/test/test-WLD-III-1-1.txt'
-    if (not os.path.isfile(csv_file)): 
-        context['message'] = "Kan CSV bestand niet vinden op: " + csv_file
-    else:
-        # Read the information
-        f = codecs.open(csv_file, "r", encoding='utf-8-sig')
-        bEnd = False
-        while (not bEnd):
-            # Read one line
-            strLine = f.readline()
-            if (strLine == ""):
-                bEnd = True
-                break
-            strLine = str(strLine)
-            strLine = strLine.strip(" \n\r")
-            # Only process substantial lines
-            if (strLine != ""):
-                # Split the line into parts
-                arPart = strLine.split('\t')
-                # Unescape item [4]
-                arPart[5] = html.unescape(arPart[5])
-                # Remove quotation marks everywhere and adapt NULL where needed
-                for k, val in enumerate(arPart):
-                    if arPart[k] != None:
-                        arPart[k] = val.strip('"')
-                        arPart[k] = arPart[k].strip()
-                        if arPart[k].startswith("'") and arPart[k].endswith("'"):
-                            arPart[k] = arPart[k].strip("'")
-                        if arPart[k] == "NULL":
-                            arPart[k] = ""
-                # Add to the list of entries
-                entry_list.append(arPart)
-
-
-    # Add to the context
-    context['entry_list'] = entry_list
-
-    # Return a page that shows the dialect entries
-    return render(request, template_name, context)
 
 def import_csv_start(request):
     # Formulate a response
@@ -429,34 +387,47 @@ def import_csv_start(request):
     return JsonResponse(data)
 
 def import_csv_progress(request):
-    iDeel = request.GET.get('deel', 1)
-    iSectie = request.GET.get('sectie', None)
-    iAflnum = request.GET.get('aflnum', 1)
-    # Get the id of the Info object
-    if iSectie==None or iSectie == "":
-        info = Info.objects.filter(deel=iDeel, aflnum=iAflnum).first()
-    else:
-        info = Info.objects.filter(deel=iDeel, sectie=iSectie, aflnum=iAflnum).first()
+    oErr = ErrHandle()
     # Prepare a return object
     data = {'read':0, 'skipped':0, 'method': '(unknown)', 'msg': ''}
-    # Find out how far importing is going
-    qs = Status.objects.filter(info=info)
-    if qs != None and len(qs) > 0:
-        oStatus = qs[0]
-        # Fill in the return object
-        data['read'] = oStatus.read
-        data['skipped'] = oStatus.skipped
-        data['method'] = oStatus.method
-        data['status'] = oStatus.status
-        # Checking...
-        if data['status'] == "idle":
-            data['msg'] = "Idle status in import_csv_progress"
-    else:
-        # Do we have an INFO object?
-        if info == None:
-            data['status'] = "Please supply [deel], [sectie] and [aflnum]"
+    try:
+        # Debugging
+        oErr.Status("import_csv_progress at {}".format(datetime.now()))
+
+        if request.POST:
+            qd = request.POST
         else:
-            data['status'] = "No status object for info=" + str(info.id) + " has been created yet"
+            qd = request.GET
+        iDeel = qd.get('deel', 1)
+        iSectie = qd.get('sectie', None)
+        iAflnum = qd.get('aflnum', 1)
+        # Get the id of the Info object
+        if iSectie==None or iSectie == "":
+            info = Info.objects.filter(deel=iDeel, aflnum=iAflnum).first()
+        else:
+            info = Info.objects.filter(deel=iDeel, sectie=iSectie, aflnum=iAflnum).first()
+        # Find out how far importing is going
+        qs = Status.objects.filter(info=info)
+        if qs != None and len(qs) > 0:
+            oStatus = qs[0]
+            # Fill in the return object
+            data['read'] = oStatus.read
+            data['skipped'] = oStatus.skipped
+            data['method'] = oStatus.method
+            data['status'] = oStatus.status
+            # Checking...
+            if data['status'] == "idle":
+                data['msg'] = "Idle status in import_csv_progress"
+        else:
+            # Do we have an INFO object?
+            if info == None:
+                data['status'] = "Please supply [deel], [sectie] and [aflnum]"
+            else:
+                data['status'] = "No status object for info=" + str(info.id) + " has been created yet"
+    except Exception as ex:
+        oErr.DoError("import_csv_progress error")
+        data['status'] = "error"
+
     # Return where we are
     return JsonResponse(data)
 
@@ -486,10 +457,14 @@ class TrefwoordListView(ListView):
 
     model = Trefwoord
     template_name = 'dictionary/trefwoord_list.html'
-    paginate_by = paginateEntries # paginateSize
+    # paginate_by = paginateEntries
+    paginate_by = paginateSize
     entrycount = 0
+    bUseMijnen = True   # Limburg uses mijnen, Brabant not
+    bWbdApproach = True # Filter using the WBD approach (this also applies for the revised WLD)
     qEntry = None
     qs = None
+    bDoTime = True      # Measure time
     strict = True      # Use strict filtering
 
     def get_qs(self):
@@ -517,11 +492,17 @@ class TrefwoordListView(ListView):
             """ Provide Html response"""
             return export_html(self.get_qs(), 'trefwoorden')
         else:
-            return super(TrefwoordListView, self).render_to_response(context, **response_kwargs)
+            oResponse = super(TrefwoordListView, self).render_to_response(context, **response_kwargs)
+            return oResponse
 
     def get_context_data(self, **kwargs):
         # Call the base implementation first to get a context
         context = super(TrefwoordListView, self).get_context_data(**kwargs)
+
+        # Action depends on the approach
+        if self.bWbdApproach:
+            # Need to adapt the object_list to get the entries to be used
+            context['object_list'] = self.get_entryset(context['page_obj'])
 
         # Get parameters for the search
         initial = self.request.GET
@@ -538,15 +519,30 @@ class TrefwoordListView(ListView):
         else:
             context['paginateSize'] = self.paginate_by  # paginateSize
 
-        # Try to retain the choice for Aflevering and Mijn
-        if 'mijn' in initial:
-            context['mijnkeuze'] = int(initial['mijn'])
-        else:
-            context['mijnkeuze'] = 0
+        if self.bUseMijnen:
+            # Try to retain the choice for Mijn
+            if 'mijn' in initial:
+                mijn_id = int(initial['mijn'])
+                context['mijnkeuze'] = mijn_id
+                mijn_inst = Mijn.objects.filter(id=mijn_id).first()
+                if mijn_inst == None:
+                    context['mijnnaam'] = ''
+                else:
+                    context['mijnnaam'] = mijn_inst.naam
+            else:
+                context['mijnkeuze'] = 0
+                context['mijnnaam'] = ''
+        # Process and retain the choice for Aflevering
         if 'aflevering' in initial:
             context['aflkeuze'] = int(initial['aflevering'])
+            afl = Aflevering.objects.filter(id=context['aflkeuze']).first()
+            if afl == None:
+                context['afl'] = ''
+            else:
+                context['afl'] = afl.get_summary()
         else:
             context['aflkeuze'] = 0
+            context['afl'] = ''
 
         # Get possible user choice of 'strict'
         if 'strict' in initial:
@@ -603,8 +599,8 @@ class TrefwoordListView(ListView):
         # Start the output
         html = []
         # Initialize the variables whose changes are important
-        lVars = ["trefwoord_woord", "lemma_gloss", "dialectopgave", "dialect_stad"]
-        lFuns = [["trefwoord", "woord"], ["lemma", "gloss"], Entry.dialectopgave, ["dialect", "stad"]]
+        lVars = ["trefwoord_woord", "lemma_gloss", "toelichting", "dialectopgave", "dialect_stad"]
+        lFuns = [["trefwoord", "woord"], ["lemma", "gloss"], Entry.get_toelichting, Entry.dialectopgave, ["dialect", "stad"]]
         # Get a list of items containing 'first' and 'last' information
         lItem = get_item_list(lVars, lFuns, qs)
         # REturn this list
@@ -635,42 +631,25 @@ class TrefwoordListView(ListView):
         """
         return self.request.GET.get('paginate_by', self.paginate_by)
         
-    def get_queryset(self):
-
-        # Get the parameters passed on with the GET request
-        get = self.request.GET
-
-        # Get possible user choice of 'strict'
-        if 'strict' in get:
-            self.strict = (get['strict'] == "True")
-
+    def get_entryset(self, page_obj):
         lstQ = []
         bHasSearch = False
         bHasFilter = False
 
-        # Fine-tuning: search string is the LEMMA
-        if 'search' in get and get['search'] != '':
-            val = adapt_search(get['search'])
-            # Use the 'woord' attribute of Trefwoord
-            lstQ.append(Q(woord__iregex=val) )
-            bHasSearch = True
+        # Retrieve the set of trefwoorden from the page_obj
+        trefw_list = [item.id for item in page_obj]
 
-            # check for possible exact numbers having been given
-            if re.match('^\d+$', val):
-                lstQ.append(Q(sn__exact=val))
+        # Initialize the filtering
+        lstQ.append(Q(trefwoord__id__in=trefw_list))
 
-        # Check for 'toelichting'
-        if 'toelichting' in get and get['toelichting'] != '':
-            val = adapt_search(get['toelichting'])
-            # Try to get to the 'toelichting'
-            lstQ.append(Q(toelichting__iregex=val))
-            bHasSearch = True
+        # Get the parameters passed on with the GET request
+        get = self.request.GET
 
+        # Check for aflevering being publishable
         if self.strict:
-            # Get the set of Trefwoord elements belonging to the selected Trefwoord/toelichting-elements
-            trefw = Trefwoord.objects.filter(*lstQ)
-            lstQ.clear()
-            lstQ.append(Q(trefwoord__id__in=trefw))
+            lstQ.append(Q(aflevering__toonbaar=True))
+        else:
+            lstQ.append(Q(entry__aflevering__toonbaar=True))
 
         # Check for dialectwoord
         if 'dialectwoord' in get and get['dialectwoord'] != '':
@@ -726,7 +705,7 @@ class TrefwoordListView(ListView):
                     bHasFilter = True
 
         # Check for mijn
-        if 'mijn' in get and get['mijn'] != '':
+        if self.bUseMijnen and 'mijn' in get and get['mijn'] != '':
             # What we get should be a number
             val = get['mijn']
             if val.isdigit():
@@ -738,34 +717,132 @@ class TrefwoordListView(ListView):
                         lstQ.append(Q(entry__mijnlijst__id=iVal))
                     bHasFilter = True
 
-        # Make the QSE available
-        if self.strict:     # and (bHasSearch or bHasFilter):
-            # Order: "trefwoord_woord", "lemma_gloss", "dialectopgave", "dialect_stad"
-            if bHasFilter or bHasSearch:
-                qse = Entry.objects.filter(*lstQ).select_related().order_by(
-                  Lower('trefwoord__woord'), 
-                  Lower('lemma__gloss'),  
-                  Lower('woord'), 
-                  Lower('dialect__stad'))
-            else:
-                qse = Entry.objects.all().select_related().order_by(
-                  Lower('trefwoord__woord'), 
-                  Lower('lemma__gloss'),  
-                  Lower('woord'), 
-                  Lower('dialect__stad'))
-            self.qEntry = qse
-            self.qs = trefw
-        else:
-            #if self.strict:
-            #    # Make sure to reset strict
-            #    # self.strict = False
-            #    lstQ = []
-            #    self.paginate_by  = paginateSize
-            qse = Trefwoord.objects.filter(*lstQ).distinct().select_related().order_by(Lower('woord'))
-            self.qEntry = None
-            self.qs = qse
+        # Order: "trefwoord_woord", "lemma_gloss", "dialectopgave", "dialect_stad"
+        # Make sure we apply the filter
+        qse = Entry.objects.filter(*lstQ).distinct().select_related().order_by(
+            Lower('trefwoord__woord'), 
+            'lemma__gloss',  
+            Lower('toelichting'),
+            Lower('woord'), 
+            Lower('dialect__stad'))
+        self.qEntry = qse
+        return qse
+        
+    def get_queryset(self):
 
-        self.entrycount = qse.count()
+        # Get the parameters passed on with the GET or the POST request
+        get = self.request.GET if self.request.method == "GET" else self.request.POST
+        
+        # Debugging: mesaure time
+        if self.bDoTime: iStart = get_now_time()
+
+        # Get possible user choice of 'strict'
+        if 'strict' in get:
+            self.strict = (get['strict'] == "True")
+
+        lstQ = []
+        bHasSearch = False
+        bHasFilter = False
+
+        # Fine-tuning: search string is the LEMMA
+        if 'search' in get and get['search'] != '':
+            val = get['search']
+            if '*' in val or '[' in val or '?' in val:
+                val = adapt_search(val)
+                lstQ.append(Q(woord__iregex=val) )
+            else:
+                # Strive for equality, but disregard case
+                lstQ.append(Q(woord__iexact=val))
+            #val = adapt_search(get['search'])
+            ## Use the 'woord' attribute of Trefwoord
+            #lstQ.append(Q(woord__iregex=val) )
+            bHasSearch = True
+
+            # check for possible exact numbers having been given
+            if re.match('^\d+$', val):
+                lstQ.append(Q(sn__exact=val))
+
+        # Check for 'toelichting'
+        if 'toelichting' in get and get['toelichting'] != '':
+            val = adapt_search(get['toelichting'])
+            # Try to get to the 'toelichting'
+            lstQ.append(Q(toelichting__iregex=val))
+            bHasSearch = True
+
+        # Check for dialectwoord
+        if 'dialectwoord' in get and get['dialectwoord'] != '':
+            val = adapt_search(get['dialectwoord'])
+            # Adapt Entry filter
+            lstQ.append(Q(entry__woord__iregex=val))
+            bHasFilter = True
+
+        # Check for lemma
+        if 'lemma' in get and get['lemma'] != '':
+            val = adapt_search(get['lemma'])
+            # Adapt Entry filter
+            lstQ.append(Q(entry__lemma__gloss__iregex=val))
+            bHasFilter = True
+
+        # Check for dialect city
+        if 'dialectCity' in get and get['dialectCity'] != '':
+            val = adapt_search(get['dialectCity'])
+            # Adapt Entry filter
+            lstQ.append(Q(entry__dialect__stad__iregex=val))
+            bHasFilter = True
+
+        # Check for dialect code (Kloeke)
+        if 'dialectCode' in get and get['dialectCode'] != '':
+            val = adapt_search(get['dialectCode'])
+            # Adapt Entry filter
+            lstQ.append(Q(entry__dialect__nieuw__iregex=val))
+            bHasFilter = True
+
+        # Check for aflevering
+        if 'aflevering' in get and get['aflevering'] != '':
+            # What we get should be a number
+            val = get['aflevering']
+            if val.isdigit():
+                iVal = int(val)
+                if iVal>0:
+                    lstQ.append(Q(entry__aflevering__id=iVal))
+                    bHasFilter = True
+
+        # Check for mijn
+        if self.bUseMijnen and 'mijn' in get and get['mijn'] != '':
+            # What we get should be a number
+            val = get['mijn']
+            if val.isdigit():
+                iVal = int(val)
+                if iVal>0:
+                    lstQ.append(Q(entry__mijnlijst__id=iVal))
+                    bHasFilter = True
+
+        # Debugging: time
+        if self.bDoTime: print("TrefwoordListView get_queryset part 1: {:.1f}".format(get_now_time() - iStart))
+
+        # Debugging: mesaure time
+        if self.bDoTime: iStart = get_now_time()
+
+        # Figure out which trefwoorden to exclude
+        trefwoord_exclude = Trefwoord.objects.filter(toonbaar=0)
+
+        # Create a QSE
+        qse = Trefwoord.objects.exclude(id__in=trefwoord_exclude).filter(*lstQ).select_related().order_by(Lower('woord')).distinct()
+
+        # Debugging: time
+        if self.bDoTime: 
+                print("TrefwoordListView get_queryset part 2: {:.1f}".format(get_now_time() - iStart))
+                iStart = get_now_time()
+
+        # Note the number of ITEMS we have
+        #   (The nature of these items depends on the approach taken)
+        # self.entrycount = qse.count()
+        # Using 'len' is faster since [qse] is being actually used again
+        self.entrycount = len(qse)
+
+        # Debugging: time
+        if self.bDoTime: 
+                print("TrefwoordListView get_queryset part 3: {:.1f}".format(get_now_time() - iStart))
 
         return qse
 
@@ -776,12 +853,17 @@ class LemmaListView(ListView):
     model = Lemma
     # context_object_name = 'lemma'    
     template_name = 'dictionary/lemma_list.html'
-    paginate_by = paginateEntries # paginateSize
+    template_ajax = 'dictionary/lemma_list_oview.html'
+    # paginate_by = paginateEntries
+    paginate_by = paginateSize
     entrycount = 0
+    bUseMijnen = True       # Limburg uses mijnen, Brabant not
+    bWbdApproach = True     # Filter using the WBD approach
+    bOrderWrdToel = False   # Use the word order 'dialectopgave-toelichting' if True
     bDoTime = True          # Measure time
     qEntry = None
     qs = None
-    strict = True           # Use strict filtering
+    strict = True      # Use strict filtering ALWAYS
 
     def get_qs(self):
         """Get the Entry elements that are selected"""
