@@ -375,48 +375,55 @@ def import_csv_test(request):
     return render(request, template_name, context)
 
 def import_csv_start(request):
-    # x = request.POST
-    iDeel = request.GET.get('deel', 1)
-    iSectie = request.GET.get('sectie', None)
-    iAflnum = request.GET.get('aflnum', 1)
-    sFile = request.GET.get('filename', '')
-
     # Formulate a response
     data = {'status': 'done'}
+    oErr = ErrHandle()
 
-    bUseDbase = request.GET.get('usedbase', False)
-    if bUseDbase:
-        if bUseDbase == "true":
-            bUseDbase = True
+    try:
+        # x = request.POST
+        iDeel = request.GET.get('deel', 1)
+        iSectie = request.GET.get('sectie', None)
+        iAflnum = request.GET.get('aflnum', 1)
+        sFile = request.GET.get('filename', '')
+
+        bUseDbase = request.GET.get('usedbase', False)
+        if bUseDbase:
+            if bUseDbase == "true":
+                bUseDbase = True
+            else:
+                bUseDbase = False
+
+        # Get the id of the Info object
+        if iSectie==None or iSectie == "":
+            info = Info.objects.filter(deel=iDeel, aflnum=iAflnum).first()
         else:
-            bUseDbase = False
+            info = Info.objects.filter(deel=iDeel, sectie=iSectie, aflnum=iAflnum).first()
 
-    # Get the id of the Info object
-    if iSectie==None or iSectie == "":
-        info = Info.objects.filter(deel=iDeel, aflnum=iAflnum).first()
-    else:
-        info = Info.objects.filter(deel=iDeel, sectie=iSectie, aflnum=iAflnum).first()
+        if info == None:
+            data['status'] = 'error: no Info object found'
+            return JsonResponse(data)
 
-    if info == None:
-        data.status = 'error: no Info object found'
-        return JsonResponse(data)
+        # Remove any previous status objects for this info
+        Status.objects.filter(info=info).delete()
 
-    # Remove any previous status objects for this info
-    Status.objects.filter(info=info).delete()
+        # Create a new import-status object
+        oStatus = Status(info=info)
 
-    # Create a new import-status object
-    oStatus = Status(info=info)
+        # Note that we are starting
+        oStatus.set_status("starting")
+        iStatus = oStatus.id
+        # oCsvImport['status'] = "starting"
 
-    # Note that we are starting
-    oStatus.status = "starting"
-    oStatus.save()
-    iStatus = oStatus.id
-    # oCsvImport['status'] = "starting"
+        # Call the process
+        oResult = csv_to_fixture(sFile, iDeel, iSectie, iAflnum, iStatus, bUseDbase = bUseDbase, bUseOld = True)
+        if oResult == None or oResult['result'] == False:
+            data['status'] = 'error'
 
-    # Call the process
-    oResult = csv_to_fixture(sFile, iDeel, iSectie, iAflnum, iStatus, bUseDbase = bUseDbase, bUseOld = True)
-    if oResult == None or oResult['result'] == False:
-        data.status = 'error'
+        # WSince we are done: explicitly set the status so
+        oStatus.set_status("done")
+    except Exception as ex:
+        oErr.DoError("import_csv_start error")
+        data['status'] = "error"
 
     # Return this response
     return JsonResponse(data)

@@ -53,7 +53,7 @@ SECRET_KEY = '485c409a-daf7-47d3-81af-257049728c58'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'e-wld.nl', 'www.e-wld.nl']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'e-wld.nl', 'www.e-wld.nl', 'corpus-studio-web.cttnww-meertens.surf-hosted.nl']
 
 
 # Application definition
@@ -137,7 +137,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Amsterdam'
 
 USE_I18N = True
 
@@ -154,3 +154,5 @@ if ("/scratch" in WRITABLE_DIR):
     STATIC_URL = '/'+APP_PREFIX+'static/'
 
 STATIC_ROOT = posixpath.join(*(BASE_DIR.split(os.path.sep) + ['static']))
+# The following should be better:
+# STATIC_ROOT = os.path.abspath(os.path.join("/", posixpath.join(*(BASE_DIR.split(os.path.sep) + ['static']))))

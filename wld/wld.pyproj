@@ -4,8 +4,9 @@
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <Name>wld</Name>
     <RootNamespace>wld</RootNamespace>
-    <InterpreterId>{6c713d71-6be7-4b28-b6ee-cf405b42bea2}</InterpreterId>
+    <InterpreterId>{340e6dd6-cef2-455d-afe6-3df755927e24}</InterpreterId>
     <InterpreterVersion>3.5</InterpreterVersion>
+    <WebBrowserPort>6506</WebBrowserPort>
   </PropertyGroup>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -17,7 +18,7 @@
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
-    <LaunchProvider>Django launcher</LaunchProvider>
+    <LaunchProvider>Web launcher</LaunchProvider>
     <OutputPath>.</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -46,6 +47,9 @@
     <Compile Include="wld\dictionary\fixtures\management\__init__.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="wld\dictionary\migrations\0002_lemma_gloss.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="wld\dictionary\migrations\__init__.py" />
     <Compile Include="wld\dictionary\models.py" />
     <Compile Include="wld\dictionary\adminviews.py">
@@ -55,6 +59,9 @@
     <Compile Include="wld\dictionary\views.py" />
     <Compile Include="wld\dictionary\__init__.py" />
     <Compile Include="manage.py" />
+    <Compile Include="wld\utils.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="wld\__init__.py" />
     <Compile Include="wld\settings.py" />
     <Compile Include="wld\urls.py" />
@@ -95,24 +102,19 @@
     <Content Include="wld\dictionary\static\dictionary\fonts\glyphicons-halflings-regular.woff" />
     <Content Include="wld\dictionary\static\dictionary\scripts\diadict.js" />
     <Content Include="wld\dictionary\static\dictionary\scripts\gtrack.js" />
-    <Content Include="wld\dictionary\templates\dictionary\about-OUD.html" />
-    <Content Include="wld\dictionary\templates\dictionary\lemma_list_short.html" />
+    <Content Include="wld\dictionary\templates\dictionary\import_test.html" />
     <Content Include="wld\dictionary\templates\dictionary\repair.html" />
     <Content Include="wld\dictionary\templates\dictionary\aflevering_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\afleveringen.html" />
-    <Content Include="wld\dictionary\templates\dictionary\contact-OUD.html" />
     <Content Include="wld\dictionary\templates\dictionary\dialectviewing.html" />
     <Content Include="wld\dictionary\templates\dictionary\import_csv.html" />
-    <Content Include="wld\dictionary\templates\dictionary\lemma_list_full.html" />
     <Content Include="wld\dictionary\templates\dictionary\location_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\mijn_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\dialect_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\pagination.html" />
     <Content Include="wld\dictionary\templates\dictionary\trefwoord_list.html" />
-    <Content Include="wld\dictionary\templates\dictionary\trefwoord_list_strict.html" />
     <Content Include="wld\dictionary\templates\dictionary\lemma_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\topnav.html" />
-    <Content Include="wld\dictionary\templates\dictionary\trefwoord_list_plain.html" />
     <Content Include="wld\templates\admin\base.html" />
     <Content Include="wld\templates\admin\base_site.html" />
     <Content Include="wld\templates\admin\dictionary\Info\change_form.html" />
@@ -141,16 +143,16 @@
     <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Interpreter Include="..\..\..\..\..\..\env\collbank\">
-      <Id>{6c713d71-6be7-4b28-b6ee-cf405b42bea2}</Id>
-      <BaseInterpreter>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</BaseInterpreter>
+    <Interpreter Include="..\..\..\..\..\env\diadict\">
+      <Id>{340e6dd6-cef2-455d-afe6-3df755927e24}</Id>
+      <BaseInterpreter>{2af0f10d-7135-4994-9156-5d01c9c11b7e}</BaseInterpreter>
       <Version>3.5</Version>
-      <Description>collbank (Python 64-bit 3.5)</Description>
+      <Description>diadict (Python 3.5)</Description>
       <InterpreterPath>Scripts\python.exe</InterpreterPath>
       <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
       <LibraryPath>Lib\</LibraryPath>
       <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
-      <Architecture>Amd64</Architecture>
+      <Architecture>X86</Architecture>
     </Interpreter>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.Django.targets" />

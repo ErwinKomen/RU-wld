@@ -33,7 +33,6 @@ urlpatterns = [
     url(r'^$', wld.dictionary.views.home, name='home'),
     url(r'^contact$', wld.dictionary.views.contact, name='contact'),
     url(r'^about', wld.dictionary.views.about, name='about'),
-    url(r'^test', wld.dictionary.views.import_csv_test, name='import_test'),
     url(r'^delen', DeelListView.as_view(), name='delen'),
     url(r'^definitions$', RedirectView.as_view(url='/'+pfx+'admin/'), name='definitions'),
     url(r'^entries$', RedirectView.as_view(url='/'+pfx+'admin/dictionary/entry/'), name='entries'),
