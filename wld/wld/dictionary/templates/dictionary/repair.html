@@ -3,24 +3,14 @@
 {% block content %}
 
 <div class="container body-content">
-  <h3>Reparaties</h3>
+  <h3>Reparatie van LEMMA's</h3>
   <div class="row">
     Het repareren van lemma's houdt in dat ieder lemma ontdaan wordt van voorafgaande en volgende spaties.
     Bovendien wordt er gekeken of een lemma zowel begint als eindigt met een aanhalingsteken.
     Indien dat zo is, dan worden beide aanhalingstekens verwijderd.
   </div>
 
-  <div class="row">
-    <div>&nbsp;</div>
-  </div>
-
-  <div class="row">
-    <div>&nbsp;</div>
-  </div>
-
-  <div class="row">
-    <div>&nbsp;</div>
-  </div>
+  <div class="row"><div>&nbsp;</div></div>
 
   <div class="row">
     <div class="col-md-3">
@@ -31,6 +21,27 @@
       </span>
     </div>
     <div id="repair_progress_lemma" class="col-md-9">
+      <!-- This is where the progress will be reported -->
+    </div>
+  </div>
+
+  <h3>Reparatie van ENTRY en DESCRIPTION</h3>
+  <div class="row">
+    Het repareren van Entry-Descriptions houdt in dat alle niet-unieke Descriptions worden verwijderd, 
+    en dat alle Entry instances naar de juiste Description instances verwijzen.
+  </div>
+
+  <div class="row"><div>&nbsp;</div></div>
+
+  <div class="row">
+    <div class="col-md-3">
+      <span><a id="repair_start_entrydescr" class="btn btn-primary" 
+          repair-start="{% url 'repair_start' %}?repairtype=entrydescr" 
+          repair-progress="{% url 'repair_progress' %}?repairtype=entrydescr" 
+          onclick="repair_start('entrydescr')">Entry/Descriptions repareren</a>
+      </span>
+    </div>
+    <div id="repair_progress_entrydescr" class="col-md-9">
       <!-- This is where the progress will be reported -->
     </div>
   </div>

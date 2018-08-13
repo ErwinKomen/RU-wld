@@ -20,7 +20,7 @@ import io
 import codecs
 import html
 import json
-                
+import copy         
 
 
 MAX_IDENTIFIER_LEN = 10
@@ -2518,3 +2518,91 @@ def do_repair_lemma(oRepair):
 
     # Return positively
     return True
+
+def do_repair_entrydescr(oRepair):
+    """Repair descriptions and the entries that point to them"""
+
+    oErr = ErrHandle()
+    try:
+        # Show we are starting
+        oRepair.status = "Starting up Repair-EntryDescr"
+        oRepair.save()
+
+        # Get all the entries ordered by description text
+        # Note: do not use select_related(). because of the iterator
+        qs = Entry.objects.all().order_by(
+            'descr__toelichting',
+            'descr__bronnenlijst',
+            'descr__boek')
+
+        # Start a list of descr objects that need to be deleted
+        descr_del = []
+
+        if qs.exists():
+            # Prepare a 'previous' object
+            oPrev = None
+            entry_prev = None
+            count = 0
+            dCount = 0
+            # Iterate over them
+            for entry in qs.iterator():
+                ## DEBUGGING
+                #if entry.id == 1551778:
+                #    iStop = True
+                # show where we are
+                if count % 1000 == 0:
+                    oRepair.status = "Working on entry {}".format(count)
+                    oRepair.save()
+                # Get the new description values
+                descr = entry.descr
+                oNew = {'toelichting': descr.toelichting,
+                        'bronnenlijst': descr.bronnenlijst}
+                if descr.boek: 
+                    oNew['boek'] = descr.boek
+                else:
+                    oNew['boek'] = None
+                # Keep track of where we are
+                count += 1
+                # Check if this should be removed
+                if oPrev != None and descr.id != descr_prev.id and oPrev['toelichting'] == oNew['toelichting'] and \
+                   oPrev['bronnenlijst'] == oNew['bronnenlijst'] and oPrev['boek'] == oNew['boek']:
+                    # Add this description to the deletables
+                    if not descr.id in descr_del:
+                        descr_del.append(descr.id)
+                        dCount += 1
+                    # Possibly change the lemmadescr
+                    ld_list = LemmaDescr.objects.filter(description=descr)
+                    with transaction.atomic():
+                        # The new one is the same as the previous, so it should be added to the list of the ones that can be deleted
+                        entry.descr = descr_prev
+                        entry.save()
+                        for ld in ld_list:
+                            ld.description = descr_prev
+                            ld.save()
+                else:
+                    oPrev = copy.copy(oNew)
+                    descr_prev = descr
+
+            # Now delete all necessary description objects
+            oRepair.status = "Deleting descr instances: {}...".format(dCount)
+            oRepair.save()
+            # divide over chunks of 100
+            n = 100
+            for i in range(0, dCount, n):
+                oRepair.status = "Deleting descr instances: {} chunk={}...".format(dCount, i)
+                oRepair.save()
+                chnk = descr_del[i:i+n]
+                with transaction.atomic():
+                    Description.objects.filter(id__in=chnk).delete()
+            # Reset the list
+            descr_del = []
+
+        oRepair.status = "Everything has finished"
+        oRepair.save()
+        # Now we are ready
+        return True
+    except:
+        msg = oErr.get_error_message()
+        oRepair.status = "Error: {}".format(msg)
+        oRepair.save()
+        return False

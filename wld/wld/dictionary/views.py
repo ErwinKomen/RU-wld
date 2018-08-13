@@ -310,6 +310,10 @@ def do_repair_start(request):
         bResult = do_repair_lemma(oRepair)
         if not bResult:
             data.status = "error"
+    elif sRepairType == "entrydescr":
+        bResult = do_repair_entrydescr(oRepair)
+        if not bResult:
+            data.status = "error"
 
     # Return this response
     return JsonResponse(data)
