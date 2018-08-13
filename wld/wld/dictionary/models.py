@@ -606,7 +606,7 @@ class Description(models.Model):
         """Return the instance described by the options"""
 
         oErr = ErrHandle()
-        bSpeedUp = True
+        bSpeedUp = False # True
         try:
             # Get the parameters
             bronnenlijst = options['bronnenlijst']
