@@ -543,7 +543,12 @@ class Description(models.Model):
     boek = models.TextField("Boekaanduiding", db_index=True, null=True,blank=True)
 
     class Meta:
-        index_together = ['toelichting', 'bronnenlijst', 'boek']
+        #index_together = ['toelichting', 'bronnenlijst', 'boek']
+        #index_together = ['toelichting', 'bronnenlijst']
+        indexes = [
+            models.Index(fields=['toelichting', 'bronnenlijst', 'boek'], name='descr_three'),
+            models.Index(fields=['toelichting', 'bronnenlijst'], name='descr_two'),
+            ]
 
     def __str__(self):
         return self.bronnenlijst
