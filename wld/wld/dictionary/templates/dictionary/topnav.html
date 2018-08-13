@@ -20,6 +20,7 @@
                       <ul class="dropdown-menu">
                           <li><a href="#" onclick="set_search('lemmasearch')">Begrippen</a></li>
                           <li><a href="#" onclick="set_search('locationsearch')">Plaatsen</a></li>
+                          <li><a href="#" onclick="set_search('dialectsearch')">Dialecten</a></li>
                           <li><a href="#" onclick="set_search('trefwoordsearch')">Trefwoorden</a></li>
                       </ul>
                     </li>
@@ -50,6 +51,12 @@
                     <input id="search" name="search" type="text" class="form-control" placeholder="Plaats">
                   </div>
                 </form>
+                <form name="topdialectsearch" id="topdialectsearch" class="navbar-form navbar-left hidden"
+                      action="{% url 'dialectsearch' %}">
+                  <div class="form-group">
+                    <input id="search" name="search" type="text" class="form-control" placeholder="Dialect">
+                  </div>
+                </form>
                 <form name="toptrefwoordsearch" id="toptrefwoordsearch" class="navbar-form navbar-left hidden"
                       action="{% url 'trefwoordsearch' %}">
                   <div class="form-group">
@@ -64,7 +71,9 @@
                       <ul class="dropdown-menu">
                         <li><a href="{% url 'lemmasearch' %}">Begrippen</a></li>
                         <li><a href="{% url 'dialects' %}">Dialecten</a></li>
+                        <!-- Mines *ARE* needed for e-WLD -->
                         <li><a href="{% url 'minesearch' %}">Mijnen</a></li>
+                        <!-- -->
                         <li><a href="{% url 'trefwoordsearch' %}">Trefwoorden</a></li>
                         <li role="separator" class="divider"></li>
                         <li><a href="{% url 'delen' %}">Oorspronkelijke uitgaven</a></li>
@@ -77,6 +86,7 @@
                          aria-haspopup="true" aria-expanded="false">Over... <span class="caret"></span></a>
                       <ul class="dropdown-menu">
                         <li><a href="{% url 'about' %}">Informatie</a></li>
+                        <li><a href="{% url 'guide' %}">Handleiding</a></li>
                         <li><a href="{% url 'contact' %}">Contact</a></li>
                         {% if user.is_authenticated %}
                           <form id="logoutForm" action="{% url 'logout' %}" method="post" class="navbar-right">

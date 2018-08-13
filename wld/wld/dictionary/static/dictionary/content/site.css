@@ -88,6 +88,13 @@ table tbody tr:hover {
     background-color: lightyellow;
     font-size: smaller;
 }
+.lemma-word-has-toelichting:hover {
+    background-color: yellow;
+}
+.word-kloeketoelichting {
+  background-color: lightblue;
+  font-size: smaller;
+}
 
 .lemma-word-dialect-code {
   font-variant-caps: small-caps;
@@ -260,3 +267,37 @@ table tbody tr:hover {
 #header  .navbar-custom  .open .dropdown-menu li  a:visited {
   color: black !important;
 }
+
+/* Nieuw toegevoegd voor e-WBD en ook gebruikt door e-WLD */
+.filter-summary {
+  font-family: monospace, serif;
+  color: darkblue;
+}
+.filter-item {
+  background-color: lightgray;
+  border-radius: 3px 4px;
+  margin: 2px 2px 2px 2px;
+}
+.filter-item:hover {
+  background-color: lightyellow;
+  color: darkred;
+  border-radius: 3px 4px;
+  margin: 2px 2px 2px 2px;
+}
+
+.glyphicon-refresh-animate {
+    animation: spin .7s infinite linear;
+    -webkit-animation: spin2 .7s infinite linear;
+}
+
+
+@-webkit-keyframes spin2 {
+    from { -webkit-transform: rotate(0deg);}
+    to { -webkit-transform: rotate(360deg);}
+}
+
+@keyframes spin {
+    from { transform: scale(1) rotate(0deg);}
+    to { transform: scale(1) rotate(360deg);}
+}
+
