@@ -313,6 +313,10 @@ def do_repair_start(request):
         bResult = do_repair_entrydescr(oRepair)
         if not bResult:
             data.status = "error"
+    elif sRepairType == "clean":
+        bResult = do_repair_clean(oRepair)
+        if not bResult:
+            data.status = "error"
 
     # Return this response
     return JsonResponse(data)
@@ -325,15 +329,17 @@ def do_repair_progress(request):
     # Formulate a response
     data = {'status': 'not found'}
 
-    # Get the repair object
-    qs = Repair.objects.filter(repairtype=sRepairType)
-    if qs != None and len(qs) > 0:
-        oRepair = qs[0]
-        data['status'] = oRepair.status
+    try:
+        # Get the repair object
+        qs = Repair.objects.filter(repairtype=sRepairType)
+        if qs != None and len(qs) > 0:
+            oRepair = qs[0]
+            data['status'] = oRepair.status
+    except:
+        data['status'] = 'skipping a beat (repair_progress)'
 
     # Return this response
     return JsonResponse(data)
-
 
 def import_csv_start(request):
     # Formulate a response

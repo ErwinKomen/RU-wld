@@ -46,6 +46,28 @@
     </div>
   </div>
 
+  <h3>Helemaal opschonen van Lemma, Trefwoord, Entry</h3>
+  <div class="row">
+    <b>GEVAARLIJK!!!</b>
+    Alle instances van Lemma, Trefwoord en Entry worden verwijderd uit de database.
+    Ook alle instances van Dialects worden verwijderd.
+  </div>
+
+  <div class="row"><div>&nbsp;</div></div>
+
+  <div class="row">
+    <div class="col-md-3">
+      <span><a id="repair_start_clean" class="btn btn-primary" 
+          repair-start="{% url 'repair_start' %}?repairtype=clean" 
+          repair-progress="{% url 'repair_progress' %}?repairtype=clean" 
+          onclick="repair_start('clean')">Opschonen</a>
+      </span>
+    </div>
+    <div id="repair_progress_clean" class="col-md-9">
+      <!-- This is where the progress will be reported -->
+    </div>
+  </div>
+
 </div>
 
 

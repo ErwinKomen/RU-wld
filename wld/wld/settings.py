@@ -12,7 +12,11 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 
 import os
 import posixpath
+import socket
 from django.contrib import admin
+
+# Get the HOST by IP address
+hst = socket.gethostbyname(socket.gethostname())
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -23,25 +27,26 @@ if "RU-wld\\writable" in WRITABLE_DIR:
     WRITABLE_DIR = os.path.abspath(os.path.join(BASE_DIR, "../../../writable/database/"))
     MEDIA_ROOT = os.path.abspath(os.path.join(BASE_DIR, "../../../writable/media/"))
 
-APP_PREFIX = "dd/"
+APP_PREFIX = "ewld/"
 if "d:" in WRITABLE_DIR or "D:" in WRITABLE_DIR:
     APP_PREFIX = ""
-elif "/scratch" in WRITABLE_DIR:
-    # Previous configuration of http://applejack.science.ru.nl/ewld
-    # APP_PREFIX = "ewld/"
-    # admin.site.site_url = '/ewld'
-    # New configuration of http://e-wld.nl
+elif "131.174" in hst:
+    # Radboud University environment
     APP_PREFIX = ""
-    admin.site.site_url = '/'
+    admin.site.site_url = "/"
+elif "/var/www" in WRITABLE_DIR:
+    # Previous configuration of http://applejack.science.ru.nl/ewld
+    APP_PREFIX = "ewld/"
+    admin.site.site_url = '/ewld'
 else:
-    admin.site.site_url = '/dd'
+    admin.site.site_url = '/ewld'
 
 # Not the location of the wsgi.py file for "reload_wld"
 WSGI_FILE = os.path.abspath(os.path.join(BASE_DIR,"wld/wsgi.py"))
 
 # publishing on a sub-url
 # NOTE: possibly remove this for the production environment...
-# FORCE_SCRIPT_NAME = "/ru"
+FORCE_SCRIPT_NAME = admin.site.site_url
 
 
 # Quick-start development settings - unsuitable for production
@@ -93,6 +98,12 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+            ],
+            'loaders': [
+                ('django.template.loaders.cached.Loader', [
+                    'django.template.loaders.filesystem.Loader',
+                    'django.template.loaders.app_directories.Loader',
+                ]),
             ],
             'debug': DEBUG,
         },
@@ -150,9 +161,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
 STATIC_URL = '/static/'
-if ("/scratch" in WRITABLE_DIR):
+if ("ewld" in APP_PREFIX):
     STATIC_URL = '/'+APP_PREFIX+'static/'
 
-STATIC_ROOT = posixpath.join(*(BASE_DIR.split(os.path.sep) + ['static']))
+# STATIC_ROOT = posixpath.join(*(BASE_DIR.split(os.path.sep) + ['static']))
 # The following should be better:
-# STATIC_ROOT = os.path.abspath(os.path.join("/", posixpath.join(*(BASE_DIR.split(os.path.sep) + ['static']))))
+STATIC_ROOT = os.path.abspath(os.path.join("/", posixpath.join(*(BASE_DIR.split(os.path.sep) + ['static']))))
