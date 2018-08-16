@@ -3,7 +3,7 @@ Definition of views.
 """
 
 from django.views.generic.detail import DetailView
-from django.views.generic.list import ListView
+from django.views.generic.list import ListView, View
 from django.shortcuts import get_object_or_404, render
 from django.http import HttpRequest, HttpResponse
 from django.core.urlresolvers import reverse
@@ -1863,6 +1863,65 @@ class DialectListView(ListView):
             print("DialectListView get_queryset point 'b': {:.1f}".format( get_now_time() - iStart))
 
         # Return the resulting filtered and sorted queryset
+        return qs
+
+
+class DialectCheckView(ListView):
+    """Check how the dialects have fared"""
+
+    model = Dialect
+    template_name = 'dictionary/dialect_check.html'
+
+    def get_context_data(self, **kwargs):
+        # Retrieve the default context
+        context = super(DialectCheckView, self).get_context_data(**kwargs)
+
+        # Add my own stuff to the context
+        # (1) Get a list of unique dialect names
+        qs = Dialect.objects.order_by(Lower('stad')).distinct().select_related()
+        d_list = []
+        for item in qs:
+            d_list.append({'id': item.id, 'stad': item.stad, 'nieuw': item.nieuw})
+        context['d_list']  = d_list
+
+        # (2) Get a list of all names that have more than one entry (modula case)
+        d_double = []
+        last_stad = ""
+        for item in d_list:
+            name = item['stad']
+            if name != last_stad:
+                last_stad = name
+                qs = Dialect.objects.filter(Q(stad__iexact=name))
+                if qs.count()>1:
+                    # Get all the codes and all the afl for this name
+                    lCode = []
+                    lAfl = []
+                    for d in qs:
+                        # Check the code (nieuw) for this dialect
+                        if not d.nieuw in lCode:
+                            lCode.append(d.nieuw)
+                        # Get all the entries that point to this dialect
+                        qse = Entry.objects.filter(dialect=d).distinct()
+                        # Check all the afl for this dialect
+                        qsa = Aflevering.objects.filter(entry__in=qse).distinct().select_related().order_by('deel', 'sectie', 'aflnum')
+                        # Add the list of afl
+                        for a in qsa:
+                            if not a.sectie or a.sectie == None:
+                                sAfl = "{}/{}".format(a.deel.nummer, a.aflnum)
+                            else:
+                                sAfl = "{}/{}/{}".format(a.deel.nummer, a.sectie, a.aflnum)
+                            if not sAfl in lAfl:
+                                lAfl.append(sAfl)
+                    # Get all the afleveringen for this name
+                    oDouble = {'name': name, 'count': qs.count(), 'codes': lCode, 'afl_list': lAfl}
+                    d_double.append(oDouble)
+        context['d_double'] = d_double
+
+        # Return the context
+        return context
+
+    def get_queryset(self):
+        qs = Dialect.objects.none()
         return qs
 
 

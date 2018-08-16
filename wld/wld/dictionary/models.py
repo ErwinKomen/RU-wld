@@ -1452,6 +1452,13 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
     bUsdDbaseMijnen = True
     oErr = ErrHandle()
 
+    def get_basename(d, s, a):
+        # Basename: derive from deel/section/aflevering
+        sBaseName = "fixture-d" + str(d)
+        if iSectie != None: sBaseName = sBaseName + "-s" + str(s)
+        sBaseName = sBaseName + "-a" + str(a)
+        return sBaseName
+
     try:
         # Retrieve the correct instance of the status object
         oStatus = Status.objects.filter(id=iStatus).first()
@@ -1565,7 +1572,23 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
             if not os.path.isfile(csv_file):
                 lMsg.append("{}/{}/{} file is not existing: {}".format(
                     iDeel, iSectie, iAflevering, csv_file))
-
+            elif oInfo.processed != None:
+                # Check if there already is an output file name
+                oErr.Status("Checking the PK of {}/{}/{}".format(iDeel, iSectie, iAflevering))
+                sBaseName = get_basename(iDeel, iSectie, iAflevering)
+                output_file = os.path.join(MEDIA_ROOT ,sBaseName + ".json")
+                if os.path.isfile(output_file):
+                    oErr.Status("Reading from file {}".format(output_file))
+                    # Read the file as a JSON object
+                    fl_out = io.open(output_file, "r", encoding='utf-8')   
+                    lFix = json.load(fl_out)                 
+                    # Find the highest (=last) 
+                    size = len(lFix)
+                    pk_last = lFix[size-1]['pk']
+                    if pk_last > iPkEntry:
+                        oErr.Status("Found last_pk to be {}".format(pk_last))
+                        iPkEntry = pk_last + 1
+                        
         # Any messages?
         if len(lMsg) > 0:
             sMsg = "\n".join(lMsg)
@@ -1604,12 +1627,8 @@ def csv_to_fixture(csv_file, iDeel, iSectie, iAflevering, iStatus, bUseDbase=Fal
                 oErr.Status(sWorking)
 
                 # Create an output file writer
-                # Basename: derive from filename
-                # sBaseName = os.path.splitext(os.path.basename(csv_file))[0]
                 # Basename: derive from deel/section/aflevering
-                sBaseName = "fixture-d" + str(iDeel)
-                if iSectie != None: sBaseName = sBaseName + "-s" + str(iSectie)
-                sBaseName = sBaseName + "-a" + str(iAflevering)
+                sBaseName = get_basename(iDeel, iSectie, iAflevering)
                 output_file = os.path.join(MEDIA_ROOT ,sBaseName + ".json")
                 skip_file = os.path.join(MEDIA_ROOT, sBaseName + ".skip")
                 oFix = FixOut(output_file)

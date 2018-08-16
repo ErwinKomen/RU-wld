@@ -87,6 +87,7 @@
                       <ul class="dropdown-menu">
                         <li><a href="{% url 'about' %}">Informatie</a></li>
                         <li><a href="{% url 'guide' %}">Handleiding</a></li>
+                        <li><a href="{% url 'dialectcheck' %}">Dialectencontrole</a></li>
                         <li><a href="{% url 'contact' %}">Contact</a></li>
                         {% if user.is_authenticated %}
                           <form id="logoutForm" action="{% url 'logout' %}" method="post" class="navbar-right">

@@ -1,0 +1,51 @@
+﻿{% extends "dictionary/layout.html" %}
+
+{% block content %}
+
+<div class="panel panel-default">
+  <div class="panel-heading" data-toggle="collapse" data-target="#ddouble-area">
+      <span>Alle dialecten die meerdere keren voorkomen...</span>
+  </div>
+  <!-- class="collapse" -->
+  <div id="ddouble-area" class="collapse">
+    {% if d_double %}
+      <table>
+        {% for item in d_double %}
+          <tr>
+            <td valign="top">{{item.name}}</td>
+            <td valign="top">{{item.count}}</td>
+            <td valign="top">{{item.codes}}</td>
+            <td valign="top">{{item.afl_list}}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p>Er zijn geen dialectnamen die meerdere keren voorkomen.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel panel-default">
+  <div class="panel-heading" data-toggle="collapse" data-target="#dname-area">
+      <span>Alle dialectnamen...</span>
+  </div>
+  <!-- class="collapse" -->
+  <div id="dname-area" class="collapse">
+    {% if d_list %}
+      <table>
+        {% for item in d_list %}
+        <tr><td valign="top">{{item.id}}</td><td valign="top">{{item.stad}}</td><td valign="top">{{item.nieuw}}</td></tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p>Er is geen lijst met dialectnamen.</p>
+    {% endif %}
+  </div>
+</div>
+
+
+
+
+
+{% endblock content %}
+
