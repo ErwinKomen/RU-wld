@@ -14,13 +14,46 @@
           <tr>
             <td valign="top">{{item.name}}</td>
             <td valign="top">{{item.count}}</td>
-            <td valign="top">{{item.codes}}</td>
-            <td valign="top">{{item.afl_list}}</td>
+            <td valign="top">
+              {% for oCode in item.codes %}
+                <a target="_blank" 
+                   href="{% url 'lemmasearch' %}?dialectCity={{item.name}}&dialectCode={{oCode.nieuw}}">{{oCode.nieuw}}</a> ({{oCode.num}}){% if not forloop.last %}, {% endif %}
+              {% endfor %}
+            </td>
+            <td valign="top" style="width: 250px;">{{item.afl_list}}</td>
           </tr>
         {% endfor %}
       </table>
     {% else %}
       <p>Er zijn geen dialectnamen die meerdere keren voorkomen.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel panel-default">
+  <div class="panel-heading" data-toggle="collapse" data-target="#kdouble-area">
+      <span>Kloekecodes die naar meerdere plaatsen verwijzen...</span>
+  </div>
+  <!-- class="collapse" -->
+  <div id="kdouble-area" class="collapse">
+    {% if k_double %}
+      <table>
+        {% for item in k_double %}
+          <tr>
+            <td valign="top">{{item.code}}</td>
+            <td valign="top">{{item.count}}</td>
+            <td valign="top">
+              {% for oCode in item.cities %}
+                <a target="_blank" 
+                   href="{% url 'lemmasearch' %}?dialectCity={{oCode.stad}}&dialectCode={{item.code}}">{{oCode.stad}}</a> ({{oCode.num}}){% if not forloop.last %}, {% endif %}
+              {% endfor %}
+            </td>
+            <td valign="top" style="width: 250px;">{{item.afl_list}}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p>Er zijn geen kloekecodes die naar meerdere plaatsen verwijzen.</p>
     {% endif %}
   </div>
 </div>
@@ -43,6 +76,23 @@
   </div>
 </div>
 
+<div class="panel panel-default">
+  <div class="panel-heading" data-toggle="collapse" data-target="#kloeke-area">
+      <span>Kloekecodes op alfabetische volgorde...</span>
+  </div>
+  <!-- class="collapse" -->
+  <div id="kloeke-area" class="collapse">
+    {% if k_list %}
+      <table>
+        {% for item in k_list %}
+        <tr><td valign="top">{{item.id}}</td><td valign="top">{{item.nieuw}}</td><td valign="top">{{item.stad}}</td></tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p>Er is geen lijst met kloekecodes.</p>
+    {% endif %}
+  </div>
+</div>
 
 
 

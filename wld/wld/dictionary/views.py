@@ -1876,6 +1876,53 @@ class DialectCheckView(ListView):
         # Retrieve the default context
         context = super(DialectCheckView, self).get_context_data(**kwargs)
 
+        def get_range(qs, d, s):
+            """Get the afleveringen belonging to d/s as a range-string"""
+
+            lstQ = []
+            lstQ.append(Q(deel__nummer=d))
+            if s != None:
+                lstQ.append(Q(sectie=s))
+                sBack = "{}/{}:".format(d,s)
+            else:
+                sBack = "{}:".format(d)
+            # qsr = qs.objects.filter(*lstQ).order_by('aflnum')
+            # qsr = Aflevering.objects.filter(id__in=qs).filter(*lstQ).order_by('aflnum')
+            qsr = qs.filter(*lstQ).order_by('aflnum')
+            if qsr.count() == 0:
+                return ""
+            # Initializations
+            prev_num = -1
+            bRange = False  # In a range or not
+            for item in qsr:
+                num = item.aflnum
+                if prev_num == -1:
+                    sBack += "{}".format(num)
+                elif prev_num + 1 == num:
+                    # We are in a range
+                    if not bRange:
+                        # Indicate we are inside a range
+                        sBack += "-"
+                        bRange = True
+                elif prev_num + 1 != num:
+                    if bRange:
+                        # Finish previous range and start a new one
+                        sBack += "{},{}".format(prev_num, num)
+                        bRange = False
+                    else:
+                        # Start a range
+                        sBack += ",{}".format(num)
+                # Adapt the previous number
+                prev_num = num
+            # Check if we are still in the range
+            if bRange:
+                # Finish this range
+                sBack += "{}".format(num)
+            return sBack
+
+        # The set of ranges that cen be looked at
+        ranges = [{'d': 1, 's': None}, {'d': 2, 's': None}, {'d': 3, 's': 1}, {'d': 3, 's': 2}, {'d': 3, 's': 3}, {'d': 3, 's': 4}]
+
         # Add my own stuff to the context
         # (1) Get a list of unique dialect names
         qs = Dialect.objects.order_by(Lower('stad')).distinct().select_related()
@@ -1884,7 +1931,15 @@ class DialectCheckView(ListView):
             d_list.append({'id': item.id, 'stad': item.stad, 'nieuw': item.nieuw})
         context['d_list']  = d_list
 
-        # (2) Get a list of all names that have more than one entry (modula case)
+        # (2) Get a list of unique kloekecodes
+        qs = Dialect.objects.order_by(Lower('nieuw')).distinct().select_related()
+        k_list = []
+        for item in qs:
+            k_list.append({'id': item.id, 'stad': item.stad, 'nieuw': item.nieuw})
+        context['k_list']  = k_list
+
+
+        # (3) Get a list of all names that have more than one entry (modula case)
         d_double = []
         last_stad = ""
         for item in d_list:
@@ -1897,25 +1952,64 @@ class DialectCheckView(ListView):
                     lCode = []
                     lAfl = []
                     for d in qs:
-                        # Check the code (nieuw) for this dialect
-                        if not d.nieuw in lCode:
-                            lCode.append(d.nieuw)
                         # Get all the entries that point to this dialect
                         qse = Entry.objects.filter(dialect=d).distinct()
+                        qse_count = qse.count()
+                        # Check the code (nieuw) for this dialect
+                        if not d.nieuw in lCode:
+                            lCode.append({'nieuw': d.nieuw,'num': qse_count})
                         # Check all the afl for this dialect
-                        qsa = Aflevering.objects.filter(entry__in=qse).distinct().select_related().order_by('deel', 'sectie', 'aflnum')
-                        # Add the list of afl
+                        qsa = Aflevering.objects.filter(entry__in=qse).distinct()
                         for a in qsa:
-                            if not a.sectie or a.sectie == None:
-                                sAfl = "{}/{}".format(a.deel.nummer, a.aflnum)
-                            else:
-                                sAfl = "{}/{}/{}".format(a.deel.nummer, a.sectie, a.aflnum)
-                            if not sAfl in lAfl:
-                                lAfl.append(sAfl)
+                            if not a.id in lAfl: lAfl.append(a.id)
+                    # Sort the list of afl
+                    qsa = Aflevering.objects.filter(id__in=lAfl).select_related().order_by('deel', 'sectie', 'aflnum')
+                    lAfl = []
+                    # Get a number of standard ranges
+                    for oRange in ranges:
+                        sBack = get_range(qsa, oRange['d'], oRange['s'])
+                        if sBack != "": lAfl.append(sBack)
                     # Get all the afleveringen for this name
                     oDouble = {'name': name, 'count': qs.count(), 'codes': lCode, 'afl_list': lAfl}
                     d_double.append(oDouble)
         context['d_double'] = d_double
+
+        # (4) Get a list of all kloekecodes that have more than one entry 
+        k_double = []
+        last_code = ""
+        for item in k_list:
+            code = item['nieuw']
+            if code != last_code:
+                last_code = code
+                # Get all the dialects with this particular kloekecode
+                qs = Dialect.objects.filter(Q(nieuw__iexact=code)).distinct()
+                if qs.count() > 1:
+                    # There is more than one city linked to this kloekecode
+                    lStad = []
+                    lAfl = []
+                    for d in qs:
+                        # Get all the entries that point to this dialect
+                        qse = Entry.objects.filter(dialect=d).distinct()
+                        qse_count = qse.count()
+                        # Check the city name (stad) for this dialect
+                        if not d.stad in lStad:
+                            lStad.append({'stad': d.stad,'num': qse_count})
+                        # Check all the afl for this dialect
+                        qsa = Aflevering.objects.filter(entry__in=qse).distinct()
+                        for a in qsa:
+                            if not a.id in lAfl: lAfl.append(a.id)
+                    # Sort the list of afl
+                    qsa = Aflevering.objects.filter(id__in=lAfl).select_related().order_by('deel', 'sectie', 'aflnum')
+                    lAfl = []
+                    # Get a number of standard ranges
+                    for oRange in ranges:
+                        sBack = get_range(qsa, oRange['d'], oRange['s'])
+                        if sBack != "": lAfl.append(sBack)
+                    # Get all the afleveringen for this code
+                    oDouble = {'code': code, 'count': qs.count(), 'cities': lStad, 'afl_list': lAfl}
+                    k_double.append(oDouble)
+
+        context['k_double'] = k_double
 
         # Return the context
         return context
