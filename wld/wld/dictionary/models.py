@@ -777,6 +777,29 @@ class Info(models.Model):
     # Het bestand dat ge-upload wordt
     csv_file = models.FileField(upload_to="csv_files/")
 
+    def reset_item(self):
+        # Reset the 'Processed' comment
+        self.processed = ""
+        # Reset the amount of items read and skipped
+        self.read = 0
+        self.skipped = 0
+        # Save changes
+        self.save()
+
+    def clear_item(self):
+        # Reset the 'Processed' comment
+        self.processed = ""
+        # Reset the amount of items read and skipped
+        self.read = 0
+        self.skipped = 0
+        # Remove the CSV-file from where it is stored
+        csv_file = self.csv_file.path
+        os.remove(csv_file)
+        # Reset the CSV-file
+        self.csv_file = ""
+        # Save changes
+        self.save()
+
 
 class Status(models.Model):
     """Status of importing a CSV file """

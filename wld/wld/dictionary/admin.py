@@ -67,8 +67,25 @@ class AfleveringAdmin(admin.ModelAdmin):
     list_display = ['deel', 'sectie', 'aflnum', 'naam', 'inleiding', 'toonbaar']
 
 
+def reset_infos(modeladmin, request, qs):
+    """Reset all the info's in the queryset"""
+
+    with transaction.atomic():
+        for info in qs:
+            info.reset_item()
+reset_infos.short_description = "Reset process info"
+
+def clean_infos(modeladmin, request, qs):
+    """Reset all the info's in the queryset and remove associated CSV files"""
+
+    with transaction.atomic():
+        for info in qs:
+            info.clear_item()
+clean_infos.short_description = "Clean process Info and remove CSV files"
+
 class InfoAdmin(admin.ModelAdmin):
     list_display = ['deel', 'sectie', 'aflnum', 'csv_file', 'processed', 'read', 'skipped']
+    actions = [reset_infos, clean_infos]
 
 
 # -- Components of an entry
