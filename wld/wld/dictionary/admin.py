@@ -86,6 +86,8 @@ clean_infos.short_description = "Clean process Info and remove CSV files"
 class InfoAdmin(admin.ModelAdmin):
     list_display = ['deel', 'sectie', 'aflnum', 'csv_file', 'processed', 'read', 'skipped']
     actions = [reset_infos, clean_infos]
+    ordering = ['deel', 'sectie', 'aflnum']
+    list_filter = ['deel', 'sectie']
 
 
 # -- Components of an entry
