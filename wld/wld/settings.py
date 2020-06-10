@@ -44,7 +44,12 @@ else:
 # Not the location of the wsgi.py file for "reload_wld"
 WSGI_FILE = os.path.abspath(os.path.join(BASE_DIR,"wld/wsgi.py"))
 
-BLOCKED_IPS = ['88.198.17.136', '46.229.168.133']
+BLOCKED_IPS = ['40.77.167.57',
+               '46.229.168.133', 
+               '88.198.17.136', 
+               '157.55.39.235',
+               '157.55.39.199'
+               ]
 
 # publishing on a sub-url
 # NOTE: possibly remove this for the production environment...

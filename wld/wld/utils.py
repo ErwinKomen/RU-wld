@@ -53,7 +53,20 @@ class ErrHandle:
 
 class BlockedIpMiddleware(object):
 
+    bot_list = ['bot.htm', '/petalbot', 'crawler.com' ]
+
     def process_request(self, request):
         if request.META['REMOTE_ADDR'] in settings.BLOCKED_IPS:
             return http.HttpResponseForbidden('<h1>Forbidden</h1>')
+        else:
+            # Get the user agent
+            user_agent = request.META.get('HTTP_USER_AGENT')
+            user_agent = user_agent.lower()
+            for bot in self.bot_list:
+                if bot in user_agent:
+                    ip = request.META.get('REMOTE_ADDR')
+                    # Print it for logging
+                    msg = "blocking bot: [{}] {}: {}".format(ip, bot, user_agent)
+                    print(msg, file=sys.stderr)
+                    return http.HttpResponseForbidden('<h1>Forbidden</h1>')
         return None
