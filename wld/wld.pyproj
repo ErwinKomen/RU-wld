@@ -4,7 +4,7 @@
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <Name>wld</Name>
     <RootNamespace>wld</RootNamespace>
-    <InterpreterId>{340e6dd6-cef2-455d-afe6-3df755927e24}</InterpreterId>
+    <InterpreterId>{112aad7f-f820-4834-98e8-8b5ddafb535e}</InterpreterId>
     <InterpreterVersion>3.5</InterpreterVersion>
     <WebBrowserPort>6506</WebBrowserPort>
   </PropertyGroup>
@@ -32,6 +32,7 @@
   <ItemGroup>
     <Compile Include="wld\dictionary\admin.py" />
     <Compile Include="wld\dictionary\apps.py" />
+    <Compile Include="wld\dictionary\conversion.py" />
     <Compile Include="wld\dictionary\forms.py">
       <SubType>Code</SubType>
     </Compile>
@@ -59,6 +60,12 @@
     <Compile Include="wld\dictionary\views.py" />
     <Compile Include="wld\dictionary\__init__.py" />
     <Compile Include="manage.py" />
+    <Compile Include="wld\mapview\admin.py" />
+    <Compile Include="wld\mapview\apps.py" />
+    <Compile Include="wld\mapview\models.py" />
+    <Compile Include="wld\mapview\tests.py" />
+    <Compile Include="wld\mapview\views.py" />
+    <Compile Include="wld\mapview\__init__.py" />
     <Compile Include="wld\utils.py">
       <SubType>Code</SubType>
     </Compile>
@@ -81,6 +88,16 @@
     <Folder Include="wld\dictionary\static\dictionary\scripts\" />
     <Folder Include="wld\dictionary\templates\" />
     <Folder Include="wld\dictionary\templates\dictionary\" />
+    <Folder Include="wld\mapview\" />
+    <Folder Include="wld\mapview\migrations\" />
+    <Folder Include="wld\mapview\migrations\__pycache__\" />
+    <Folder Include="wld\mapview\static\" />
+    <Folder Include="wld\mapview\static\mapview\" />
+    <Folder Include="wld\mapview\static\mapview\content\" />
+    <Folder Include="wld\mapview\static\mapview\scripts\" />
+    <Folder Include="wld\mapview\static\mapview\webfonts\" />
+    <Folder Include="wld\mapview\templates\" />
+    <Folder Include="wld\mapview\templates\mapview\" />
     <Folder Include="wld\templates\" />
     <Folder Include="wld\templates\admin\" />
     <Folder Include="wld\templates\admin\dictionary\" />
@@ -91,6 +108,7 @@
     <Content Include="wld\dictionary\static\dictionary\content\boeken-wld.jpg" />
     <Content Include="wld\dictionary\static\dictionary\content\bootstrap.css" />
     <Content Include="wld\dictionary\static\dictionary\content\bootstrap.min.css" />
+    <Content Include="wld\dictionary\static\dictionary\content\fontawesome-5-all.css" />
     <Content Include="wld\dictionary\static\dictionary\content\taalkaart-wld-750.jpg" />
     <Content Include="wld\dictionary\static\dictionary\content\taalkaart-wld.jpg" />
     <Content Include="wld\dictionary\static\dictionary\content\taalkaart-wld.png" />
@@ -117,6 +135,29 @@
     <Content Include="wld\dictionary\templates\dictionary\trefwoord_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\lemma_list.html" />
     <Content Include="wld\dictionary\templates\dictionary\topnav.html" />
+    <Content Include="wld\mapview\migrations\__pycache__\__init__.cpython-35.pyc" />
+    <Content Include="wld\mapview\static\mapview\content\fontawesome-5-all.css" />
+    <Content Include="wld\mapview\static\mapview\content\leaflet.css" />
+    <Content Include="wld\mapview\static\mapview\content\ru.mapview.css" />
+    <Content Include="wld\mapview\static\mapview\scripts\leaflet-src.js" />
+    <Content Include="wld\mapview\static\mapview\scripts\oms.min.js" />
+    <Content Include="wld\mapview\static\mapview\scripts\ru.mapview.js" />
+    <Content Include="wld\mapview\static\mapview\webfonts\fa-brands-400.eot" />
+    <Content Include="wld\mapview\static\mapview\webfonts\fa-brands-400.svg" />
+    <Content Include="wld\mapview\static\mapview\webfonts\fa-brands-400.ttf" />
+    <Content Include="wld\mapview\static\mapview\webfonts\fa-brands-400.woff" />
+    <Content Include="wld\mapview\static\mapview\webfonts\fa-brands-400.woff2" />
+    <Content Include="wld\mapview\static\mapview\webfonts\fa-regular-400.eot" />
+    <Content Include="wld\mapview\static\mapview\webfonts\fa-regular-400.svg" />
+    <Content Include="wld\mapview\static\mapview\webfonts\fa-regular-400.ttf" />
+    <Content Include="wld\mapview\static\mapview\webfonts\fa-regular-400.woff" />
+    <Content Include="wld\mapview\static\mapview\webfonts\fa-regular-400.woff2" />
+    <Content Include="wld\mapview\static\mapview\webfonts\fa-solid-900.eot" />
+    <Content Include="wld\mapview\static\mapview\webfonts\fa-solid-900.svg" />
+    <Content Include="wld\mapview\static\mapview\webfonts\fa-solid-900.ttf" />
+    <Content Include="wld\mapview\static\mapview\webfonts\fa-solid-900.woff" />
+    <Content Include="wld\mapview\static\mapview\webfonts\fa-solid-900.woff2" />
+    <Content Include="wld\mapview\templates\mapview\map_view.html" />
     <Content Include="wld\templates\admin\base.html" />
     <Content Include="wld\templates\admin\base_site.html" />
     <Content Include="wld\templates\admin\dictionary\Info\change_form.html" />
@@ -146,15 +187,15 @@
   </ItemGroup>
   <ItemGroup>
     <Interpreter Include="..\..\..\..\..\env\diadict\">
-      <Id>{340e6dd6-cef2-455d-afe6-3df755927e24}</Id>
-      <BaseInterpreter>{2af0f10d-7135-4994-9156-5d01c9c11b7e}</BaseInterpreter>
+      <Id>{112aad7f-f820-4834-98e8-8b5ddafb535e}</Id>
+      <BaseInterpreter>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</BaseInterpreter>
       <Version>3.5</Version>
-      <Description>diadict (Python 3.5)</Description>
+      <Description>diadict (Python 64-bit 3.5)</Description>
       <InterpreterPath>Scripts\python.exe</InterpreterPath>
       <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
       <LibraryPath>Lib\</LibraryPath>
       <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
-      <Architecture>X86</Architecture>
+      <Architecture>Amd64</Architecture>
     </Interpreter>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.Django.targets" />

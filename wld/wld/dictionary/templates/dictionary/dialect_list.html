@@ -1,4 +1,4 @@
-﻿{% extends "dictionary/layout.html" %}
+{% extends "dictionary/layout.html" %}
 
     {% block content %}
       <div class="panel panel-default">
@@ -43,20 +43,30 @@
                     <input class='btn btn-default' type="submit" onclick="do_search(this, 'dialect', 'Herstel');" name="submit_type" value="Herstel">
                 </div>
               </div>
-              <div class="col-sm-2">
-                <div class='form-group' id='paginate_by'>
+              <div class="col-sm-3">
+                <div class='form-group pull-right' id='paginate_by'>
                   <label for='paginate_by'>Per pagina</label>
-                  <select class='form-control' name="paginate_by">
-                    {% for pag in paginateValues %}
-                    <option {% if pag == paginateSize %} selected {% endif %}>{{pag}}</option>
-                    {% endfor %}
-                  </select>
+                  <div>
+                    <select class='form-control' name="paginate_by" style="width: inherit; display: inline-block;">
+                      {% for pag in paginateValues %}
+                      <option {% if pag == paginateSize %} selected {% endif %}>{{pag}}</option>
+                      {% endfor %}
+                    </select>
+                    <a role="button" class="btn btn-xs" title="Toon dialecten op kaart"
+                       onclick="ru.mapview.dialect_map(this);"
+                       targeturl="{% url 'dialectmap' %}" targetid="" >
+                      <i class="far fa-map" style="color: brown;"></i>
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
 
         </form>
       </div>
+
+    <!-- Make sure the modal form is loaded -->
+    {% include 'mapview/map_view.html' %}
 
     {% if object_list %}
       <h3>Dialecten</h3>

@@ -590,15 +590,48 @@ class LemmaDescr(models.Model):
             return None
     
 
+class Coordinate(models.Model):
+    """Kloeke code and real-life coordinates"""
+
+    # [1] The actual (new) KloekeCode
+    kloeke = models.CharField("Plaatscode (Kloeke)", blank=False, max_length=6, default="xxxxxx")
+    # [0-1] The place name
+    place = models.CharField("Place name", db_index=True, blank=True, max_length=MAX_LEMMA_LEN)
+    # [0-1] The province
+    province = models.CharField("Province", db_index=True, blank=True, max_length=MAX_LEMMA_LEN)
+    # [0-1] The country name
+    country = models.CharField("Country", db_index=True, blank=True, max_length=MAX_LEMMA_LEN)
+    # [0-1] The dictionary in which this occurs
+    dictionary = models.CharField("Dictionary", db_index=True, blank=True, max_length=MAX_LEMMA_LEN)
+    # [0-1] The point coordinates
+    point = models.CharField("Coordinates", db_index=True, blank=True, max_length=MAX_LEMMA_LEN)
+
+    def __str__(self):
+        sBack = "{}: {}".format(self.kloeke, self.place)
+        return sBack
+
+
 class Dialect(models.Model):
     """Dialect"""
 
+    # [1] The location name (city)
     stad = models.CharField("Dialectlocatie", db_index=True, blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+    # [1] The 'old' Kloeke code
     code = models.CharField("Plaatscode (Kloeke)", blank=False, max_length=6, default="xxxxxx")
+    # [1] The 'new' Kloeke code
     nieuw = models.CharField("Plaatscode (Nieuwe Kloeke)", db_index=True, blank=False, max_length=6, default="xxxxxx")
-    # A field that indicates this item may be showed
+    # [1] The area
+    streek = models.CharField("Streek", db_index=True, blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
+
+    # [1] A field that indicates this item may be showed
     toonbaar = models.BooleanField("Mag getoond worden", blank=False, default=True)
     toelichting = models.TextField("Toelichting bij dialect", blank=True)
+
+    # [0-1] Would like to have a coordinate for this dialect
+    coordinate = models.ForeignKey(Coordinate, null=True, blank=True, on_delete=models.SET_NULL, related_name="coordinatedialects")
+
+    # [1] Calculated field: number of 'Entry' elements for this dialect
+    count = models.IntegerField("Number of entries", default=0)
 
     class Meta:
         verbose_name_plural = "Dialecten"

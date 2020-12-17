@@ -7,6 +7,7 @@
     {% load staticfiles %}
     {% load static %}
     <link rel="stylesheet" type="text/css" href="{% static 'dictionary/content/bootstrap.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'dictionary/content/fontawesome-5-all.css' %}" />
     <link rel="stylesheet" type="text/css" href="{% static 'dictionary/content/site.css' %}" />
     <script src="{% static 'dictionary/scripts/modernizr-2.6.2.js' %}"></script>
     <script src="{% static 'dictionary/scripts/jquery-1.10.2.js' %}"></script>
@@ -23,8 +24,13 @@
     <div class="container body-content">
 {% block content %}{% endblock %}
         <hr/>
+    </div>
+
+    <div>
         <footer>
-            <p>&copy; 2016-{{ year }} - e-WLD</p>
+            <span>e-WLD v1.2.0 &copy; 2016-{% now "Y" %}</span>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <span>Developed at: <a href="https://www.ru.nl/facultyofarts/research/humanities-lab/our-labs/">Radboud University Nijmegen, Humanities Lab, TSG</a></span>
         </footer>
     </div>
 

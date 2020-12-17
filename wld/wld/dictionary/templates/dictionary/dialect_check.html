@@ -31,6 +31,24 @@
 </div>
 
 <div class="panel panel-default">
+  <div class="panel-heading" data-toggle="collapse" data-target="#diacoord-area">
+      <span>Alle dialecten die (nog) geen coördinaat hebben... ({{dc_list|length}})</span>
+  </div>
+  <!-- class="collapse" -->
+  <div id="diacoord-area" class="collapse">
+    {% if dc_list|length > 0 %}
+      <table>
+        {% for item in dc_list %}
+          <tr><td valign="top">{{item.id}}</td><td valign="top">{{item.stad}}</td><td valign="top">{{item.nieuw}}</td></tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p>Er zijn geen dialecten zonder coördinaat.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="panel panel-default">
   <div class="panel-heading" data-toggle="collapse" data-target="#kdouble-area">
       <span>Kloekecodes die naar meerdere plaatsen verwijzen...</span>
   </div>

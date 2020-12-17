@@ -135,6 +135,9 @@
         </form>
       </div>
 
+    <!-- Make sure the modal form is loaded -->
+    {% include 'mapview/map_view.html' %}
+
     <div id="lemma_list_msg"><!-- Room for any error messages --></div>
     <div id="lemma_list_oview">
     {% if object_list %}
@@ -200,6 +203,12 @@
                 <td>
                   <!-- Treat the list of lemma-descriptions (toelichtingen) and sources (bronnen) for this lemma -->
                   {% spaceless %}
+
+                  <a role="button" class="btn btn-xs" title="Toon trefwoorden op kaart"
+                     onclick="ru.mapview.lemma_map(this);"
+                     targeturl="{% url 'lemmamap' item.entry.lemma.id %}" targetid="" >
+                    <i class="far fa-map" style="color: brown;"></i>
+                  </a>
 
                   {% for item_descr in item.dlist %}
                     {% if item_descr.descr.first %}<span class="toelichting">{{item_descr.entry.toelichting}}</span>{% endif %}

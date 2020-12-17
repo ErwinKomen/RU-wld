@@ -301,3 +301,29 @@ table tbody tr:hover {
     to { transform: scale(1) rotate(360deg);}
 }
 
+/* Starting from e-WGD: better footer representation */
+body > div > footer {
+  height: 18px;
+  padding-top: 4px;
+  background: darkgreen;
+  color: white;
+  font-size: x-small;
+  position: fixed;
+  bottom: 0px;
+  width: 100%;
+  text-align: center;
+}
+body > div > footer a {
+  color: lightgreen;
+  position: relative;
+  z-index: 1000;
+}
+
+.kloekecode {
+    padding: 2px 4px;
+    font-size: 90%;
+    color: saddlebrown;
+    white-space: nowrap;
+    background-color: #f9f2f4;
+    border-radius: 4px;
+}

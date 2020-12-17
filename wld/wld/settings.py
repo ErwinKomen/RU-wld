@@ -78,7 +78,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # The apps for RU-wld
     'wld.dictionary',
+    'wld.mapview',
 ]
 
 MIDDLEWARE_CLASSES = [

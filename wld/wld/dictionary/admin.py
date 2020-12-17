@@ -38,9 +38,18 @@ class DescriptionAdmin(admin.ModelAdmin):
 
 
 class DialectAdmin(admin.ModelAdmin):
-    fieldsets = ( ('Editable', {'fields': ('stad', 'code', 'nieuw', 'toelichting',)}),
+    fieldsets = ( ('Editable', {'fields': ('stad', 'code', 'nieuw', 'toelichting', 'coordinate',)}),
                 )
-    list_display = ['nieuw', 'stad', 'toelichting']
+    list_display = ['nieuw', 'stad', 'coordinate']
+    search_fields = ['nieuw', 'stad']
+
+
+class CoordinateAdmin(admin.ModelAdmin):
+    fieldsets = ( ('Editable', {'fields': ('kloeke', 'country', 'province', 'dictionary', 'place', 'point',)}),
+                )
+    list_display = ['kloeke', 'country', 'province', 'dictionary', 'place', 'point']
+    list_filter = ['country', 'province', 'dictionary']
+    search_fields = ['place', 'province', 'country', 'kloeke']
 
 
 class TrefwoordAdmin(admin.ModelAdmin):
@@ -93,6 +102,7 @@ class InfoAdmin(admin.ModelAdmin):
 # -- Components of an entry
 admin.site.register(Lemma, LemmaAdmin)
 admin.site.register(Dialect, DialectAdmin)
+admin.site.register(Coordinate, CoordinateAdmin)
 admin.site.register(Trefwoord, TrefwoordAdmin)
 admin.site.register(Aflevering, AfleveringAdmin)
 admin.site.register(Mijn)

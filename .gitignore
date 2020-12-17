@@ -249,3 +249,4 @@ ModelManifest.xml
 /wld/imported_csv.txt
 /psdif.txt
 /pdf-oview.json
+/wld/wld/mapview/migrations/__init__.py

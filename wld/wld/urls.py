@@ -7,20 +7,24 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.conf.urls import url
 from django.core import urlresolvers
 import django.contrib.auth.views
+from django.views.decorators.csrf import csrf_exempt
+
 # Enable the admin:
+from wld.settings import APP_PREFIX
+
+# Imports for the app 'dictionary'
+import wld.dictionary.forms
+from wld.dictionary.views import *
+from wld.dictionary.adminviews import EntryListView, InfoListView
+
+# Other Django stuff
 from django.conf.urls import include
 from django.shortcuts import redirect
 from django.core.urlresolvers import reverse, reverse_lazy
 from django.views.generic.base import RedirectView
 from django.contrib import admin
-from wld.settings import APP_PREFIX
+
 admin.autodiscover()
-
-# Imports for my own project
-import wld.dictionary.forms
-from wld.dictionary.views import *
-from wld.dictionary.adminviews import EntryListView, InfoListView
-
 
 # set admin site names
 admin.site.site_header = 'e-WLD Admin'
@@ -40,10 +44,12 @@ urlpatterns = [
     url(r'^entries/import/$', permission_required('dictionary.search_gloss')(InfoListView.as_view()), name='admin_import_list'),
     url(r'^lemmas$', LemmaListView.as_view(), name='lemmas'),
     url(r'^lemma/search/$', LemmaListView.as_view(), name='lemmasearch'),
+    url(r'^lemma/map/(?P<pk>\d+)/$', csrf_exempt(LemmaMapView.as_view()), name='lemmamap'),
     url(r'^trefwoord/search/$', TrefwoordListView.as_view(), name='trefwoordsearch'),
     url(r'^dialects', DialectListView.as_view(), name='dialects'),
     url(r'^dialect/search/$', DialectListView.as_view(), name='dialectsearch'),
     url(r'^dialect/check/$', DialectCheckView.as_view(), name='dialectcheck'),
+    url(r'^dialect/map/$', csrf_exempt(DialectMapView.as_view()), name='dialectmap'),
     url(r'^locations', LocationListView.as_view(), name='locations'),
     url(r'^location/search/$', LocationListView.as_view(), name='locationsearch'),
     url(r'^mines', MijnListView.as_view(), name='mines'),
