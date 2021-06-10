@@ -15,6 +15,9 @@ import posixpath
 import socket
 from django.contrib import admin
 
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = False        # Further down DEBUG is put to True for development environment
+
 # Get the HOST by IP address
 hst = socket.gethostbyname(socket.gethostname())
 
@@ -28,18 +31,22 @@ if "RU-wld\\writable" in WRITABLE_DIR:
     MEDIA_ROOT = os.path.abspath(os.path.join(BASE_DIR, "../../../writable/media/"))
 
 APP_PREFIX = "ewld/"
+ADMIN_SITE_URL = "/"
 if "d:" in WRITABLE_DIR or "D:" in WRITABLE_DIR:
     APP_PREFIX = ""
 elif "131.174" in hst:
     # Radboud University environment
     APP_PREFIX = ""
-    admin.site.site_url = "/"
+    # admin.site.site_url = "/"
+    ADMIN_SITE_URL = "/"
 elif "/var/www" in WRITABLE_DIR:
     # Previous configuration of http://applejack.science.ru.nl/ewld
     APP_PREFIX = "ewld/"
-    admin.site.site_url = '/ewld'
+    # admin.site.site_url = '/ewld'
+    ADMIN_SITE_URL = "/ewld"
 else:
-    admin.site.site_url = '/ewld'
+    # admin.site.site_url = '/ewld'
+    ADMIN_SITE_URL = "/ewld"
 
 # Not the location of the wsgi.py file for "reload_wld"
 WSGI_FILE = os.path.abspath(os.path.join(BASE_DIR,"wld/wsgi.py"))
@@ -53,7 +60,7 @@ BLOCKED_IPS = ['40.77.167.57',
 
 # publishing on a sub-url
 # NOTE: possibly remove this for the production environment...
-FORCE_SCRIPT_NAME = admin.site.site_url
+# FORCE_SCRIPT_NAME = admin.site.site_url
 
 
 # Quick-start development settings - unsuitable for production
@@ -62,10 +69,12 @@ FORCE_SCRIPT_NAME = admin.site.site_url
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = '485c409a-daf7-47d3-81af-257049728c58'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'e-wld.nl', 'www.e-wld.nl', 'corpus-studio-web.cttnww-meertens.surf-hosted.nl']
+
+# Handling email on exceptions
+DEFAULT_FROM_EMAIL = 'diadict@science.ru.nl'
+ADMINS = [('Erwin', 'e.komen@ru.nl')]
 
 
 # Application definition
