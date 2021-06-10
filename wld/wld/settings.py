@@ -70,7 +70,8 @@ BLOCKED_IPS = ['40.77.167.57',
 SECRET_KEY = '485c409a-daf7-47d3-81af-257049728c58'
 
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'e-wld.nl', 'www.e-wld.nl', 'corpus-studio-web.cttnww-meertens.surf-hosted.nl']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '131.174.114.202',
+                 'e-wld.nl', 'www.e-wld.nl', 'corpus-studio-web.cttnww-meertens.surf-hosted.nl']
 
 # Handling email on exceptions
 DEFAULT_FROM_EMAIL = 'diadict@science.ru.nl'
