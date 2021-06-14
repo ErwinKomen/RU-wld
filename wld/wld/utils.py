@@ -61,12 +61,17 @@ class BlockedIpMiddleware(object):
         else:
             # Get the user agent
             user_agent = request.META.get('HTTP_USER_AGENT')
-            user_agent = user_agent.lower()
-            for bot in self.bot_list:
-                if bot in user_agent:
-                    ip = request.META.get('REMOTE_ADDR')
-                    # Print it for logging
-                    msg = "blocking bot: [{}] {}: {}".format(ip, bot, user_agent)
-                    print(msg, file=sys.stderr)
-                    return http.HttpResponseForbidden('<h1>Forbidden</h1>')
+            if user_agent == None or user_agent == "":
+                # This is forbidden...
+                return http.HttpResponseForbidden('<h1>Forbidden</h1>')
+            else:
+                # Check what the user agent is...
+                user_agent = user_agent.lower()
+                for bot in self.bot_list:
+                    if bot in user_agent:
+                        ip = request.META.get('REMOTE_ADDR')
+                        # Print it for logging
+                        msg = "blocking bot: [{}] {}: {}".format(ip, bot, user_agent)
+                        print(msg, file=sys.stderr)
+                        return http.HttpResponseForbidden('<h1>Forbidden</h1>')
         return None

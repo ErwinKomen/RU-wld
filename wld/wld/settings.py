@@ -70,7 +70,7 @@ BLOCKED_IPS = ['40.77.167.57',
 SECRET_KEY = '485c409a-daf7-47d3-81af-257049728c58'
 
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '131.174.114.202',
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '131.174.114.202', 'e-wld.science.ru.nl', '192.168.0.1',
                  'e-wld.nl', 'www.e-wld.nl', 'corpus-studio-web.cttnww-meertens.surf-hosted.nl']
 
 # Handling email on exceptions
