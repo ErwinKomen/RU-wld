@@ -53,16 +53,25 @@ class ErrHandle:
 
 class BlockedIpMiddleware(object):
 
-    bot_list = ['bot.htm', '/petalbot', 'crawler.com' ]
+    bot_list = ['googlebot', 'bot.htm', '/petalbot', 'crawler.com', '/robot' ]
 
     def process_request(self, request):
-        if request.META['REMOTE_ADDR'] in settings.BLOCKED_IPS:
+        oErr = ErrHandle()
+        remote_ip = request.META['REMOTE_ADDR']
+        if remote_ip in settings.BLOCKED_IPS:
+            oErr.Status("Blocking IP: {}".format(remote_ip))
             return http.HttpResponseForbidden('<h1>Forbidden</h1>')
         else:
+            # Try the IP addresses the other way around
+            for block_ip in settings.BLOCKED_IPS:
+                if block_ip in remote_ip:
+                    oErr.Status("Blocking IP: {}".format(remote_ip))
+                    return http.HttpResponseForbidden('<h1>Forbidden</h1>')
             # Get the user agent
             user_agent = request.META.get('HTTP_USER_AGENT')
             if user_agent == None or user_agent == "":
                 # This is forbidden...
+                oErr.Status("Blocking empty user agent")
                 return http.HttpResponseForbidden('<h1>Forbidden</h1>')
             else:
                 # Check what the user agent is...
