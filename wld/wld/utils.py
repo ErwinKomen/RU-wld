@@ -53,7 +53,7 @@ class ErrHandle:
 
 class BlockedIpMiddleware(object):
 
-    bot_list = ['googlebot', 'bot.htm', '/petalbot', 'crawler.com', '/robot' ]
+    bot_list = ['googlebot', 'bot.htm', 'bot.com', '/petalbot', 'crawler.com', 'robot', 'crawler' ]
 
     def process_request(self, request):
         oErr = ErrHandle()

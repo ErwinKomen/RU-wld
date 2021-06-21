@@ -24,6 +24,7 @@ import fnmatch
 import csv
 import codecs
 import copy
+import sys
 from wld.dictionary.models import *
 from wld.dictionary.forms import *
 from wld.mapview.views import MapView
@@ -212,12 +213,14 @@ def do_repair(request):
 
 def adapt_search(val):
     # First trim
-    val = val.strip()    
+    val = val.strip()  
     # Adapt for the use of '#'
     if '#' in val:
         val = r'(^|(.*\b))' + val.replace('#', r'((\b.*)|$)') # + r'((\b.*)|$)'
     else:
         val = '^' + fnmatch.translate(val) + '$'
+    # Make sure to get the hyphen literally  
+    val = val.replace("-", "\-")
     return val
 
 def export_csv(qs, sFileName):
@@ -977,6 +980,8 @@ class TrefwoordListView(ListView):
         if self.bDoTime: 
                 print("TrefwoordListView get_queryset part 3: {:.1f}".format(get_now_time() - iStart))
 
+        # Show that we responded
+        print("Trefwoordlist responded", file=sys.stderr)
         return qse
 
 
