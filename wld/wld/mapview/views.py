@@ -3,7 +3,7 @@ Views that are needed to show a map
 """
 
 from django.views.generic.detail import DetailView
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from django.views.generic.list import ListView, View
 from django.shortcuts import get_object_or_404, render

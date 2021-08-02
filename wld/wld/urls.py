@@ -5,7 +5,8 @@ Definition of urls for wld.
 from datetime import datetime
 from django.contrib.auth.decorators import login_required, permission_required
 from django.conf.urls import url
-from django.core import urlresolvers
+# from django.core import urlresolvers
+from django.contrib.auth.views import LoginView, LogoutView
 import django.contrib.auth.views
 from django.views.decorators.csrf import csrf_exempt
 
@@ -20,7 +21,7 @@ from wld.dictionary.adminviews import EntryListView, InfoListView
 # Other Django stuff
 from django.conf.urls import include
 from django.shortcuts import redirect
-from django.core.urlresolvers import reverse, reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic.base import RedirectView
 from django.contrib import admin
 
@@ -63,28 +64,18 @@ urlpatterns = [
     url(r'^repair/start/$', wld.dictionary.views.do_repair_start, name='repair_start'),
     url(r'^repair/progress/$', wld.dictionary.views.do_repair_progress, name='repair_progress'),
 
-    url(r'^login/$',
-        django.contrib.auth.views.login,
-        {
-            'template_name': 'dictionary/login.html',
-            'authentication_form': wld.dictionary.forms.BootstrapAuthenticationForm,
-            'extra_context':
-            {
-                'title': 'Log in',
-                'year': datetime.now().year,
-            }
-        },
+    url(r'^login/$', LoginView.as_view
+        (
+            template_name= 'dictionary/login.html',
+            authentication_form= wld.dictionary.forms.BootstrapAuthenticationForm,
+            extra_context= {'title': 'Log in','year': datetime.now().year,}
+        ),
         name='login'),
-    url(r'^logout$',
-        django.contrib.auth.views.logout,
-        {
-            'next_page': reverse_lazy('home'),
-        },
-        name='logout'),
+    url(r'^logout$',  LogoutView.as_view(next_page=reverse_lazy('home')), name='logout'),
 
     # Uncomment the admin/doc line below to enable admin documentation:
-    url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
+    # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     # Uncomment the next line to enable the admin:
-    url(r'^admin/', include(admin.site.urls), name='admin_base'),
+    url(r'^admin/', admin.site.urls, name='admin_base'),
 ]

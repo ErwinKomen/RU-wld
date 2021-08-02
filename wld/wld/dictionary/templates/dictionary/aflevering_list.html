@@ -20,7 +20,7 @@
     </b></p>
 
     <!-- Take all the [aflevering] elements for this [deel] and divide them over their [lemma] -->
-    {% regroup deel.aflevering_set.all|dictsort:"get_number" by naam as afl_list %}
+    {% regroup deel.deel_afleveringen.all|dictsort:"get_number" by naam as afl_list %}
     {% for afl in afl_list %}
       <p class="citation-line">
         {% for deze in afl.list %}

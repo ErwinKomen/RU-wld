@@ -46,7 +46,7 @@ class FieldChoice(models.Model):
         ordering = ['field','machine_value']
 
 def get_now_time():
-    return time.clock()
+    return time.process_time()
 
 def build_choice_list(field):
     """Create a list of choice-tuples"""
@@ -853,7 +853,7 @@ class Status(models.Model):
     status = models.TextField("Status", blank=False, default="idle")
     method = models.CharField("Reading method", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
     # Link to the Info
-    info = models.ForeignKey(Info, blank=False)
+    info = models.ForeignKey(Info, blank=False, on_delete=models.CASCADE, related_name="info_statuses")
 
     def set_status(self, sStatus, sMsg = None):
         self.status = sStatus
@@ -879,7 +879,7 @@ class Aflevering(models.Model):
     # The 'naam' is the full name of the PDF (without path) in which information is stored
     naam = models.CharField("PDF naam", blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
     # The 'deel' is the main category of the books
-    deel = models.ForeignKey(Deel, db_index=True, blank=False)
+    deel = models.ForeignKey(Deel, db_index=True, blank=False, on_delete=models.CASCADE, related_name="deel_afleveringen")
     # The 'sectie' is a sub-category used for instance in deel 3
     sectie = models.IntegerField("Sectie (optioneel)", db_index=True, blank=True, null=True)
     # The 'aflnum' is the actual number of the aflevering 
@@ -1053,19 +1053,19 @@ class Entry(models.Model):
         return self.woord + '_' + self.dialect.code
 
     # Lemma: obligatory
-    lemma = models.ForeignKey(Lemma, db_index=True, blank=False)
+    lemma = models.ForeignKey(Lemma, db_index=True, blank=False, on_delete=models.CASCADE)
     # Description: this description should be one and the same for a whole lemma, but this is not true in practice
-    descr = models.ForeignKey(Description, db_index=True, blank=False)
+    descr = models.ForeignKey(Description, db_index=True, blank=False, on_delete=models.CASCADE)
     # Dialect: obligatory
-    dialect = models.ForeignKey(Dialect, db_index=True, blank=False)
+    dialect = models.ForeignKey(Dialect, db_index=True, blank=False, on_delete=models.CASCADE)
     # Trefwoord: obligatory
-    trefwoord = models.ForeignKey(Trefwoord, db_index=True, blank=False)
+    trefwoord = models.ForeignKey(Trefwoord, db_index=True, blank=False, on_delete=models.CASCADE)
     # Mijn [0-1]
     # mijn = models.ForeignKey(Mijn, blank = True, null=True)
     # Mijn [0-n]
     mijnlijst = models.ManyToManyField(Mijn, db_index=True, through='EntryMijn')
     # Aflevering [1]
-    aflevering = models.ForeignKey(Aflevering, db_index=True, blank=False)
+    aflevering = models.ForeignKey(Aflevering, db_index=True, blank=False, on_delete=models.CASCADE)
     # Dialectal entry: obligatory
     woord = models.CharField("Dialectopgave", db_index=True, blank=False, max_length=MAX_LEMMA_LEN, default="(unknown)")
     # Notes to this entry: optional

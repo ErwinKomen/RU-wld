@@ -51,12 +51,12 @@ else:
 # Not the location of the wsgi.py file for "reload_wld"
 WSGI_FILE = os.path.abspath(os.path.join(BASE_DIR,"wld/wsgi.py"))
 
-BLOCKED_IPS = ['40.77.167.57',
-               '46.229.168.133', 
-               '88.198.17.136', 
-               '157.55.39.235',
+BLOCKED_IPS = ['40.77.167.57',      '161.35.188.242',
+               '46.229.168.133',    '54.202.172.244',
+               '88.198.17.136',     '34.222.29.95',
+               '157.55.39.235',     '37.9.13.199',
                '157.55.39.199',
-               '54.36.148.', '54.36.149.'
+               '54.36.148.',        '54.36.149.'
                ]
 
 # publishing on a sub-url
@@ -94,16 +94,17 @@ INSTALLED_APPS = [
     'wld.mapview',
 ]
 
-MIDDLEWARE_CLASSES = [
+MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    # 'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'wld.utils.BlockedIpMiddleware'
+    'wld.utils.BlockedIpMiddleware',
 ]
 
 ROOT_URLCONF = 'wld.urls'

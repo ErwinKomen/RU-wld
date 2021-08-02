@@ -250,3 +250,4 @@ ModelManifest.xml
 /psdif.txt
 /pdf-oview.json
 /wld/wld/mapview/migrations/__init__.py
+/wld/static

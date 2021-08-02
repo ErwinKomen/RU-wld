@@ -1,7 +1,7 @@
 from django.views.generic.list import ListView
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.core.exceptions import PermissionDenied
 
 import operator
