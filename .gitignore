@@ -251,3 +251,4 @@ ModelManifest.xml
 /pdf-oview.json
 /wld/wld/mapview/migrations/__init__.py
 /wld/static
+/wld/wld/safelogging

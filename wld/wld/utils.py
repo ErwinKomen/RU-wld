@@ -53,17 +53,38 @@ class ErrHandle:
 
 class BlockedIpMiddleware(object):
 
-    bot_list = ['googlebot', 'bot.htm', 'bot.com', '/petalbot', 'crawler.com', 'robot', 'crawler' ]
+    bot_list = ['googlebot', 'bot.htm', 'bot.com', '/petalbot', 'crawler.com', 'robot', 'crawler',
+                'semrush', 'bingbot' ]
+    bDebug = False
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        return self.get_response(request)
+
+        oErr = ErrHandle()
+        if self.bDebug:
+            oErr.Status("BlockedIpMiddleware: __call__")
+
+        # First double-check if this is okay...
+        response = self.process_request(request)
+
+        if response == None:
+            # No problem: we can do what we want
+            oErr.Status("Honoring request")
+            response = self.get_response(request)
+        else:
+            oErr.Status("Denying request")
+
+        return response
 
     def process_request(self, request):
         oErr = ErrHandle()
         remote_ip = request.META['REMOTE_ADDR']
+
+        if self.bDebug:
+            oErr.Status("BlockedIpMiddleware: remote addr = [{}]".format(remote_ip))
+
         if remote_ip in settings.BLOCKED_IPS:
             oErr.Status("Blocking IP: {}".format(remote_ip))
             return http.HttpResponseForbidden('<h1>Forbidden</h1>')
@@ -75,6 +96,10 @@ class BlockedIpMiddleware(object):
                     return http.HttpResponseForbidden('<h1>Forbidden</h1>')
             # Get the user agent
             user_agent = request.META.get('HTTP_USER_AGENT')
+
+            if self.bDebug:
+                oErr.Status("BlockedIpMiddleware: http user agent = [{}]".format(user_agent))
+
             if user_agent == None or user_agent == "":
                 # This is forbidden...
                 oErr.Status("Blocking empty user agent")

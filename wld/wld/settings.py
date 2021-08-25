@@ -78,6 +78,8 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '131.174.114.202', 'e-wld.science.ru.
 DEFAULT_FROM_EMAIL = 'diadict@science.ru.nl'
 ADMINS = [('Erwin', 'e.komen@ru.nl')]
 
+# Use safelogging
+from wld.safelogging.settings import *
 
 # Application definition
 
@@ -89,6 +91,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'wld.safelogging',
     # The apps for RU-wld
     'wld.dictionary',
     'wld.mapview',
@@ -96,6 +99,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'wld.utils.BlockedIpMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -104,7 +108,6 @@ MIDDLEWARE = [
     # 'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'wld.utils.BlockedIpMiddleware',
 ]
 
 ROOT_URLCONF = 'wld.urls'
