@@ -600,7 +600,7 @@ class TrefwoordListView(ListView):
     bWbdApproach = True # Filter using the WBD approach (this also applies for the revised WLD)
     qEntry = None
     qs = None
-    bDoTime = True      # Measure time
+    bDoTime = False      # Measure time
     strict = True      # Use strict filtering
 
     def get_qs(self):
@@ -866,122 +866,129 @@ class TrefwoordListView(ListView):
         
     def get_queryset(self):
 
-        # Get the parameters passed on with the GET or the POST request
-        get = self.request.GET if self.request.method == "GET" else self.request.POST
+        oErr = ErrHandle()
+        qse = Trefwoord.objects.none()
+        try:
+            # Get the parameters passed on with the GET or the POST request
+            get = self.request.GET if self.request.method == "GET" else self.request.POST
         
-        # Debugging: mesaure time
-        if self.bDoTime: iStart = get_now_time()
+            # Debugging: mesaure time
+            if self.bDoTime: iStart = get_now_time()
 
-        # Get possible user choice of 'strict'
-        if 'strict' in get:
-            self.strict = (get['strict'] == "True")
+            # Get possible user choice of 'strict'
+            if 'strict' in get:
+                self.strict = (get['strict'] == "True")
 
-        lstQ = []
-        bHasSearch = False
-        bHasFilter = False
+            lstQ = []
+            bHasSearch = False
+            bHasFilter = False
 
-        # Fine-tuning: search string is the LEMMA
-        if 'search' in get and get['search'] != '':
-            val = get['search']
-            if '*' in val or '[' in val or '?' in val or '#' in val:
-                val = adapt_search(val)
-                lstQ.append(Q(woord__iregex=val) )
-            else:
-                # Strive for equality, but disregard case
-                lstQ.append(Q(woord__iexact=val))
-            #val = adapt_search(get['search'])
-            ## Use the 'woord' attribute of Trefwoord
-            #lstQ.append(Q(woord__iregex=val) )
-            bHasSearch = True
+            # Fine-tuning: search string is the LEMMA
+            if 'search' in get and get['search'] != '':
+                val = get['search']
+                if '*' in val or '[' in val or '?' in val or '#' in val:
+                    val = adapt_search(val)
+                    lstQ.append(Q(woord__iregex=val) )
+                else:
+                    # Strive for equality, but disregard case
+                    lstQ.append(Q(woord__iexact=val))
+                #val = adapt_search(get['search'])
+                ## Use the 'woord' attribute of Trefwoord
+                #lstQ.append(Q(woord__iregex=val) )
+                bHasSearch = True
 
-            # check for possible exact numbers having been given
-            if re.match('^\d+$', val):
-                lstQ.append(Q(sn__exact=val))
+                # check for possible exact numbers having been given
+                if re.match('^\d+$', val):
+                    lstQ.append(Q(sn__exact=val))
 
-        # Check for 'toelichting'
-        if 'toelichting' in get and get['toelichting'] != '':
-            val = adapt_search(get['toelichting'])
-            # Try to get to the 'toelichting'
-            lstQ.append(Q(toelichting__iregex=val))
-            bHasSearch = True
+            # Check for 'toelichting'
+            if 'toelichting' in get and get['toelichting'] != '':
+                val = adapt_search(get['toelichting'])
+                # Try to get to the 'toelichting'
+                lstQ.append(Q(toelichting__iregex=val))
+                bHasSearch = True
 
-        # Check for dialectwoord
-        if 'dialectwoord' in get and get['dialectwoord'] != '':
-            val = adapt_search(get['dialectwoord'])
-            # Adapt Entry filter
-            lstQ.append(Q(entry__woord__iregex=val))
-            bHasFilter = True
+            # Check for dialectwoord
+            if 'dialectwoord' in get and get['dialectwoord'] != '':
+                val = adapt_search(get['dialectwoord'])
+                # Adapt Entry filter
+                lstQ.append(Q(entry__woord__iregex=val))
+                bHasFilter = True
 
-        # Check for lemma
-        if 'lemma' in get and get['lemma'] != '':
-            val = adapt_search(get['lemma'])
-            # Adapt Entry filter
-            lstQ.append(Q(entry__lemma__gloss__iregex=val))
-            bHasFilter = True
+            # Check for lemma
+            if 'lemma' in get and get['lemma'] != '':
+                val = adapt_search(get['lemma'])
+                # Adapt Entry filter
+                lstQ.append(Q(entry__lemma__gloss__iregex=val))
+                bHasFilter = True
 
-        # Check for dialect city
-        if 'dialectCity' in get and get['dialectCity'] != '':
-            val = adapt_search(get['dialectCity'])
-            # Adapt Entry filter
-            lstQ.append(Q(entry__dialect__stad__iregex=val))
-            bHasFilter = True
+            # Check for dialect city
+            if 'dialectCity' in get and get['dialectCity'] != '':
+                val = adapt_search(get['dialectCity'])
+                # Adapt Entry filter
+                lstQ.append(Q(entry__dialect__stad__iregex=val))
+                bHasFilter = True
 
-        # Check for dialect code (Kloeke)
-        if 'dialectCode' in get and get['dialectCode'] != '':
-            val = adapt_search(get['dialectCode'])
-            # Adapt Entry filter
-            lstQ.append(Q(entry__dialect__nieuw__iregex=val))
-            bHasFilter = True
+            # Check for dialect code (Kloeke)
+            if 'dialectCode' in get and get['dialectCode'] != '':
+                val = adapt_search(get['dialectCode'])
+                # Adapt Entry filter
+                lstQ.append(Q(entry__dialect__nieuw__iregex=val))
+                bHasFilter = True
 
-        # Check for aflevering
-        if 'aflevering' in get and get['aflevering'] != '':
-            # What we get should be a number
-            val = get['aflevering']
-            if val.isdigit():
-                iVal = int(val)
-                if iVal>0:
-                    lstQ.append(Q(entry__aflevering__id=iVal))
-                    bHasFilter = True
+            # Check for aflevering
+            if 'aflevering' in get and get['aflevering'] != '':
+                # What we get should be a number
+                val = get['aflevering']
+                if val.isdigit():
+                    iVal = int(val)
+                    if iVal>0:
+                        lstQ.append(Q(entry__aflevering__id=iVal))
+                        bHasFilter = True
 
-        # Check for mijn
-        if self.bUseMijnen and 'mijn' in get and get['mijn'] != '':
-            # What we get should be a number
-            val = get['mijn']
-            if val.isdigit():
-                iVal = int(val)
-                if iVal>0:
-                    lstQ.append(Q(entry__mijnlijst__id=iVal))
-                    bHasFilter = True
+            # Check for mijn
+            if self.bUseMijnen and 'mijn' in get and get['mijn'] != '':
+                # What we get should be a number
+                val = get['mijn']
+                if val.isdigit():
+                    iVal = int(val)
+                    if iVal>0:
+                        lstQ.append(Q(entry__mijnlijst__id=iVal))
+                        bHasFilter = True
 
-        # Debugging: time
-        if self.bDoTime: print("TrefwoordListView get_queryset part 1: {:.1f}".format(get_now_time() - iStart))
+            # Debugging: time
+            if self.bDoTime: print("TrefwoordListView get_queryset part 1: {:.1f}".format(get_now_time() - iStart))
 
-        # Debugging: mesaure time
-        if self.bDoTime: iStart = get_now_time()
+            # Debugging: mesaure time
+            if self.bDoTime: iStart = get_now_time()
 
-        # Figure out which trefwoorden to exclude
-        trefwoord_exclude = Trefwoord.objects.filter(toonbaar=0)
+            # Figure out which trefwoorden to exclude
+            trefwoord_exclude = Trefwoord.objects.filter(toonbaar=0)
 
-        # Create a QSE
-        qse = Trefwoord.objects.exclude(id__in=trefwoord_exclude).filter(*lstQ).select_related().order_by(Lower('woord')).distinct()
+            # Create a QSE
+            qse = Trefwoord.objects.exclude(id__in=trefwoord_exclude).filter(*lstQ).select_related().order_by(Lower('woord')).distinct()
 
-        # Debugging: time
-        if self.bDoTime: 
-                print("TrefwoordListView get_queryset part 2: {:.1f}".format(get_now_time() - iStart))
-                iStart = get_now_time()
+            # Debugging: time
+            if self.bDoTime: 
+                    print("TrefwoordListView get_queryset part 2: {:.1f}".format(get_now_time() - iStart))
+                    iStart = get_now_time()
 
-        # Note the number of ITEMS we have
-        #   (The nature of these items depends on the approach taken)
-        # self.entrycount = qse.count()
-        # Using 'len' is faster since [qse] is being actually used again
-        self.entrycount = len(qse)
+            # Note the number of ITEMS we have
+            #   (The nature of these items depends on the approach taken)
+            # self.entrycount = qse.count()
+            # Using 'len' is faster since [qse] is being actually used again
+            self.entrycount = len(qse)
 
-        # Debugging: time
-        if self.bDoTime: 
+            # Debugging: time
+            if self.bDoTime: 
                 print("TrefwoordListView get_queryset part 3: {:.1f}".format(get_now_time() - iStart))
 
-        # Show that we responded
-        print("Trefwoordlist responded", file=sys.stderr)
+            # Show that we responded
+            print("Trefwoordlist responded", file=sys.stderr)
+        except:
+            msg = oErr.get_error_message()
+            oErr.DoError("Trefwoordlistview/get_queryset")
+            qse = Trefwoord.objects.none()
         return qse
 
 
@@ -998,7 +1005,7 @@ class LemmaListView(ListView):
     bUseMijnen = True       # Limburg uses mijnen, Brabant not
     bWbdApproach = True     # Filter using the WBD approach
     bOrderWrdToel = False   # Use the word order 'dialectopgave-toelichting' if True
-    bDoTime = True          # Measure time
+    bDoTime = False          # Measure time
     qEntry = None
     qs = None
     strict = True      # Use strict filtering ALWAYS
@@ -1037,8 +1044,9 @@ class LemmaListView(ListView):
             iStart = get_now_time()
             # sResp = render_to_string(self.template_name, context)
             oRendered = super(LemmaListView, self).render_to_response(context, **response_kwargs)
-            # Show what the render-time was
-            print("LemmaListView render time: {:.1f}".format(get_now_time() - iStart))
+            if self.bDoTime:
+                # Show what the render-time was
+                print("LemmaListView render time: {:.1f}".format(get_now_time() - iStart))
             return oRendered
 
     def post(self, request, *args, **kwargs):
@@ -1440,9 +1448,9 @@ class LemmaListView(ListView):
                 lstQ.append(Q(gloss__iexact=val))
             bHasSearch = True
 
-            # check for possible exact numbers having been given
-            if re.match('^\d+$', val):
-                lstQ.append(Q(sn__exact=val))
+            ## check for possible exact numbers having been given
+            #if re.match('^\d+$', val):
+            #    lstQ.append(Q(sn__exact=val))
  
         # Check for dialect city
         if 'dialectCity' in get and get['dialectCity'] != '':
@@ -1513,6 +1521,8 @@ class LemmaListView(ListView):
         if self.bDoTime:
             print("LemmaListView get_queryset point 'b': {:.1f}".format( get_now_time() - iStart))
 
+        # Show that we responded
+        print("Lemmalistview responded", file=sys.stderr)
         # Return the resulting filtered and sorted queryset
         return qse
 
@@ -1563,7 +1573,7 @@ class LocationListView(ListView):
     qAll = None         # Ordered queryset of ALL
     qs = None           # Current queryset (for speeding up)
     strict = True       # Use strict filtering ALWAYS
-    bDoTime = True      # Use timing to determine what goes fastest
+    bDoTime = False      # Use timing to determine what goes fastest
 
     def get_qs(self):
         """Get the Entry elements that are selected"""
@@ -1934,7 +1944,7 @@ class DialectListView(ListView):
     paginate_by = 10
     template_name = 'dictionary/dialect_list.html'
     entrycount = 0
-    bDoTime = True
+    bDoTime = False
     bImportKloekeInfo = False
 
     def get_context_data(self, **kwargs):
@@ -1976,7 +1986,8 @@ class DialectListView(ListView):
                         dialect.save()
             count_after = Dialect.objects.filter(coordinate__isnull=True).count()
             count_gain = count_dialect - count_after
-            oErr.Status("Count before: {}, after: {}".format(count_dialect, count_after))
+            if self.bDoTime:
+                oErr.Status("Count before: {}, after: {}".format(count_dialect, count_after))
 
         # Get parameters for the search
         initial = self.request.GET
